@@ -2,6 +2,14 @@
 
 A DPS meter for EVE Online, built from the game's own combat log. A small always-on-top window, drawn as a piece of hardware, shows what your fleet deals, live.
 
+<p align="center">
+  <img src="https://github.com/user-attachments/assets/f3b02356-2159-42ac-b320-91f8f6bbcef3" width="269" alt="The Norns — DPS Meter" />
+  &nbsp;
+  <img src="https://github.com/user-attachments/assets/dff9e554-f469-4b86-b1a5-0a2537ca84dc" width="269" alt="The Norns — Settings" />
+  &nbsp;
+  <img src="https://github.com/user-attachments/assets/875f0ab9-9c12-46df-bc68-f7239340d2f8" width="269" alt="The Norns — Session Statistics" />
+</p>
+
 It runs fully on your PC: no AI, no cloud, no account. It only **reads** the combat logs that the EVE client writes to `Documents\EVE\logs\Gamelogs` and the titles of the open EVE windows.
 
 - It never sends anything to the game: no key presses, no clicks, no screen reading.
@@ -25,9 +33,9 @@ It runs fully on your PC: no AI, no cloud, no account. It only **reads** the com
 
 ## Install
 
-Run `TheNorns-Setup-<version>.exe`. It installs for your own Windows user, needs no administrator rights, and can be removed from Windows Settings → Apps. Or unpack the portable zip and run `TheNorns.exe`.
+Run `TheNorns-Setup-1.1.0.exe`. It installs for your own Windows user, needs no administrator rights, and can be removed from Windows Settings → Apps. Or unpack `TheNorns-1.1.0-portable.zip` and run `TheNorns.exe`.
 
-Your settings and session statistics live in `%LOCALAPPDATA%\The Norns`. An earlier build of this app is replaced by the installer, and its settings move over on the first start.
+Your settings and session statistics live in `%LOCALAPPDATA%\The Norns`.
 
 ## Build
 
