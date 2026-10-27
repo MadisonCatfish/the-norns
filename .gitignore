@@ -8,6 +8,7 @@ obj/
 # Temporary, scratch, and archives
 *.zip
 *.log
+*.gif
 .vs/
 *.user
 *.suo
