@@ -1,5 +1,15 @@
 # Changelog
 
+## 1.2.0 — 2026-10-27
+
+- Anomaly clear time: after the fleet warp the Vorton lines sink and the time of the site just left (warp to warp) counts up from 00:00 in the middle of the graph; the first hit on an NPC fades it out and the lines come back.
+- Faction spawns: a ★ count of this session's rare spawns (commanders, faction NPCs, titans) next to the anomaly counter; a click opens Statistics, where every session shows its ★ count and the total. One spawn per NPC name; the same name after 10 minutes is a new spawn.
+- The anchor's smartbombs as a dotted line in the Vorton graph.
+- Smartbomb columns clear at the fleet warp instead of showing the last cycle of the site just left.
+- Over keys the pointer shows a pulsing ring; the app's own pointer now shows over the whole body, the screen too, and the screen drags the window like the hull.
+- Tooltips appear after a short rest on a key.
+- The ノルン name turns accent under the mouse (no bar under it); the NPC faction on the small display is 1 px larger and 2 px lower.
+
 ## 1.1.0 — 2026-10-27
 
 First public release of The Norns.

@@ -55,6 +55,7 @@ namespace TheNorns
         public readonly List<DateTime> BountyTimes = new List<DateTime>();   // when each tick came (the grid colours commander / titan kills)
         public string LastWarpLeader = "";
         public DateTime LastWarpTime = DateTime.MinValue;
+        public DateTime PrevWarpTime = DateTime.MinValue;   // the warp before: warp to warp is the anomaly's clear time
         DateTime siteStart = DateTime.MinValue;
         // a site is done (start = its first bounty, end = the warp out, its ISK): the session statistics keep it
         public event Action<DateTime, DateTime, long> SiteClosed;
@@ -65,6 +66,7 @@ namespace TheNorns
         {
             if (string.Equals(leader, LastWarpLeader, StringComparison.OrdinalIgnoreCase) && Math.Abs((t - LastWarpTime).TotalSeconds) <= 10) return;
             LastWarpLeader = leader;
+            PrevWarpTime = LastWarpTime;
             LastWarpTime = t;
             if (Bounties.Count > 0 || CurrentAnomalyIsk > 0)
             {
@@ -100,7 +102,7 @@ namespace TheNorns
             LastAnomalyIsk = 0;
             Bounties.Clear(); BountyTimes.Clear();
             LastWarpLeader = "";
-            LastWarpTime = DateTime.MinValue;
+            LastWarpTime = PrevWarpTime = DateTime.MinValue;
         }
     }
 
@@ -388,6 +390,10 @@ namespace TheNorns
         // the rare spawns (owner 27.10.2026): an asteroid belt's commander battleship (1) and a titan (2), by their name;
         // every hit to or from one is kept with its time
         readonly List<Tuple<DateTime, int>> special = new List<Tuple<DateTime, int>>();
+        // the rare spawns of this run (commanders, faction NPCs, titans): one per NPC name, a name seen again after
+        // 10 minutes without it is a new spawn. Kept for the whole run (the session statistics count them)
+        public readonly List<Tuple<DateTime, string>> Spawns = new List<Tuple<DateTime, string>>();
+        readonly Dictionary<string, DateTime> spawnSeen = new Dictionary<string, DateTime>(StringComparer.OrdinalIgnoreCase);
         static readonly Regex TitanName = new Regex(@"\bTitan\b", RegexOptions.IgnoreCase), CommanderName = new Regex(@"\bCommander\b|^(Shadow Serpentis|Dread Guristas|Dark Blood|True Sansha|Domination)\b", RegexOptions.IgnoreCase);   // + faction spawns
         public static int SpecialKind(string npc)
         {
@@ -579,7 +585,13 @@ namespace TheNorns
                 if (!IsPlayerOrFriendly(e.Other, Pilots))
                 {
                     int sk = SpecialKind(e.Other);
-                    if (sk != 0) special.Add(Tuple.Create(e.T, sk));
+                    if (sk != 0)
+                    {
+                        special.Add(Tuple.Create(e.T, sk));
+                        DateTime seen;
+                        if (!spawnSeen.TryGetValue(e.Other, out seen) || (e.T - seen).TotalMinutes > 10) Spawns.Add(Tuple.Create(e.T, e.Other));
+                        if (!spawnSeen.ContainsKey(e.Other) || e.T > spawnSeen[e.Other]) spawnSeen[e.Other] = e.T;
+                    }
                     var f = IdentifyFaction(e.Other);
                     if (!string.IsNullOrEmpty(f)) DetectedFaction = f;
                 }
@@ -594,18 +606,19 @@ namespace TheNorns
         // pilot and direction are picked once per change (in time order) instead of on every frame (review 26.10.2026)
         int version, cacheVersion = -1, cachePilots; bool cacheThund;
         readonly Dictionary<string, List<DmgEvent>> picked = new Dictionary<string, List<DmgEvent>>();
-        List<DmgEvent> Picked(string pilot, bool outgoing)
+        List<DmgEvent> Picked(string pilot, bool outgoing, string weapon = null)
         {
             if (cacheVersion != version || cacheThund != Thundpack || cachePilots != Pilots.Count)
             {
                 picked.Clear(); cacheVersion = version; cacheThund = Thundpack; cachePilots = Pilots.Count;
             }
-            var key = (pilot ?? "\0") + (outgoing ? "\0out" : "\0in");
+            var key = (pilot ?? "\0") + (outgoing ? "\0out" : "\0in") + "\0" + weapon;
+            var w = weapon ?? OutWeapon;
             List<DmgEvent> l;
             if (!picked.TryGetValue(key, out l))
             {
                 l = events.Where(x => (pilot == null || x.Pilot == pilot) && x.Out == outgoing && (!Thundpack || !IsPlayerOrFriendly(x.Other, Pilots))
-                                     && (!outgoing || OutWeapon == null || (x.Weapon ?? "").IndexOf(OutWeapon, StringComparison.OrdinalIgnoreCase) >= 0))
+                                     && (!outgoing || w == null || (x.Weapon ?? "").IndexOf(w, StringComparison.OrdinalIgnoreCase) >= 0))
                           .OrderBy(x => x.T).ToList();   // stable: a log's own order is kept, so the sums stay the same
                 picked[key] = l;
             }
@@ -613,11 +626,11 @@ namespace TheNorns
         }
 
         // DPS per second over the last 60 s, continuous Hann-smoothed kernel (Variant B: direct effective combat log HP)
-        public double[] Series(string pilot, bool outgoing, DateTime now)
+        public double[] Series(string pilot, bool outgoing, DateTime now, string weapon = null)
         {
             var s = new double[N];
             const double W = 3.0; // Hann kernel radius in seconds
-            var matching = Picked(pilot, outgoing);
+            var matching = Picked(pilot, outgoing, weapon);
             if (matching.Count == 0) return s;
 
             int lo = 0;   // the samples go forward in time: only the events within ±W of a sample are visited
@@ -741,8 +754,8 @@ namespace TheNorns
             if (!sbBest.TryGetValue(pilot, out best) || best.Length != n) sbBest[pilot] = best = new double[n];
             foreach (var cycle in cycles) { var d = perModule(cycle); for (int k = 0; k < n; k++) best[k] = Math.Max(best[k], d[k]); }
             var last = cycles[cycles.Count - 1];
-            // older than two periods: the smartbombs are quiet now
-            var dmg = (now - last[last.Count - 1].T).TotalSeconds <= period * 2 + 1 ? perModule(last) : new double[n];
+            // older than two periods, or from before the fleet warp (the site just left): the smartbombs are quiet now
+            var dmg = (now - last[last.Count - 1].T).TotalSeconds <= period * 2 + 1 && last[last.Count - 1].T >= sbWarp ? perModule(last) : new double[n];
             var r = new SmartbombReading { Pilot = pilot, Modules = n, Dps = new double[n], Frac = new double[n] };
             for (int k = 0; k < n; k++)
             {
@@ -782,6 +795,7 @@ namespace TheNorns
         public const string Check = "M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z";
         public const string Folder = "M10 4H4c-1.1 0-1.99.9-1.99 2L2 18c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V8c0-1.1-.9-2-2-2h-8l-2-2z";
         public const string Search = "M15.5 14h-.79l-.28-.27C15.41 12.59 16 11.11 16 9.5 16 5.91 13.09 3 9.5 3S3 5.91 3 9.5 5.91 16 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z";
+        public const string Star = "M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z";
         public const string Close = "M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z";
 
         static readonly Regex TokenRegex = new Regex(@"([a-zA-Z]|[-+]?(?:\d*\.\d+|\d+)(?:[eE][-+]?\d+)?)", RegexOptions.Compiled);

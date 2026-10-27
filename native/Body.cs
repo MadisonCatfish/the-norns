@@ -5,7 +5,7 @@
 //   * a recessed OLED screen: DPS OUT · TOTAL (pilot lines white to dark grey), SMARTBOMBS · DPS (one column per
 //     module), the ISK heat grid (every bounty tick of every client, acid-yellow scale, neighbours share heat);
 //   * printed markings on the bottom edge.
-// Clicks on the screen pass through to the game; the screen glass lights up where the mouse is.
+// The whole body, the screen too, drags the window; the screen glass lights up where the mouse is.
 // Geometry is in logical px (the sketch at 1/2) x Theme.K. Thundpack filtering is always on (owner, 26.10.2026).
 using System;
 using System.Collections.Generic;
@@ -162,6 +162,8 @@ namespace TheNorns
         public DpsStats Stats { get { return stats; } }
         readonly Timer timer = new Timer { Interval = 40 };   // 25 fps: the power display and the glass light move
         readonly ToolTip tip = new ToolTip { ShowAlways = true, UseAnimation = false, UseFading = false };
+        const double TipDelay = 0.7;   // seconds on a key before its tip
+        string tipText; Point tipAt; double tipDue;
         readonly Stopwatch clock = Stopwatch.StartNew();
         Bitmap shell;   // the static body, drawn once per size
         public DateTime? DemoNow;            // selftest: a fixed "now"
@@ -178,6 +180,18 @@ namespace TheNorns
 
         static Cursor pointer;
         internal static Cursor Pointer { get { return BluePointer; } }
+        // the pulsing arrow over keys: 12 frames of Glass.PulseFrame, picked by the clock
+        static Cursor[] pulses;
+        static Cursor PulseCursor(double seconds)
+        {
+            if (pulses == null)
+            {
+                pulses = new Cursor[12];
+                for (int i = 0; i < pulses.Length; i++) try { pulses[i] = Glass.MakePulse((double)i / pulses.Length, BodyTheme.Pointer, BodyTheme.PointerOutline); } catch { pulses[i] = Cursors.Default; }
+            }
+            return pulses[(int)(seconds / Glass.PulseLoop * pulses.Length) % pulses.Length];
+        }
+        static readonly Stopwatch pulseClock = Stopwatch.StartNew();
         static Cursor BluePointer { get { if (pointer == null) try { pointer = Glass.MakePointer(BodyTheme.Pointer, BodyTheme.PointerOutline); } catch { pointer = Cursors.Default; } return pointer; } }
 
         class VisualGraphState { public double VisualMax, VisualTotal; public readonly Dictionary<string, float[]> VisualSeries = new Dictionary<string, float[]>(StringComparer.OrdinalIgnoreCase); }
@@ -249,9 +263,12 @@ namespace TheNorns
                     try { clients = Eve.FindWindows("EVE - ").Count; } catch { }
                     Follow();
                 }
-                // the glass light follows the mouse; the screen itself passes clicks through, so the cursor is polled
+                // the glass light follows the mouse (polled, so it also follows while dragging)
                 var mp = PointToClient(Cursor.Position);
                 glare = GlassRect.Contains(mp) ? (Point?)mp : null;
+                if (tipText != null && clock.Elapsed.TotalSeconds >= tipDue) { tip.Show(tipText, this, tipAt.X, tipAt.Y, 3000); tipText = null; }
+                // the ring pulses on while the mouse rests on a key (WM_SETCURSOR comes only when it moves)
+                if (OnPulse(mp) && ClientRectangle.Contains(mp) && WindowFromPoint(Cursor.Position) == Handle) SetCursor(PulseCursor(pulseClock.Elapsed.TotalSeconds).Handle);
                 Render();
             };
         }
@@ -272,9 +289,12 @@ namespace TheNorns
             }
         }
 
-        bool OnKey(Point p) { return NameRect.Contains(p) || (settingsOpen && GlassRect.Contains(p)) || (Standalone && CloseRect.Contains(p)) || vortonFx.Contains(p) || sbFx.Contains(p); }
+        // where the pulsing pointer shows: the keys, and in the settings only the spots that do something
+        bool OnPulse(Point p) { return NameRect.Contains(p) || (Standalone && CloseRect.Contains(p)) || (!settingsOpen && (vortonFx.Contains(p) || sbFx.Contains(p) || spawnChip.Contains(p))) || (settingsOpen && spots.Any(sp => sp.Item2.Contains(p))); }
+        bool OnKey(Point p) { return NameRect.Contains(p) || (settingsOpen && GlassRect.Contains(p)) || (Standalone && CloseRect.Contains(p)) || vortonFx.Contains(p) || sbFx.Contains(p) || spawnChip.Contains(p); }
 
         [DllImport("user32.dll")] static extern IntPtr SetCursor(IntPtr h);
+        [DllImport("user32.dll")] static extern IntPtr WindowFromPoint(Point p);
         const int WM_NCHITTEST = 0x84, WM_SETCURSOR = 0x20, HTCLIENT = 1, HTTRANSPARENT = -1, HTCAPTION = 2, WM_EXITSIZEMOVE = 0x0232;
         protected override void WndProc(ref Message m)
         {
@@ -285,14 +305,15 @@ namespace TheNorns
                 if (OnKey(p)) { m.Result = (IntPtr)HTCLIENT; return; }
                 bool onBody;
                 using (var body = Round(new RectangleF(0, 0, Width, Height), 24)) onBody = body.IsVisible(p);
-                // the screen shows only: clicks go to the game; the rest of the body is the handle to drag the window
-                m.Result = (IntPtr)(onBody && !GlassRect.Contains(p) && Standalone ? HTCAPTION : HTTRANSPARENT);
+                // the whole body, the screen too, is the handle to drag the window, so the app's own pointer shows over all of it
+                // (owner, 27.10.2026: before, the screen let clicks through to the game and showed the game's cursor)
+                m.Result = (IntPtr)(onBody ? (Standalone ? HTCAPTION : HTCLIENT) : HTTRANSPARENT);
                 return;
             }
             if (m.Msg == WM_SETCURSOR)
             {
                 int hit = (short)(m.LParam.ToInt64() & 0xFFFF);
-                if (hit == HTCAPTION || hit == HTCLIENT) { SetCursor(BluePointer.Handle); m.Result = (IntPtr)1; return; }
+                if (hit == HTCAPTION || hit == HTCLIENT) { SetCursor((OnPulse(PointToClient(Cursor.Position)) ? PulseCursor(pulseClock.Elapsed.TotalSeconds) : BluePointer).Handle); m.Result = (IntPtr)1; return; }
             }
             if (m.Msg == WM_EXITSIZEMOVE && Standalone) SavePos();
             base.WndProc(ref m);
@@ -303,13 +324,17 @@ namespace TheNorns
             base.OnMouseMove(e);
             bool hn = NameRect.Contains(e.Location), hc = Standalone && CloseRect.Contains(e.Location);
             bool hv = !settingsOpen && vortonFx.Contains(e.Location), hs = !settingsOpen && sbFx.Contains(e.Location);
+            bool hsp = !settingsOpen && spawnChip.Contains(e.Location);
+            if (hsp != hoverSpawns) { hoverSpawns = hsp; Render(); }
             var spot = settingsOpen ? SpotAt(e.Location) : null;
             mouseAt = e.Location;
             if (hn == hoverName && hc == hoverClose && (hv || hs) == hoverFx && spot == hotSpot) return;
             hoverName = hn; hoverClose = hc; hoverFx = hv || hs; hotSpot = spot;
-            if (hn) tip.Show(L.T("Settings"), this, (int)NameRect.Left, (int)NameRect.Bottom + (int)U(4), 3000);
-            else if (hc) tip.Show(L.T("Close"), this, (int)CloseRect.Left, (int)CloseRect.Bottom + (int)U(4), 3000);
-            else tip.Hide(this);
+            // the tip after a short rest on the key, not at once (owner, 27.10.2026)
+            tip.Hide(this);
+            tipText = hn ? L.T("Settings") : hc ? L.T("Close") : null;
+            tipAt = hn ? new Point((int)NameRect.Left, (int)(NameRect.Bottom + U(4))) : hc ? new Point((int)CloseRect.Left, (int)(CloseRect.Bottom + U(4))) : Point.Empty;
+            tipDue = clock.Elapsed.TotalSeconds + TipDelay;
             Render();
         }
 
@@ -319,7 +344,7 @@ namespace TheNorns
             if (hoverName || downName || hoverClose || downClose || hoverFx || hotSpot != null || downSpot != null)
             {
                 hoverName = downName = hoverClose = downClose = hoverFx = false; hotSpot = downSpot = null;
-                tip.Hide(this);
+                tip.Hide(this); tipText = null;
                 Render();
             }
         }
@@ -327,12 +352,14 @@ namespace TheNorns
         protected override void OnMouseDown(MouseEventArgs e)
         {
             base.OnMouseDown(e);
+            tipText = null; tip.Hide(this);   // a click: no tip
             if (e.Button != MouseButtons.Left) return;
             if (NameRect.Contains(e.Location)) downName = true;
             else if (Standalone && CloseRect.Contains(e.Location)) downClose = true;
             else if (settingsOpen) downSpot = SpotAt(e.Location);
             else if (vortonFx.Contains(e.Location)) downFx = 1;
             else if (sbFx.Contains(e.Location)) downFx = 2;
+            else if (spawnChip.Contains(e.Location)) downSpawns = true;
             Render();
         }
 
@@ -341,6 +368,7 @@ namespace TheNorns
             base.OnMouseUp(e);
             bool left = e.Button == MouseButtons.Left;
             if (downName) { downName = false; if (left && NameRect.Contains(e.Location)) ToggleSettings(); Render(); }
+            if (downSpawns) { downSpawns = false; if (left && spawnChip.Contains(e.Location)) { ToggleSettings(); page = "stats"; sessions = null; } Render(); }
             if (downSpot != null)
             {
                 var id = downSpot; downSpot = null;
@@ -945,9 +973,9 @@ namespace TheNorns
             double a = DemoDamageSettled && DemoNow != null ? 1 : Math.Min(1, (t - damageSince) / 0.9);
             a = a * a * (3 - 2 * a);   // a smooth fade in
             float pad = U(4);
-            var nf = NornsFonts.Body(U(5.5f));
+            var nf = NornsFonts.Body(U(5.5f) + K);   // 1 px larger and 2 px lower (owner, 27.10.2026)
             using (var b = new SolidBrush(Color.FromArgb((int)(a * 230), Mix(FactionColor(faction), BodyTheme.Ink, 0.35))))
-                g.DrawString(faction.ToUpperInvariant(), nf, b, new RectangleF(r.Left + pad, r.Top + U(3), r.Width - 2 * pad, nf.GetHeight(g) + U(1)),
+                g.DrawString(faction.ToUpperInvariant(), nf, b, new RectangleF(r.Left + pad, r.Top + U(3) + 2 * K, r.Width - 2 * pad, nf.GetHeight(g) + U(1)),
                     new StringFormat(StringFormat.GenericTypographic) { Alignment = StringAlignment.Center, Trimming = StringTrimming.EllipsisCharacter, FormatFlags = StringFormatFlags.NoWrap });
             Tuple<Dmg, int>[] dealt;
             DamageDealt.TryGetValue(faction, out dealt);
@@ -1041,6 +1069,69 @@ namespace TheNorns
         Color Muted { get { return Color.FromArgb(175, BodyTheme.Ink); } }
 
 
+        // the anomaly's clear time (owner, 27.10.2026): from warp to warp. After the fleet warp the Vorton lines sink, then
+        // the time of the site just left counts up from 00:00 mid-graph in the headings' Orbitron; the first hit on an NPC
+        // fades it out fast and the lines come back. The first warp of a session has no site before it: no time
+        float quiet, timerA;            // 0..1: how far the lines are down, how much of the timer shows
+        double lastQuietFrame = -1;
+        public float? DemoQuiet, DemoTimerA, DemoCount;   // selftest
+        double countStart = -1;            // when the count-up began (the timer's fade-in)
+        const double CountSecs = 1.4;
+        public float TimerThin = 1.4f;          // how much of the stroke is eaten (both edges together; owner, 27.10.2026)
+        void StepQuiet(DateTime now)
+        {
+            var warp = stats.Tracker.LastWarpTime;
+            bool still = warp != DateTime.MinValue && now >= warp && stats.LastNpcHit < warp;   // no hit since the warp
+            double t = clock.Elapsed.TotalSeconds, dt = lastQuietFrame < 0 ? 0 : Math.Min(0.2, t - lastQuietFrame);
+            lastQuietFrame = t;
+            if (still)
+            {
+                quiet = Math.Min(1, quiet + (float)(dt / 0.7));                                        // lines down in 0.7 s
+                if (quiet >= 1)
+                {
+                    if (timerA <= 0) countStart = t;
+                    timerA = Math.Min(1, timerA + (float)(dt / 0.6));                                   // then the timer in 0.6 s
+                }
+            }
+            else
+            {
+                timerA = Math.Max(0, timerA - (float)(dt / 0.15));                                   // out fast
+                if (timerA <= 0) quiet = Math.Max(0, quiet - (float)(dt / 0.6));                      // then the lines back
+            }
+            if (DemoQuiet != null) quiet = DemoQuiet.Value;
+            if (DemoTimerA != null) timerA = DemoTimerA.Value;
+        }
+        void PaintAnomalyTimer(Graphics g, RectangleF plot, DateTime now)
+        {
+            var tr = stats.Tracker;
+            if (timerA <= 0 || tr.LastWarpTime == DateTime.MinValue || tr.PrevWarpTime == DateTime.MinValue) return;
+            double a = timerA * timerA * (3 - 2 * timerA);
+            // counts up from 00:00 to the clear time, slowing down at the end
+            double p = DemoCount ?? (countStart < 0 ? 1 : Math.Min(1, (clock.Elapsed.TotalSeconds - countStart) / CountSecs));
+            p = 1 - Math.Pow(1 - p, 3);
+            int total = (int)Math.Round(Math.Min(99 * 60 + 59, (tr.LastWarpTime - tr.PrevWarpTime).TotalSeconds) * p);
+            var text = (total / 60).ToString("00") + ":" + (total % 60).ToString("00");
+            var f = NornsFonts.Screen(U(26));
+            // the digits in equal cells, so the time does not jitter as it counts
+            float cell = g.MeasureString("0", f, 1000, StringFormat.GenericTypographic).Width, colon = g.MeasureString(":", f, 1000, StringFormat.GenericTypographic).Width;
+            float w = 4 * cell + colon, h = f.GetHeight(g), x = plot.Left + (plot.Width - w) / 2, y = plot.Top + (plot.Height - h) / 2;
+            // thinner than Orbitron's lightest (400): the glyph outlines, their edge eaten by the glass black
+            using (var path = new GraphicsPath())
+            {
+                foreach (var ch in text)
+                {
+                    float cw = ch == ':' ? colon : cell;
+                    float gw = g.MeasureString(ch.ToString(), f, 1000, StringFormat.GenericTypographic).Width;
+                    path.AddString(ch.ToString(), f.FontFamily, (int)f.Style, f.Size, new PointF(x + (cw - gw) / 2, y + U(4) * (float)(1 - a)), StringFormat.GenericTypographic);
+                    x += cw;
+                }
+                using (var b = new SolidBrush(Color.FromArgb((int)(a * 235), BodyTheme.Ink))) g.FillPath(b, path);
+                using (var pen = new Pen(Color.Black, U(TimerThin)) { LineJoin = LineJoin.Round }) g.DrawPath(pen, path);
+            }
+        }
+
+        const string SbKey = "\0smartbombs";
+        static readonly Color SbLineColor = Color.FromArgb(242, 243, 245);   // the smartbomb line: dotted, in the pilots' white (owner, 27.10.2026)
         void PaintDpsOut(Graphics g, RectangleF r, DateTime now)
         {
             var label = NornsFonts.Screen(U(9));
@@ -1049,30 +1140,47 @@ namespace TheNorns
             var state = stateOut;
             var pilots = stats.Pilots;
             var target = pilots.Select(p => stats.Series(p, true, now)).ToList();
+            // the anchor's smartbombs as one more line, in the accent blue (owner, 27.10.2026)
+            var sbr = stats.Smartbombs(now);
+            var sbLine = sbr == null ? null : stats.Series(sbr.Pilot, true, now, "Smartbomb");
+            if (sbLine != null) target.Add(sbLine);
             double tMax = Math.Max(100.0, target.SelectMany(s => s).DefaultIfEmpty(0).Max()) * 1.15;
             bool snap = DemoNow != null || state.VisualMax <= 0;
             const double ease = 0.08;   // per frame at 25 fps
             state.VisualMax = snap ? tMax : state.VisualMax + (tMax - state.VisualMax) * ease;
             state.VisualTotal = snap ? total : state.VisualTotal + (total - state.VisualTotal) * ease * 2;
-            for (int i = 0; i < pilots.Count; i++)
+            for (int i = 0; i < target.Count; i++)
             {
+                string key = i < pilots.Count ? pilots[i] : SbKey;
                 float[] cur;
-                if (snap || !state.VisualSeries.TryGetValue(pilots[i], out cur) || cur.Length != DpsStats.N) state.VisualSeries[pilots[i]] = target[i].Select(v => (float)v).ToArray();
+                if (snap || !state.VisualSeries.TryGetValue(key, out cur) || cur.Length != DpsStats.N) state.VisualSeries[key] = target[i].Select(v => (float)v).ToArray();
                 else for (int j = 0; j < DpsStats.N; j++) cur[j] += (float)((target[i][j] - cur[j]) * ease);
             }
+            if (sbLine == null) state.VisualSeries.Remove(SbKey);
 
             vortonFx = FormulaBadge(g, "Eff. DPS · Vorton Projector", label, r.Left, r.Top);
             Glow(g, Num(state.VisualTotal), val, BodyTheme.Ink, r.Right, r.Top, true);
             var plot = RectangleF.FromLTRB(r.Left, r.Top + U(14), r.Right, r.Bottom - U(1));
             using (var pen = new Pen(Color.FromArgb(46, BodyTheme.Ink), 1f)) g.DrawLine(pen, plot.Left, plot.Bottom, plot.Right, plot.Bottom);
+            StepQuiet(now);
+            PaintAnomalyTimer(g, plot, now);
+            float lift = 1 - quiet * quiet * (3 - 2 * quiet);   // the lines sink and fade after a warp
             var st = g.Save();
             g.SetClip(RectangleF.Inflate(plot, U(1), U(1)));
             for (int i = pilots.Count - 1; i >= 0; i--)   // pilot 1 (white) on top
             {
                 float[] s;
                 if (!state.VisualSeries.TryGetValue(pilots[i], out s)) continue;
-                var pts = s.Select((v, j) => new PointF(plot.Left + plot.Width * j / (DpsStats.N - 1), Math.Max(plot.Top, plot.Bottom - (float)(plot.Height * (v / state.VisualMax))))).ToArray();
-                using (var pen = new Pen(PilotGrey(i, pilots.Count), U(0.8f)) { LineJoin = LineJoin.Round }) g.DrawCurve(pen, pts, 0.5f);
+                var pts = s.Select((v, j) => new PointF(plot.Left + plot.Width * j / (DpsStats.N - 1), Math.Max(plot.Top, plot.Bottom - (float)(plot.Height * (v / state.VisualMax)) * lift))).ToArray();
+                using (var pen = new Pen(Color.FromArgb((int)(255 * lift), PilotGrey(i, pilots.Count)), U(0.8f)) { LineJoin = LineJoin.Round }) g.DrawCurve(pen, pts, 0.5f);
+            }
+            float[] sbs;
+            if (state.VisualSeries.TryGetValue(SbKey, out sbs))
+            {
+                var pts = sbs.Select((v, j) => new PointF(plot.Left + plot.Width * j / (DpsStats.N - 1), Math.Max(plot.Top, plot.Bottom - (float)(plot.Height * (v / state.VisualMax)) * lift))).ToArray();
+                // as quiet as the pilots' lines, dotted (owner, 27.10.2026: the solid blue drew too much attention)
+                using (var pen = new Pen(Color.FromArgb((int)(SbLineColor.A * lift), SbLineColor), U(0.8f)) { LineJoin = LineJoin.Round, DashCap = DashCap.Round, DashPattern = new[] { 0.01f, 2.7f } })
+                    g.DrawCurve(pen, pts, 0.5f);
             }
             g.Restore(st);
         }
@@ -1173,6 +1281,8 @@ namespace TheNorns
         }
 
         public RectangleF IskRect { get; private set; }
+        RectangleF spawnChip; bool hoverSpawns, downSpawns;
+        public bool ShowHoverSpawns;   // selftest
 
         // the heat grid's animation state: shown heat and presence per cell, and each cell's own pace and shimmer beat
         readonly float[] cellHeat = new float[260], cellLit = new float[260];
@@ -1191,6 +1301,10 @@ namespace TheNorns
             var bf = NornsFonts.Body(U(8.5f));
             float bh = U(15), x = r.Left;
             x = Badge(g, tr.AnomalyCount + " " + L.T("anom"), bf, x, r.Top, bh, false) + U(4);
+            // the rare spawns of this session (owner, 27.10.2026: the count is enough); a click opens the statistics
+            float sx = x;
+            x = Badge(g, stats.Spawns.Count.ToString(CultureInfo.InvariantCulture), bf, x, r.Top, bh, hoverSpawns || ShowHoverSpawns, null, null, MaterialIcon.Star) + U(4);
+            spawnChip = RectangleF.FromLTRB(sx, r.Top, x - U(4), r.Top + bh);
             x = Badge(g, FormatIsk(tr.TotalSessionIsk), bf, x, r.Top, bh, true, "Σ") + U(4);
             Glow(g, FormatIsk(tr.CurrentAnomalyIsk), NornsFonts.Screen(U(9)), BodyTheme.Ink, r.Right, r.Top, true);
 
@@ -1282,14 +1396,15 @@ namespace TheNorns
         }
 
         // prefix: a symbol Orbitron has no glyph for (Σ), drawn in Segoe UI before the text
-        float Badge(Graphics g, string text, Font f, float x, float y, float h, bool filled, string prefix = null, Color? fill = null)
+        // icon: a Material icon in place of the prefix
+        float Badge(Graphics g, string text, Font f, float x, float y, float h, bool filled, string prefix = null, Color? fill = null, string icon = null)
         {
             text = text.ToUpperInvariant();
             var sf = StringFormat.GenericTypographic;
             var pf = prefix != null ? new Font("Segoe UI Semibold", f.Size, GraphicsUnit.Pixel) : null;
             try
             {
-                float pw = pf != null ? g.MeasureString(prefix, pf, 1000, sf).Width + U(2.5f) : 0;
+                float pw = pf != null ? g.MeasureString(prefix, pf, 1000, sf).Width + U(2.5f) : icon != null ? U(9) + U(2.5f) : 0;
                 var sz = g.MeasureString(text, f, 1000, sf);
                 var r = new RectangleF(x, y, pw + sz.Width + U(9), h);
                 using (var p = Round(r, 4))
@@ -1298,6 +1413,7 @@ namespace TheNorns
                     else using (var pen = new Pen(Color.FromArgb(89, BodyTheme.Ink), 1f)) g.DrawPath(pen, p);
                 }
                 if (pf != null) using (var b = new SolidBrush(BodyTheme.Ink)) g.DrawString(prefix, pf, b, r.Left + U(4.5f), r.Top + (h - pf.GetHeight(g)) / 2, sf);
+                if (icon != null) using (var b = new SolidBrush(BodyTheme.Ink)) MaterialIcon.Draw(g, icon, new RectangleF(r.Left + U(4), r.Top + (h - U(9)) / 2, U(9), U(9)), b);
                 // dark text on a light faction colour, white otherwise
                 var ink = fill != null && (fill.Value.R * 0.299 + fill.Value.G * 0.587 + fill.Value.B * 0.114) > 150 ? Color.FromArgb(16, 17, 20) : BodyTheme.Ink;
                 Glow(g, text, f, ink, r.Left + U(4.5f) + pw, r.Top + (h - f.GetHeight(g)) / 2 + U(0.5f));
@@ -1402,7 +1518,10 @@ namespace TheNorns
             {
                 f.AddDemo(makeDemo(pilots5)); f.AddDemo(makeSmartbombs("Pilot-5"));
                 fill(f, realTicks.Length);
+                f.Stats.Spawns.Add(Tuple.Create(now.AddMinutes(-62), "Shadow Serpentis Vice Admiral"));
+                f.Stats.Spawns.Add(Tuple.Create(now.AddMinutes(-24), "Shadow Serpentis Flotilla Admiral"));
                 save(f, "dps_window.png");
+                f.ShowHoverSpawns = true; save(f, "dps_spawns_hover.png"); f.ShowHoverSpawns = false;
                 var r = f.Stats.Smartbombs(now);
                 sb.AppendLine(string.Format(CultureInfo.InvariantCulture, "smartbombs: pilot {0}, modules {1}, total {2:0} DPS, per module {3}",
                     r.Pilot, r.Modules, r.Total, string.Join(" ", r.Dps.Select(v => v.ToString("0", CultureInfo.InvariantCulture)))));
@@ -1410,6 +1529,24 @@ namespace TheNorns
                 // the animation moves; hovers; the glass lit by the mouse
                 f.DemoSeconds = 2.9; save(f, "dps_power_frame2.png"); f.DemoSeconds = 1.3;
                 f.ShowHoverName = true; save(f, "dps_hover_name.png"); f.ShowHoverName = false;
+                // the key pointer's loop: 12 frames at 4x on a dark strip, the time under each
+                {
+                    const int n = 12; float z = 4;
+                    int cw = (int)(32 * z);
+                    using (var strip = new Bitmap(cw * n, cw + 24, PixelFormat.Format32bppArgb))
+                    using (var sg = Graphics.FromImage(strip))
+                    using (var tf = new Font("Segoe UI", 11, GraphicsUnit.Pixel))
+                    {
+                        sg.Clear(Color.FromArgb(38, 40, 46)); sg.TextRenderingHint = System.Drawing.Text.TextRenderingHint.AntiAlias;
+                        for (int i = 0; i < n; i++)
+                        {
+                            double ft = (double)i / n;
+                            using (var fr = Glass.PulseFrame(ft, BodyTheme.Pointer, BodyTheme.PointerOutline, z)) sg.DrawImageUnscaled(fr, i * cw, 0);
+                            sg.DrawString((int)Math.Round(ft * Glass.PulseLoop * 1000) + " ms", tf, Brushes.Gainsboro, i * cw + 6, cw + 4);
+                        }
+                        strip.Save(Path.Combine(dir, "cursor_pulse_storyboard.png"), ImageFormat.Png);
+                    }
+                }
                 // the settings in place of the meter: as opened, a language row under the mouse, after a reset
                 f.DemoSettings(true, null, false); save(f, "dps_settings.png");
                 f.DemoSettings(true, "lang:de", false); save(f, "dps_settings_hover.png");
@@ -1426,8 +1563,8 @@ namespace TheNorns
                 f.DemoLogDirOk = false; f.DemoSettings(true, "dir:detect", false, "logs"); save(f, "dps_settings_logs_missing.png"); f.DemoLogDirOk = null;
                 f.DemoSessions = new List<SessionInfo>
                 {
-                    new SessionInfo { Start = now.AddDays(-1).AddHours(-3), End = now.AddDays(-1), Sites = 14, Isk = 1840000000 },
-                    new SessionInfo { Start = now.AddDays(-2).AddHours(-2), End = now.AddDays(-2).AddMinutes(-20), Sites = 9, Isk = 1120000000 },
+                    new SessionInfo { Start = now.AddDays(-1).AddHours(-3), End = now.AddDays(-1), Sites = 14, Isk = 1840000000, Spawns = 5 },
+                    new SessionInfo { Start = now.AddDays(-2).AddHours(-2), End = now.AddDays(-2).AddMinutes(-20), Sites = 9, Isk = 1120000000, Spawns = 4 },
                     new SessionInfo { Start = now.AddDays(-4).AddHours(-1), End = now.AddDays(-4), Sites = 5, Isk = 610000000 },
                 };
                 f.DemoSettings(true, null, false, "stats"); save(f, "dps_settings_stats.png"); f.DemoSessions = null;
@@ -1458,6 +1595,25 @@ namespace TheNorns
                 f.DemoMouse = new Point((int)(gr.Left + gr.Width * 0.35f), (int)(gr.Top + gr.Height * 0.3f)); save(f, "dps_glass_light.png"); f.DemoMouse = null;
                 // half the anomaly
                 fill(f, 52); save(f, "dps_anomaly_early.png");
+            }
+            // the anomaly timer: 47 s after a warp with the graph gone quiet, the fade, 3:12 into a site
+            using (var f = new DpsForm(pilots5, () => null, true) { DemoNow = now, DemoSeconds = 0.5, DemoFollowing = true })
+            {
+                f.Stats.DetectedFaction = "Serpentis";
+                // the site's lines, then a warp (no hits since): the lines sinking, down, the timer in; then the first
+                // hit: the timer out, the lines back
+                f.AddDemo(makeDemo(pilots5)); f.AddDemo(makeSmartbombs("Pilot-5"));
+                f.DemoQuiet = 0; f.DemoTimerA = 0; save(f, "dps_timer_0_site.png");
+                f.Stats.Tracker.PrevWarpTime = now.AddSeconds(-1 - 402);   // a site of 6:42
+                f.Stats.Tracker.LastWarpTime = now.AddSeconds(-1);
+                f.DemoQuiet = 0.5f; save(f, "dps_timer_1_sinking.png");
+                f.DemoQuiet = 1; f.DemoTimerA = 0.45f; f.DemoCount = 0.15f; save(f, "dps_timer_2_fade_in.png");
+                f.DemoTimerA = 1; f.DemoCount = 0.5f; save(f, "dps_timer_3_counting.png");
+                f.DemoCount = 1; save(f, "dps_timer_3_clear_time.png");
+                f.DemoTimerA = 0.4f; save(f, "dps_timer_4_first_hit.png");
+                f.DemoTimerA = 0; f.DemoQuiet = 0.5f; save(f, "dps_timer_5_back.png");
+                f.DemoQuiet = null; f.DemoTimerA = null; f.DemoCount = null;
+                f.Stats.Tracker.LastWarpTime = DateTime.MinValue; f.DemoQuiet = 0; f.DemoTimerA = 0; save(f, "dps_sb_line.png");
             }
             // 2) 3 and 8 pilots, no smartbombs, an empty grid
             using (var f = new DpsForm(pilots3, () => null, true) { DemoNow = now, DemoSeconds = 0.5, DemoFollowing = true })

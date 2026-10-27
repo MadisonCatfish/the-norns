@@ -293,15 +293,21 @@ namespace TheNorns
             settingsOpen = open; page = showPage; hotSpot = hot; demoResetShown = resetShown; spots.Clear();
         }
 
-        // ノルン as a key: under the mouse a thin accent bar lights up under it
+        // ノルン as a key: under the mouse the name itself turns accent (owner, 27.10.2026: no bar under it)
         void PaintNameKey(Graphics g)
         {
             bool on = hoverName || ShowHoverName || settingsOpen;
             if (!on) return;
-            var r = NameRect;
-            float y = r.Bottom - U(0.5f), x0 = nameLeft, x1 = nameRight;
             var c = settingsOpen && !(hoverName || ShowHoverName) ? Color.FromArgb(150, BodyTheme.Accent) : BodyTheme.Accent;
-            using (var b = new SolidBrush(c)) g.FillRectangle(b, x0, y - U(0.6f), x1 - x0, U(1.2f));
+            var s = StripRect;
+            var name = NamePath(U(9.5f));
+            if (name == null) return;
+            using (name)
+            {
+                var nb0 = name.GetBounds();
+                using (var m = new Matrix()) { m.Translate(U(Pad + 7) - nb0.X, s.Top + (s.Height - nb0.Height) / 2 - nb0.Y); name.Transform(m); }
+                using (var b = new SolidBrush(c)) g.FillPath(b, name);
+            }
         }
 
         // Ukrainian: the embedded fonts have no Cyrillic
@@ -478,12 +484,14 @@ namespace TheNorns
                 if (sessions == null) sessions = ReadSessions();
                 var all = new List<SessionInfo> { CurrentSession() };
                 all.AddRange(sessions);
-                long isk = all.Sum(x => x.Isk); int sites = all.Sum(x => x.Sites);
+                long isk = all.Sum(x => x.Isk); int sites = all.Sum(x => x.Sites), spawns = all.Sum(x => x.Spawns);
                 var tt = L.T("All sessions");
                 Glow(g, tt, TitleFont(tt, U(6.5f)), Muted, c.Left, y);
                 var tv = sites + " " + L.T("anom") + "  ·  " + FormatIsk(isk);
                 var vf2 = NornsFonts.Screen(U(6.5f));
-                using (var b = new SolidBrush(BodyTheme.Accent)) g.DrawString(tv.ToUpperInvariant(), vf2, b, c.Right - g.MeasureString(tv.ToUpperInvariant(), vf2, 1000, StringFormat.GenericTypographic).Width, y, StringFormat.GenericTypographic);
+                float tvx = c.Right - g.MeasureString(tv.ToUpperInvariant(), vf2, 1000, StringFormat.GenericTypographic).Width;
+                using (var b = new SolidBrush(BodyTheme.Accent)) g.DrawString(tv.ToUpperInvariant(), vf2, b, tvx, y, StringFormat.GenericTypographic);
+                StarCount(g, spawns, vf2, BodyTheme.Accent, tvx - U(8), y);
                 y += U(12);
                 line(y); y += U(5);
                 var rf2 = NornsFonts.Body(U(6.8f));
@@ -501,7 +509,9 @@ namespace TheNorns
                         g.DrawString(mid, TextFont(mid, U(6.8f)), b, c.Left + c.Width * 0.36f, y, StringFormat.GenericTypographic);
                     }
                     var iv = FormatIsk(x.Isk).ToUpperInvariant();
-                    using (var b = new SolidBrush(now ? BodyTheme.Accent : BodyTheme.Ink)) g.DrawString(iv, vf2, b, c.Right - g.MeasureString(iv, vf2, 1000, StringFormat.GenericTypographic).Width, y + U(0.5f), StringFormat.GenericTypographic);
+                    float ivx = c.Right - g.MeasureString(iv, vf2, 1000, StringFormat.GenericTypographic).Width;
+                    using (var b = new SolidBrush(now ? BodyTheme.Accent : BodyTheme.Ink)) g.DrawString(iv, vf2, b, ivx, y + U(0.5f), StringFormat.GenericTypographic);
+                    StarCount(g, x.Spawns, vf2, x.Spawns > 0 ? BodyTheme.Ink : Color.FromArgb(90, BodyTheme.Ink), c.Right - U(62), y + U(0.5f));
                     y += rowH;
                 }
                 if (all.Count == 1 && all[0].Sites == 0)
@@ -542,6 +552,18 @@ namespace TheNorns
             var vf = NornsFonts.Body(U(5.5f));
             using (var b = new SolidBrush(Color.FromArgb(80, BodyTheme.Ink)))
                 g.DrawString(ver, vf, b, c.Right - g.MeasureString(ver, vf, 1000, StringFormat.GenericTypographic).Width, c.Bottom - vf.GetHeight(g), StringFormat.GenericTypographic);
+        }
+
+        // the Material star and a count after it (the spawns of a session), ending at `right`
+        void StarCount(Graphics g, int n, Font f, Color c, float right, float y)
+        {
+            float h = f.GetHeight(g), ic = U(7.5f);
+            float x = right - ic - U(2) - g.MeasureString(n.ToString(CultureInfo.InvariantCulture), f, 1000, StringFormat.GenericTypographic).Width;
+            using (var b = new SolidBrush(c))
+            {
+                MaterialIcon.Draw(g, MaterialIcon.Star, new RectangleF(x, y + (h - ic) / 2 - U(0.5f), ic, ic), b);
+                g.DrawString(n.ToString(CultureInfo.InvariantCulture), f, b, x + ic + U(2), y, StringFormat.GenericTypographic);
+            }
         }
 
         // a full-width key on the screen: a dark key face, the icon and the label; lit = the action just happened

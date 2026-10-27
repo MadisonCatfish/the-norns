@@ -15,6 +15,7 @@ namespace TheNorns
         public DateTime Start, End;
         public int Sites;
         public long Isk;
+        public int Spawns;
         public List<long[]> SiteList = new List<long[]>();   // start ticks, end ticks, ISK
     }
 
@@ -40,7 +41,7 @@ namespace TheNorns
         {
             // the site under way counts too
             var tr = stats.Tracker;
-            return new SessionInfo { Start = session.Start, End = DateTime.Now, Sites = session.Sites + (tr.CurrentAnomalyIsk > 0 ? 1 : 0), Isk = session.Isk + tr.CurrentAnomalyIsk };
+            return new SessionInfo { Start = session.Start, End = DateTime.Now, Sites = session.Sites + (tr.CurrentAnomalyIsk > 0 ? 1 : 0), Isk = session.Isk + tr.CurrentAnomalyIsk, Spawns = stats.Spawns.Count };
         }
 
         void SaveSession()
@@ -53,7 +54,7 @@ namespace TheNorns
                 {
                     { "start", session.Start.ToString("o", CultureInfo.InvariantCulture) },
                     { "end", DateTime.Now.ToString("o", CultureInfo.InvariantCulture) },
-                    { "sites", session.Sites }, { "isk", session.Isk },
+                    { "sites", session.Sites }, { "isk", session.Isk }, { "spawns", stats.Spawns.Count },
                     { "site_list", session.SiteList.Select(x => new Dictionary<string, object> { { "start", new DateTime(x[0]).ToString("o", CultureInfo.InvariantCulture) }, { "end", new DateTime(x[1]).ToString("o", CultureInfo.InvariantCulture) }, { "isk", x[2] } }).ToList() },
                 };
                 File.WriteAllText(SessionFile, new JavaScriptSerializer().Serialize(o));
@@ -85,6 +86,7 @@ namespace TheNorns
                             End = DateTime.Parse((string)o["end"], CultureInfo.InvariantCulture, DateTimeStyles.RoundtripKind),
                             Sites = Convert.ToInt32(o["sites"], CultureInfo.InvariantCulture),
                             Isk = Convert.ToInt64(o["isk"], CultureInfo.InvariantCulture),
+                            Spawns = o.ContainsKey("spawns") ? Convert.ToInt32(o["spawns"], CultureInfo.InvariantCulture) : 0,   // before 1.2: none kept
                         });
                     }
                     catch { }

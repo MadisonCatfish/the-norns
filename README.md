@@ -40,11 +40,12 @@ Whether you are just training skills for your Skybreakers / Stormbringers or fin
 
 ### 3. Automated Anomaly Counting
 - Tracks completed anomalies automatically on fleet warp.
+- Shows each anomaly's clear time (warp to warp) in the middle of the graph while the fleet moves to the next site.
 - No more manual tallying, no spreadsheets, and no forgotten clicks to record site clears.
 
 ### 4. Smart Grid Alerts
 - 🚨 **Titan / Capital on Grid:** Within seconds of taking or dealing damage to a Titan spawn, the entire hardware hull heats up to glowing bright red — giving you immediate warning to align out and save your fleet.
-- 💎 **Faction Commander Spawns:** Never leave an Asteroid Commander Battleship (Shadow Serpentis, Dread Guristas, Dark Blood, True Sansha, Domination) behind unlooted again. Alerts you the moment a commander appears on grid.
+- 💎 **Faction Commander Spawns:** Never leave an Asteroid Commander Battleship (Shadow Serpentis, Dread Guristas, Dark Blood, True Sansha, Domination) behind unlooted again. Alerts you the moment a commander appears on grid, and counts the session's rare spawns (★) next to the anomaly counter and in the session statistics.
 
 ### 5. NPC Faction & Damage Profile Breakdown
 - Automatically detects the enemy NPC faction from log signatures.
@@ -52,7 +53,7 @@ Whether you are just training skills for your Skybreakers / Stormbringers or fin
 
 ### 6. Hardware Body UI
 - Industrial Mordu's Legion steel-blue hardware body with a recessed OLED display.
-- Drag by any part of the hull; clicks on the display pass through to the game beneath.
+- Drag by any part of the hull or the display.
 - Hardware LOG lamp indicates active log tailing and pulses red when no EVE clients are found.
 - Click the **ノルン** badge to open in-place settings: UI scaling (100% / 125% / 150%), log directory detection, session history, and update checks.
 
@@ -72,8 +73,6 @@ Available in 6 languages, auto-detected or selectable:
 - **Competition Mode:** For multiple fleet packs operating in the same system, replacing the smartbombing battleship with a fast and agile frigate anchor.
 - **Classic Mode:** For players dedicated to 2010-era pure smartbombing battleship fleets (Machariel, Praxis, Rokh without EDENCOM).
 - **Chinese (中文) Localization.**
-- **Extended Faction Spawn Statistics:** In-depth metrics on commander spawn rates and loot drops.
-- **Anomaly Timers:** Live stopwatch for site clear times.
 - **Compact & "Potato" Modes:** Minimal footprint and ultra-low rendering modes for heavy multi-client rigs.
 - **Customizable UI Themes:** Player-selectable colorways and skins.
 
@@ -81,9 +80,9 @@ Available in 6 languages, auto-detected or selectable:
 
 ## Install
 
-Run `TheNorns-Setup-1.1.0.exe`. It installs for your Windows user profile, requires no administrator privileges, and can be cleanly uninstalled from Windows Settings → Apps. 
+Run `TheNorns-Setup-1.2.0.exe`. It installs for your Windows user profile, requires no administrator privileges, and can be cleanly uninstalled from Windows Settings → Apps. 
 
-Alternatively, extract `TheNorns-1.1.0-portable.zip` and run `TheNorns.exe` directly.
+Alternatively, extract `TheNorns-1.2.0-portable.zip` and run `TheNorns.exe` directly.
 
 Your settings and session statistics are stored in `%LOCALAPPDATA%\The Norns`.
 
@@ -96,7 +95,7 @@ powershell -ExecutionPolicy Bypass -File native\build.ps1 -Out <folder>         
 powershell -ExecutionPolicy Bypass -File native\build.ps1 -Out <folder> -Setup   # + installer and portable zip
 ```
 
-Self-tests: `TheNorns.exe --selftest-dps <folder>` and `TheNorns-Setup-1.1.0.exe --selftest <folder>`.
+Self-tests: `TheNorns.exe --selftest-dps <folder>` and `TheNorns-Setup-1.2.0.exe --selftest <folder>`.
 
 ## Credits
 
