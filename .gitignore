@@ -1,0 +1,19 @@
+# Builds and releases
+build/
+release/
+native/bin/
+bin/
+obj/
+
+# Temporary, scratch, and archives
+*.zip
+*.log
+.vs/
+*.user
+*.suo
+
+# Local owner materials, publish plans, and work logs
+UI moodboard/
+STATUS.md
+FIXES.md
+publish/
