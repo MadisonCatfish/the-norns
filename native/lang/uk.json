@@ -113,5 +113,11 @@
   "Open app data folder": "Відкрити папку даних",
   "All sessions": "Усі сесії",
   "This session": "Ця сесія",
-  "No sites done yet. Every session is kept here from now on.": "Сайтів ще не пройдено. Відтепер кожна сесія зберігається тут."
+  "No sites done yet. Every session is kept here from now on.": "Сайтів ще не пройдено. Відтепер кожна сесія зберігається тут.",
+  "Check for updates at start": "Перевіряти оновлення під час запуску",
+  "Download {0}": "Завантажити {0}",
+  "• It collects no data. The only network request is the update check: at start (it can be turned off in {0}) and when you press it.": "• Вона не збирає жодних даних. Єдиний мережевий запит — перевірка оновлень: під час запуску (можна вимкнути в розділі {0}) і коли ви її натискаєте.",
+  "Potato mode: low CPU, no effects": "Режим «картопля»: менше навантаження, без ефектів",
+  "Compact mode": "Компактний режим",
+  "Sound on a titan or dreadnought": "Звук при титані або дредноуті"
 }

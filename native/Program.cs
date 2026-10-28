@@ -39,9 +39,21 @@ namespace TheNorns
             bool first;
             using (var one = new Mutex(true, "TheNorns.Instance", out first))
             {
-                if (!first) return;   // already open
+                // --preview-no-clients / --preview-update / --preview-rewarps / --preview-dread: to look at those states with
+                // clients open, next to a running copy
+                bool preview = Array.IndexOf(args, "--preview-no-clients") >= 0 || Array.IndexOf(args, "--preview-update") >= 0 || Array.IndexOf(args, "--preview-rewarps") >= 0 || Array.IndexOf(args, "--preview-dread") >= 0;
+                if (!first && !preview) return;   // already open
                 Application.EnableVisualStyles();
+                if (preview) DpsForm.SelfTesting = true;   // the preview keeps no position and no session statistics
+                if (preview && Array.IndexOf(args, "--potato") >= 0) DpsForm.Potato = true;   // a preview in Potato mode
+                if (preview && Array.IndexOf(args, "--compact") >= 0) DpsForm.Compact = true;   // a preview in Compact mode
                 var f = new DpsForm(new string[0], () => null, true);
+                if (Array.IndexOf(args, "--preview-no-clients") >= 0) f.DemoNoClients = true;
+                if (Array.IndexOf(args, "--preview-rewarps") >= 0) f.StartReplay();
+                if (Array.IndexOf(args, "--preview-dread") >= 0) f.StartDreadDemo();
+                // --preview-update <version>: shows a newer version as if the start check had found it (no network)
+                int pu = Array.IndexOf(args, "--preview-update");
+                if (pu >= 0 && args.Length > pu + 1) { DpsForm.UpdateAtStart = false; f.DemoUpdate(args[pu + 1]); }
                 f.ShowDps();
                 Application.Run(f);
             }

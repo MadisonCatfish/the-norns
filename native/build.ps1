@@ -30,7 +30,7 @@ $common = "/nologo", "/target:winexe", "/platform:x64", "/optimize+", "/unsafe",
 $common += Get-ChildItem "$here\lang" -Filter *.json | ForEach-Object { "/resource:$($_.FullName),TheNorns.lang.$($_.BaseName).json" }
 # the body's fonts (OFL) and the power display's glass texture (Body.cs)
 $common += "/resource:$here\res\fonts\Orbitron.ttf,TheNorns.font.Orbitron.ttf", "/resource:$here\res\fonts\SpaceGrotesk.ttf,TheNorns.font.SpaceGrotesk.ttf",
-    "/resource:$here\res\power_glass.png,TheNorns.power_glass.png", "/resource:$here\res\name_path.txt,TheNorns.name_path.txt", "/resource:$root\CHANGELOG.md,TheNorns.CHANGELOG.md"
+    "/resource:$here\res\power_glass.png,TheNorns.power_glass.png", "/resource:$here\res\spawn_alert.wav,TheNorns.spawn_alert.wav", "/resource:$here\res\name_path.txt,TheNorns.name_path.txt", "/resource:$root\CHANGELOG.md,TheNorns.CHANGELOG.md"
 & $csc @common "/out:$out\TheNorns.exe" "/main:TheNorns.Program" @refs @src
 if ($LASTEXITCODE -ne 0) { throw "build failed" }
 Get-Item "$out\TheNorns.exe" | Select-Object FullName, Length, LastWriteTime

@@ -1,5 +1,16 @@
 # Changelog
 
+## 1.3.0 — 2026-10-28
+
+- Update check at start: on by default, can be turned off in Settings → General (the only network request; it still runs when you press it in About). A newer release makes the version plate on the bottom band blink in the accent; a click opens About → Download.
+- No client found: the small power display flickers red like a short circuit, with a vertical line of broken pixels.
+- Dreadnoughts: a pirate faction dreadnought on grid (Angel / Domination, Blood / Dark Blood, Guristas / Dread Guristas, Sansha's / True Sansha's, Serpentis / Shadow Serpentis Dreadnought) heats the hull like a titan, in a rich yellow; a titan's red goes over it. Dreadnoughts count as ★ spawns.
+- Alert sound: three short pulses when a titan or a dreadnought spawns (once per spawn). Off by default; Settings → General, with a ▶ key to hear it.
+- Re-warp: when the fleet warps out of a site without hitting an NPC, the anomaly timer shows in red the time since the warp before and counts down to 00:00.
+- Compact mode (Settings → General): no power display or printed band, a narrower damage display, and the ISK grid folded into one row of column averages; a commander's or titan's column is drawn over its neighbours in its own colour.
+- Potato mode (Settings → General): for rigs with many clients — 5 fps, no glow, halo, glass light or shimmer, a plain hull, the formula window without animation.
+- Settings: the tabs scroll (◀ ▶ on the left, four shown, the open one in the accent), the languages in three columns, the switch rows a little tighter.
+
 ## 1.2.0 — 2026-10-27
 
 - Anomaly clear time: after the fleet warp the Vorton lines sink and the time of the site just left (warp to warp) counts up from 00:00 in the middle of the graph; the first hit on an NPC fades it out and the lines come back.

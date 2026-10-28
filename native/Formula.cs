@@ -125,6 +125,7 @@ namespace TheNorns
         void Render()
         {
             double t = clock.Elapsed.TotalSeconds, p;
+            if (DpsForm.Potato) t += 10;   // Potato mode: no slide in or out, the card just shows and goes
             if (closeStart >= 0)
             {
                 p = 1 - Math.Min(1, (t - closeStart) / CloseSecs);

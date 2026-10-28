@@ -160,7 +160,32 @@ namespace TheNorns
         readonly GameLogTail tail;
         readonly DpsStats stats;
         public DpsStats Stats { get { return stats; } }
-        readonly Timer timer = new Timer { Interval = 40 };   // 25 fps: the power display and the glass light move
+        readonly Timer timer = new Timer { Interval = Potato ? PotatoInterval : 40 };   // 25 fps: the power display and the glass light move
+        // Potato mode (owner, 28.10.2026; config.json "app": { "potato" }, off by default): for rigs running many clients.
+        // 5 fps, the power display still, no glow, halo, glass light or shimmer, a plain hull; the numbers jump instead of gliding
+        public static bool Potato = AppSetting("potato") is bool && (bool)AppSetting("potato");
+        // the spawn alert sound (owner, 28.10.2026; config.json "app": { "spawn_sound" }, off by default): three short
+        // pulses (synthesized, res\spawn_alert.wav) when a titan or a dreadnought spawns; no sound for the other spawns
+        public static bool SpawnSound = AppSetting("spawn_sound") is bool && (bool)AppSetting("spawn_sound");
+        static System.Media.SoundPlayer alertPlayer;
+        int loudHeard;
+        public static void PlayAlert()
+        {
+            try
+            {
+                if (alertPlayer == null) { alertPlayer = new System.Media.SoundPlayer(Assembly.GetExecutingAssembly().GetManifestResourceStream("TheNorns.spawn_alert.wav")); alertPlayer.Load(); }
+                alertPlayer.Play();   // async
+            }
+            catch { }
+        }
+        // a new titan / dreadnought: the alert, unless it is an old one read back from the log at start
+        void SoundSpawns(DateTime now)
+        {
+            if (stats.LoudSpawns == loudHeard) return;
+            loudHeard = stats.LoudSpawns;
+            if (SpawnSound && (now - stats.LastLoudSpawn).TotalSeconds < 60) PlayAlert();
+        }
+        const int PotatoInterval = 200;
         readonly ToolTip tip = new ToolTip { ShowAlways = true, UseAnimation = false, UseFading = false };
         const double TipDelay = 0.7;   // seconds on a key before its tip
         string tipText; Point tipAt; double tipDue;
@@ -223,21 +248,29 @@ namespace TheNorns
 
         // ---- layout (logical px from the sketch: 574 x 658 at 2x -> 287 x 329) ----
         const float W = 287, H = 329, Pad = 7, Strip = 35, Gap = 6, Band = 26.5f;
+        // Compact mode (owner, 28.10.2026; config.json "app": { "compact" }): no power display and no printed band, the
+        // damage display narrower without the faction's name, the Close key as tall as it, the top strip hugging them; the
+        // bottom edge as thick as the sides; the ISK grid one row (each dot a column's average)
+        public static bool Compact = AppSetting("compact") is bool && (bool)AppSetting("compact");
+        const float CompactStrip = 22, CompactH = 232.5f;
+        float StripH { get { return Compact ? CompactStrip : Strip; } }
+        float BandH { get { return Compact ? Pad : Band; } }
         int DesiredWidth { get { return (int)Math.Round(U(W)); } }
-        int DesiredHeight { get { return (int)Math.Round(U(H)); } }
+        // compact: the settings need the full height, so the window grows while they are open
+        int DesiredHeight { get { return (int)Math.Round(U(Compact && !settingsOpen ? CompactH : H)); } }
 
-        RectangleF StripRect { get { return new RectangleF(U(Pad), U(Pad), U(W - 2 * Pad), U(Strip)); } }
+        RectangleF StripRect { get { return new RectangleF(U(Pad), U(Pad), U(W - 2 * Pad), U(StripH)); } }
         // right-aligned, right to left: Close (as tall as the power display, owner 27.10.2026), power display, printed dot
         // the key centred on the power display's glass and lip, 2 px lower than it (owner 27.10.2026)
-        RectangleF CloseRect { get { var p = PowerRect; return new RectangleF(StripRect.Right - U(14.2f), p.Top - U(1), U(14.2f), p.Height + U(1.5f) + U(2)); } }
+        RectangleF CloseRect { get { if (Compact) { var d = DamageRect; return new RectangleF(StripRect.Right - U(14.2f), d.Top, U(14.2f), d.Height + U(1.5f)); } var p = PowerRect; return new RectangleF(StripRect.Right - U(14.2f), p.Top - U(1), U(14.2f), p.Height + U(1.5f) + U(2)); } }
         RectangleF PowerRect { get { var s = StripRect; return new RectangleF(s.Right - U(14.2f) - U(5) - U(53), s.Top + (s.Height - U(28)) / 2, U(53), U(28)); } }
         PointF DotCenter { get { var p = PowerRect; return new PointF(p.Left - U(5) - U(4.75f), p.Top + p.Height / 2); } }
         // ノルン is the key to the settings (owner 27.10.2026: they replace the LOG / RST keys)
         RectangleF NameRect { get { var s = StripRect; return RectangleF.FromLTRB(nameLeft - U(3), s.Top + U(3), nameRight + U(3), s.Bottom - U(3)); } }
-        RectangleF CavityRect { get { return RectangleF.FromLTRB(U(Pad), U(Pad + Strip + Gap), Width - U(Pad), Height - U(Band)); } }
+        RectangleF CavityRect { get { return RectangleF.FromLTRB(U(Pad), U(Pad + StripH + Gap), Width - U(Pad), Height - U(BandH)); } }
         RectangleF BezelRect { get { var c = CavityRect; c.Inflate(-U(1.5f), -U(1.5f)); return c; } }
         RectangleF GlassRect { get { var c = CavityRect; c.Inflate(-U(4), -U(4)); return c; } }
-        RectangleF BandRect { get { return RectangleF.FromLTRB(U(Pad + 7), Height - U(Band), Width - U(Pad + 7), Height); } }
+        RectangleF BandRect { get { return RectangleF.FromLTRB(U(Pad + 7), Height - U(BandH), Width - U(Pad + 7), Height); } }
 
         // radii at 60 % with smoothing 0.6: the sketch's CSS superellipse corners read tighter than Figma smoothing at the same radius
         GraphicsPath Round(RectangleF r, float logicalRadius) { return Theme.Round(r, U(logicalRadius * 0.6f), 0.6f); }
@@ -259,7 +292,8 @@ namespace TheNorns
                 if ((now - lastPoll).TotalMilliseconds >= 1000)
                 {
                     lastPoll = now;
-                    stats.Add(tail.Poll(stats), now);
+                    if (replay != null) ReplayStep(now); else stats.Add(tail.Poll(stats), now);
+                    SoundSpawns(now);
                     try { clients = Eve.FindWindows("EVE - ").Count; } catch { }
                     Follow();
                 }
@@ -274,6 +308,26 @@ namespace TheNorns
         }
 
         public void AddDemo(IEnumerable<DmgEvent> es) { stats.Add(es, DemoNow ?? DateTime.UtcNow); }
+
+        // --preview-rewarps: replays in real time a series of fleet warps from the owner's log (28.10.2026, 16:52-16:58):
+        // a short site, then four re-warps of 50, 27, 30 and 28 s, then a site again. The real logs are not read meanwhile
+        // (seconds from the start: warps, and spans with hits on NPCs)
+        static readonly double[] ReplayWarps = { 2, 24, 74, 101, 131, 159 };
+        static readonly double[][] ReplaySites = { new double[] { 5, 22 }, new double[] { 163, 200 } };
+        DateTime? replay;
+        public void StartReplay() { replay = DateTime.UtcNow; }
+        void ReplayStep(DateTime now)
+        {
+            double t = (now - replay.Value).TotalSeconds, last = t - 1;
+            foreach (var w in ReplayWarps) if (w > last && w <= t) stats.Tracker.OnWarp("Pilot-1", replay.Value.AddSeconds(w));
+            var es = new List<DmgEvent>();
+            foreach (var s in ReplaySites)
+                if (t >= s[0] && t <= s[1])
+                    for (int p = 1; p <= 5; p++)
+                        es.Add(new DmgEvent { T = now.AddMilliseconds(-p * 90), Pilot = "Pilot-" + p, Out = true, Amount = 600 + 300 * Math.Sin(t + p), Other = "Core Lord Admiral", Quality = "Hits", Weapon = "Large Vorton Projector II" });
+            foreach (var p in new[] { "Pilot-1", "Pilot-2", "Pilot-3", "Pilot-4", "Pilot-5" }) stats.EnsurePilot(p);
+            stats.Add(es, now);
+        }
 
         protected override bool ShowWithoutActivation { get { return !Standalone; } }
         const int WS_EX_LAYERED = 0x80000, WS_EX_TOOLWINDOW = 0x80, WS_EX_NOACTIVATE = 0x8000000, WS_EX_TOPMOST = 0x8, WS_EX_APPWINDOW = 0x40000;
@@ -290,8 +344,8 @@ namespace TheNorns
         }
 
         // where the pulsing pointer shows: the keys, and in the settings only the spots that do something
-        bool OnPulse(Point p) { return NameRect.Contains(p) || (Standalone && CloseRect.Contains(p)) || (!settingsOpen && (vortonFx.Contains(p) || sbFx.Contains(p) || spawnChip.Contains(p))) || (settingsOpen && spots.Any(sp => sp.Item2.Contains(p))); }
-        bool OnKey(Point p) { return NameRect.Contains(p) || (settingsOpen && GlassRect.Contains(p)) || (Standalone && CloseRect.Contains(p)) || vortonFx.Contains(p) || sbFx.Contains(p) || spawnChip.Contains(p); }
+        bool OnPulse(Point p) { return NameRect.Contains(p) || (Standalone && CloseRect.Contains(p)) || updateMark.Contains(p) || (!settingsOpen && (vortonFx.Contains(p) || sbFx.Contains(p) || spawnChip.Contains(p))) || (settingsOpen && spots.Any(sp => sp.Item2.Contains(p))); }
+        bool OnKey(Point p) { return NameRect.Contains(p) || (settingsOpen && GlassRect.Contains(p)) || (Standalone && CloseRect.Contains(p)) || vortonFx.Contains(p) || sbFx.Contains(p) || spawnChip.Contains(p) || updateMark.Contains(p); }
 
         [DllImport("user32.dll")] static extern IntPtr SetCursor(IntPtr h);
         [DllImport("user32.dll")] static extern IntPtr WindowFromPoint(Point p);
@@ -326,6 +380,8 @@ namespace TheNorns
             bool hv = !settingsOpen && vortonFx.Contains(e.Location), hs = !settingsOpen && sbFx.Contains(e.Location);
             bool hsp = !settingsOpen && spawnChip.Contains(e.Location);
             if (hsp != hoverSpawns) { hoverSpawns = hsp; Render(); }
+            bool hup = updateMark.Contains(e.Location);
+            if (hup != hoverUpdate) { hoverUpdate = hup; Render(); }
             var spot = settingsOpen ? SpotAt(e.Location) : null;
             mouseAt = e.Location;
             if (hn == hoverName && hc == hoverClose && (hv || hs) == hoverFx && spot == hotSpot) return;
@@ -354,7 +410,8 @@ namespace TheNorns
             base.OnMouseDown(e);
             tipText = null; tip.Hide(this);   // a click: no tip
             if (e.Button != MouseButtons.Left) return;
-            if (NameRect.Contains(e.Location)) downName = true;
+            if (updateMark.Contains(e.Location)) downUpdate = true;
+            else if (NameRect.Contains(e.Location)) downName = true;
             else if (Standalone && CloseRect.Contains(e.Location)) downClose = true;
             else if (settingsOpen) downSpot = SpotAt(e.Location);
             else if (vortonFx.Contains(e.Location)) downFx = 1;
@@ -368,6 +425,7 @@ namespace TheNorns
             base.OnMouseUp(e);
             bool left = e.Button == MouseButtons.Left;
             if (downName) { downName = false; if (left && NameRect.Contains(e.Location)) ToggleSettings(); Render(); }
+            if (downUpdate) { downUpdate = false; if (left && updateMark.Contains(e.Location)) { if (!settingsOpen) ToggleSettings(); page = "about"; } Render(); }
             if (downSpawns) { downSpawns = false; if (left && spawnChip.Contains(e.Location)) { ToggleSettings(); page = "stats"; sessions = null; } Render(); }
             if (downSpot != null)
             {
@@ -439,6 +497,7 @@ namespace TheNorns
             if (!Visible) Show();
             Render();
             timer.Start();
+            if (UpdateAtStart && !SelfTesting && Standalone && updateState == 0) CheckForUpdates(true);
         }
         public void HideDps() { timer.Stop(); Hide(); }
 
@@ -484,8 +543,9 @@ namespace TheNorns
                 PaintDamage(g);
                 PaintNameKey(g);
                 PaintHeat(g, now);
-                PaintPower(g, following, DemoSeconds ?? AnimTime(now));
+                if (!Compact) PaintPower(g, following, DemoSeconds ?? AnimTime(now), DemoNoClients ?? clients == 0, secs);
                 PaintClose(g, hoverClose || ShowHoverClose, downClose);
+                PaintVersionPlate(g);
                 PaintScreen(g, now);
             }
             return bmp;
@@ -503,7 +563,8 @@ namespace TheNorns
                 using (var body = Round(all, 24))
                 {
                     using (var b = new SolidBrush(BodyTheme.Hull)) g.FillPath(b, body);
-                    // satin light from the top left, darker towards the bottom
+                    // satin light from the top left, darker towards the bottom (not in Potato mode: a plain hull)
+                    if (!Potato)
                     using (var lg = new LinearGradientBrush(all, Color.White, Color.Black, 80f))
                     {
                         lg.InterpolationColors = new ColorBlend { Colors = new[] { Color.FromArgb(36, 255, 255, 255), Color.FromArgb(5, 255, 255, 255), Color.FromArgb(66, 0, 0, 0) }, Positions = new[] { 0f, 0.45f, 1f } };
@@ -538,13 +599,15 @@ namespace TheNorns
 
                 // the printed dot left of the power display
                 var dc = DotCenter;
+                if (!Compact)
                 using (var b = new SolidBrush(Color.FromArgb(178, BodyTheme.Silk))) g.FillEllipse(b, dc.X - U(1.75f), dc.Y - U(1.75f), U(3.5f), U(3.5f));
 
                 // the screen sits in a recess: the hull's wall is in shadow at the top and catches light at the bottom lip
                 var cav = CavityRect;
                 using (var cp = Round(cav, 17))
                 {
-                    using (var b = new SolidBrush(BodyTheme.Hull)) g.FillPath(b, cp);
+                    using (var b = new SolidBrush(Potato ? Mix(BodyTheme.Hull, Color.Black, 0.3) : BodyTheme.Hull)) g.FillPath(b, cp);
+                    if (!Potato)
                     using (var lg = new LinearGradientBrush(cav, Color.Black, Color.White, 90f))
                     {
                         lg.InterpolationColors = new ColorBlend { Colors = new[] { Color.FromArgb(140, 0, 0, 0), Color.FromArgb(64, 0, 0, 0), Color.FromArgb(26, 255, 255, 255) }, Positions = new[] { 0f, 0.55f, 1f } };
@@ -564,7 +627,8 @@ namespace TheNorns
                 }
                 using (var gp = Round(GlassRect, 13)) using (var b = new SolidBrush(Color.Black)) g.FillPath(b, gp);
 
-                PaintBand(g);
+                updateMark = RectangleF.Empty;
+                if (!Compact) PaintBand(g);
             }
             return bmp;
         }
@@ -601,7 +665,7 @@ namespace TheNorns
         }
 
         // printed markings on the bottom edge: left NRN-01 / PASSIVE · READ ONLY · NO INPUT, right the warning
-        // triangle, three ticks, K-287 in a yellow box and MOD 1.0
+        // triangle, three ticks, the version plate (a yellow box) and MOD 1.0
         void PaintBand(Graphics g)
         {
             Func<float, float> V = v => U(v * 1.1f);   // the markings 10 % larger than the sketch
@@ -625,10 +689,9 @@ namespace TheNorns
                 float rx = r.Right;
                 float w = SpacedWidth(g, "MOD 1.0", f, sp);
                 Spaced(g, "MOD 1.0", f, silk, rx - w, ty, sp); rx -= w + V(6);
-                float kw = SpacedWidth(g, "K-287", f, sp) + V(6);
+                float kw = SpacedWidth(g, PlateText, f, sp) + V(6);
                 var box = new RectangleF(rx - kw, cy - V(4.5f), kw, V(9));
-                using (var pen = new Pen(Color.FromArgb(217, 232, 176, 32), Math.Max(1f, V(0.5f)))) g.DrawRectangle(pen, box.X, box.Y, box.Width, box.Height);
-                using (var yb = new SolidBrush(Color.FromArgb(232, 176, 32))) Spaced(g, "K-287", f, yb, box.Left + V(3), ty, sp);
+                updateMark = box;   // the version plate, drawn per frame (it can blink)
                 rx = box.Left - V(6);
                 for (int i = 2; i >= 0; i--) g.FillRectangle(silk, rx - V(0.75f) - i * V(1.75f), cy - V(2.25f), V(0.75f), V(4.5f));
                 rx -= V(5.25f) + V(6);
@@ -741,7 +804,7 @@ namespace TheNorns
         // a soft, blurred halo: a radial gradient with a bell-shaped falloff (GDI+ has no blur)
         internal static void SoftGlow(Graphics g, PointF c, float radius, Color col, int alpha)
         {
-            if (alpha <= 2 || radius <= 0) return;
+            if (alpha <= 2 || radius <= 0 || Potato) return;
             using (var path = new GraphicsPath())
             {
                 path.AddEllipse(c.X - radius, c.Y - radius, 2 * radius, 2 * radius);
@@ -787,8 +850,52 @@ namespace TheNorns
             }
         }
 
-        void PaintPower(Graphics g, bool following, double animSecs)
+        // no EVE client (owner, 27.10.2026): the power display turns slowly in the lamp's red and now and then fails like a
+        // short circuit, at random: in about one of five half-seconds it goes out for a moment (40-160 ms) or dims and
+        // stutters. 1 = lit, 0 = off
+        internal static double ShortLevel(double secs)
         {
+            Func<double, double> hash = e => { double t = Math.Sin(e * 12.9898 + 78.233) * 43758.5453; return t - Math.Floor(t); };
+            double slot = Math.Floor(secs / 0.5);
+            if (hash(slot) > 0.2) return 1;
+            double start = slot * 0.5 + hash(slot + 0.31) * 0.3, len = 0.04 + hash(slot + 0.67) * 0.12;
+            if (secs < start || secs > start + len) return 1;
+            if (hash(slot + 0.93) < 0.5) return 0;                                  // out for a moment
+            return hash(Math.Floor(secs / 0.03) + 0.17) < 0.5 ? 0.25 : 0.7;      // dims and stutters
+        }
+
+        // and a failing column of the glass (owner's reference, 28.10.2026): now and then a thin vertical line of broken
+        // pixels lights up at a random place for 0.08-0.3 s, flickering, sometimes with a fainter twin next to it.
+        // Returns the line's place (0..1 of the width) and brightness, or null
+        static double ShortHash(double e) { double t = Math.Sin(e * 12.9898 + 78.233) * 43758.5453; return t - Math.Floor(t); }
+        internal static Tuple<double, double> ShortLine(double secs)
+        {
+            double slot = Math.Floor(secs / 0.7);
+            if (ShortHash(slot + 0.11) > 0.3) return null;
+            double start = slot * 0.7 + ShortHash(slot + 0.41) * 0.35, len = 0.08 + ShortHash(slot + 0.77) * 0.22;
+            if (secs < start || secs > start + len) return null;
+            double flick = ShortHash(Math.Floor(secs / 0.03) + 0.29);
+            return Tuple.Create(0.12 + ShortHash(slot + 0.53) * 0.76, flick < 0.25 ? 0.15 : 0.55 + 0.45 * flick);
+        }
+
+        void PaintLineOfBrokenPixels(Graphics g, RectangleF face, double x, double bright, double seed)
+        {
+            float px = Math.Max(1f, U(1)), lx = face.Left + (float)(face.Width * x);
+            for (float y = face.Top; y < face.Bottom; )
+            {
+                double h = ShortHash(seed + y * 0.37);
+                float seg = px * (2 + (float)(h * 9));
+                int a = h < 0.18 ? 0 : (int)(bright * (120 + 135 * ShortHash(seed + y * 1.7)));   // gaps and uneven pixels
+                if (a > 0) using (var b = new SolidBrush(Color.FromArgb(Math.Min(255, a), Mix(AlarmRed, Color.FromArgb(255, 210, 200), 0.35)))) g.FillRectangle(b, lx, y, px, seg);
+                y += seg;
+            }
+        }
+
+        void PaintPower(Graphics g, bool following, double animSecs, bool noClients, double secs)
+        {
+            double shortLevel = noClients ? ShortLevel(secs) : 0;
+            if (noClients) animSecs = secs * 0.15;   // slowed down, as while the fleet warps
+            if (Potato) animSecs = 0;
             var r = PowerRect;
             var sh = r; sh.Offset(0, U(3.5f)); sh.Inflate(-U(1), 0);
             using (var sp = Round(sh, 11)) using (var b = new SolidBrush(Color.FromArgb(120, 0, 0, 0))) g.FillPath(b, sp);
@@ -799,8 +906,17 @@ namespace TheNorns
                 using (var pb = new PathGradientBrush(fp) { CenterColor = Color.FromArgb(12, 13, 16), SurroundColors = new[] { Color.FromArgb(3, 3, 4) } }) g.FillPath(pb, fp);
                 var st = g.Save();
                 g.SetClip(fp);
-                PowerAnim.Draw(g, new PointF(face.Left + face.Width / 2, face.Top + face.Height / 2), face.Height * 1.89f, following ? animSecs : 0, Color.FromArgb(225, 255, 0), K * Scale);
-                var tex = GlassTexture;
+                var dotColor = noClients ? Mix(Color.FromArgb(12, 13, 16), AlarmRed, shortLevel) : Color.FromArgb(225, 255, 0);
+                if (!noClients || shortLevel > 0)
+                    PowerAnim.Draw(g, new PointF(face.Left + face.Width / 2, face.Top + face.Height / 2), face.Height * 1.89f, following || noClients ? animSecs : 0, dotColor, K * Scale);
+                var line = noClients ? ShortLine(secs) : null;
+                if (line != null)
+                {
+                    double seed = Math.Floor(secs / 0.7);
+                    PaintLineOfBrokenPixels(g, face, line.Item1, line.Item2, seed);
+                    if (ShortHash(seed + 0.83) < 0.4) PaintLineOfBrokenPixels(g, face, line.Item1 + 2.5 * U(1) / face.Width, line.Item2 * 0.45, seed + 3);
+                }
+                var tex = Potato ? null : GlassTexture;
                 if (tex != null)
                 {
                     // the texture's light marks only (white, alpha = their brightness x 0.19), 150 % of the glass
@@ -854,18 +970,34 @@ namespace TheNorns
             }
         }
 
-        // ---------------- titan alarm ----------------
+        // ---------------- titan / dreadnought alarm ----------------
         // a titan on grid (a hit to or from it in the last 20 s): the hull glows like heated metal, up to bright red in
-        // about a second, and cools down slowly (about 10 s) once it is gone
-        double heat, heatClock = -1;
-        public double? DemoHeat;   // selftest
+        // about a second, and cools down slowly (about 10 s) once it is gone. A dreadnought heats it the same way, in a rich
+        // yellow (owner, 28.10.2026); a titan's red goes over it
+        double heat, heatY, heatClock = -1;
+        public double? DemoHeat, DemoHeatY;   // selftest
+        DateTime dreadDemo = DateTime.MinValue; bool dreadDemoHot;
+        // --preview-dread: a dreadnought on grid for 6 s, then gone, every 16 s
+        public void StartDreadDemo() { dreadDemo = DateTime.UtcNow; }
+        static readonly Color[] HotRed = { Color.FromArgb(150, 16, 10), Color.FromArgb(205, 26, 12), Color.FromArgb(235, 52, 20), Color.FromArgb(255, 110, 40) };
+        static readonly Color[] HotYellow = { Color.FromArgb(175, 120, 8), Color.FromArgb(225, 165, 14), Color.FromArgb(250, 200, 36), Color.FromArgb(255, 214, 80) };
         void PaintHeat(Graphics g, DateTime now)
         {
             double t = clock.Elapsed.TotalSeconds, dt = heatClock < 0 ? 0 : Math.Min(0.5, t - heatClock);
             heatClock = t;
             bool titan = (now - stats.LastTitan).TotalSeconds < 20;
+            bool demoHot = dreadDemo != DateTime.MinValue && (DateTime.UtcNow - dreadDemo).TotalSeconds % 16 < 6;
+            if (demoHot && !dreadDemoHot && SpawnSound) PlayAlert();   // the demo's dreadnought spawns: the alert, if it is on
+            dreadDemoHot = demoHot;
+            bool dread = (now - stats.LastDread).TotalSeconds < 20 || demoHot;
             heat += ((titan ? 1 : 0) - heat) * (1 - Math.Exp(-dt / (titan ? 0.35 : 3.5)));
-            double h = DemoHeat ?? heat;
+            heatY += ((dread ? 1 : 0) - heatY) * (1 - Math.Exp(-dt / (dread ? 0.35 : 3.5)));
+            PaintHot(g, DemoHeatY ?? heatY, HotYellow, t);
+            PaintHot(g, DemoHeat ?? heat, HotRed, t);
+        }
+        // c: the top, the middle, the bottom of the heated hull, and the glow under it
+        void PaintHot(Graphics g, double h, Color[] c, double t)
+        {
             if (h < 0.01) return;
             var all = new RectangleF(0, 0, Width, Height);
             using (var body = Round(all, 24))
@@ -881,12 +1013,12 @@ namespace TheNorns
                 {
                     lg.InterpolationColors = new ColorBlend
                     {
-                        Colors = new[] { Color.FromArgb((int)(h * 125 * flick), 150, 16, 10), Color.FromArgb((int)(h * 150 * flick), 205, 26, 12), Color.FromArgb((int)(h * 170 * flick), 235, 52, 20) },
+                        Colors = new[] { Color.FromArgb((int)(h * 125 * flick), c[0]), Color.FromArgb((int)(h * 150 * flick), c[1]), Color.FromArgb((int)(h * 170 * flick), c[2]) },
                         Positions = new[] { 0f, 0.55f, 1f }
                     };
                     g.FillRectangle(lg, all);
                 }
-                SoftGlow(g, new PointF(Width / 2f, Height), Width * 0.7f, Color.FromArgb(255, 110, 40), (int)(h * 70 * flick));
+                SoftGlow(g, new PointF(Width / 2f, Height), Width * 0.7f, c[3], (int)(h * 70 * flick));
                 g.Restore(st);
             }
         }
@@ -899,6 +1031,8 @@ namespace TheNorns
         {
             get
             {
+                // compact: left of the Close key, narrower, as tall as the faction's damage row
+                if (Compact) { var s = StripRect; float h = U(17); return new RectangleF(s.Right - U(14.2f) - U(5) - U(56), s.Top + (s.Height - h) / 2, U(56), h); }
                 // right-aligned to the printed dot, as far from it as the power display on its other side (owner 27.10.2026)
                 var p = PowerRect; float right = DotCenter.X - (p.Left - DotCenter.X), minLeft = nameRight + U(6) + U(6.825f) + U(9);
                 return RectangleF.FromLTRB(Math.Max(minLeft, right - U(74)), p.Top, right, p.Bottom);
@@ -974,12 +1108,13 @@ namespace TheNorns
             a = a * a * (3 - 2 * a);   // a smooth fade in
             float pad = U(4);
             var nf = NornsFonts.Body(U(5.5f) + K);   // 1 px larger and 2 px lower (owner, 27.10.2026)
+            if (!Compact)
             using (var b = new SolidBrush(Color.FromArgb((int)(a * 230), Mix(FactionColor(faction), BodyTheme.Ink, 0.35))))
                 g.DrawString(faction.ToUpperInvariant(), nf, b, new RectangleF(r.Left + pad, r.Top + U(3) + 2 * K, r.Width - 2 * pad, nf.GetHeight(g) + U(1)),
                     new StringFormat(StringFormat.GenericTypographic) { Alignment = StringAlignment.Center, Trimming = StringTrimming.EllipsisCharacter, FormatFlags = StringFormatFlags.NoWrap });
             Tuple<Dmg, int>[] dealt;
             DamageDealt.TryGetValue(faction, out dealt);
-            var row = RectangleF.FromLTRB(r.Left + pad, r.Top + U(12), r.Right - pad, r.Bottom - U(3));
+            var row = Compact ? RectangleF.FromLTRB(r.Left + U(3), r.Top, r.Right - U(3), r.Bottom) : RectangleF.FromLTRB(r.Left + pad, r.Top + U(12), r.Right - pad, r.Bottom - U(3));
             var vf = NornsFonts.Screen(U(6.5f));
             if (dealt == null && DamageDealt.ContainsKey(faction))
             {
@@ -1028,6 +1163,7 @@ namespace TheNorns
                 float gap = U(6), line = Math.Max(1f, U(0.5f));
                 float avail = c.Height - 4 * gap - 2 * line;
                 float h1 = avail * 1.1f / 3.7f, h2 = avail * 0.9f / 3.7f, h3 = avail * 1.7f / 3.7f;
+                if (Compact) { h1 = U(60.8f); h2 = U(49.7f); h3 = avail - h1 - h2; }   // the graphs as tall as in the full body
                 float y = c.Top;
                 if (settingsOpen) PaintSettings(g, c);
                 else
@@ -1040,7 +1176,7 @@ namespace TheNorns
                 }
 
                 // the glass lights up where the mouse is
-                var m = DemoMouse ?? glare;
+                var m = Potato ? null : DemoMouse ?? glare;
                 if (m != null)
                 {
                     float rr = U(70);
@@ -1060,6 +1196,7 @@ namespace TheNorns
         {
             text = text.ToUpperInvariant();
             if (rightAligned) x -= g.MeasureString(text, f, 1000, StringFormat.GenericTypographic).Width;
+            if (!Potato)
             using (var halo = new SolidBrush(Color.FromArgb(28, c)))
                 foreach (var o in new[] { new PointF(-0.6f, 0), new PointF(0.6f, 0), new PointF(0, -0.6f), new PointF(0, 0.6f) })
                     g.DrawString(text, f, halo, x + o.X * K, y + o.Y * K, StringFormat.GenericTypographic);
@@ -1075,6 +1212,7 @@ namespace TheNorns
         float quiet, timerA;            // 0..1: how far the lines are down, how much of the timer shows
         double lastQuietFrame = -1;
         public float? DemoQuiet, DemoTimerA, DemoCount;   // selftest
+        public bool? DemoRewarp;                            // selftest
         double countStart = -1;            // when the count-up began (the timer's fade-in)
         const double CountSecs = 1.4;
         public float TimerThin = 1.4f;          // how much of the stroke is eaten (both edges together; owner, 27.10.2026)
@@ -1106,10 +1244,23 @@ namespace TheNorns
             var tr = stats.Tracker;
             if (timerA <= 0 || tr.LastWarpTime == DateTime.MinValue || tr.PrevWarpTime == DateTime.MinValue) return;
             double a = timerA * timerA * (3 - 2 * timerA);
-            // counts up from 00:00 to the clear time, slowing down at the end
-            double p = DemoCount ?? (countStart < 0 ? 1 : Math.Min(1, (clock.Elapsed.TotalSeconds - countStart) / CountSecs));
-            p = 1 - Math.Pow(1 - p, 3);
-            int total = (int)Math.Round(Math.Min(99 * 60 + 59, (tr.LastWarpTime - tr.PrevWarpTime).TotalSeconds) * p);
+            // counts up from 00:00 to the clear time, slowing down at the end. A re-warp (no hit on an NPC between the two
+            // warps: the site was taken; owner, 27.10.2026) shows in red the time it took and counts it down to 00:00
+            bool rewarp = DemoRewarp ?? stats.LastNpcHit < tr.PrevWarpTime;
+            double secs = Math.Min(99 * 60 + 59, (tr.LastWarpTime - tr.PrevWarpTime).TotalSeconds);
+            int total;
+            if (rewarp)
+            {
+                // the re-warp's time at once, held for 1 s, then counting down second by second to 00:00 (owner, 28.10.2026)
+                double since = DemoCount.HasValue ? DemoCount.Value * (secs + 1) : countStart < 0 ? 0 : clock.Elapsed.TotalSeconds - countStart;
+                total = (int)Math.Ceiling(Math.Max(0, secs - Math.Max(0, since - 1)));
+            }
+            else
+            {
+                double p = DemoCount ?? (countStart < 0 ? 1 : Math.Min(1, (clock.Elapsed.TotalSeconds - countStart) / CountSecs));
+                p = 1 - Math.Pow(1 - p, 3);
+                total = (int)Math.Round(secs * p);
+            }
             var text = (total / 60).ToString("00") + ":" + (total % 60).ToString("00");
             var f = NornsFonts.Screen(U(26));
             // the digits in equal cells, so the time does not jitter as it counts
@@ -1125,7 +1276,7 @@ namespace TheNorns
                     path.AddString(ch.ToString(), f.FontFamily, (int)f.Style, f.Size, new PointF(x + (cw - gw) / 2, y + U(4) * (float)(1 - a)), StringFormat.GenericTypographic);
                     x += cw;
                 }
-                using (var b = new SolidBrush(Color.FromArgb((int)(a * 235), BodyTheme.Ink))) g.FillPath(b, path);
+                using (var b = new SolidBrush(Color.FromArgb((int)(a * 235), rewarp ? AlarmRed : BodyTheme.Ink))) g.FillPath(b, path);
                 using (var pen = new Pen(Color.Black, U(TimerThin)) { LineJoin = LineJoin.Round }) g.DrawPath(pen, path);
             }
         }
@@ -1145,7 +1296,7 @@ namespace TheNorns
             var sbLine = sbr == null ? null : stats.Series(sbr.Pilot, true, now, "Smartbomb");
             if (sbLine != null) target.Add(sbLine);
             double tMax = Math.Max(100.0, target.SelectMany(s => s).DefaultIfEmpty(0).Max()) * 1.15;
-            bool snap = DemoNow != null || state.VisualMax <= 0;
+            bool snap = DemoNow != null || state.VisualMax <= 0 || Potato;
             const double ease = 0.08;   // per frame at 25 fps
             state.VisualMax = snap ? tMax : state.VisualMax + (tMax - state.VisualMax) * ease;
             state.VisualTotal = snap ? total : state.VisualTotal + (total - state.VisualTotal) * ease * 2;
@@ -1248,6 +1399,7 @@ namespace TheNorns
         {
             if (sbShown.Length != n) { sbShown = new double[n]; sbTarget = new double[n]; sbLastClock = -1; }
             double t = clock.Elapsed.TotalSeconds, dt = DemoSeconds != null || sbLastClock < 0 ? 0 : Math.Min(0.5, t - sbLastClock);
+            if (Potato) dt = 1e3;   // the columns jump
             sbLastClock = t;
             for (int k = 0; k < n; k++)
             {
@@ -1281,6 +1433,33 @@ namespace TheNorns
         }
 
         public RectangleF IskRect { get; private set; }
+
+        // the version plate on the bottom band (owner, 28.10.2026): the yellow box shows the app's version; while a newer
+        // one is out it blinks slowly in the same yellow. A click opens About
+        RectangleF updateMark; bool hoverUpdate, downUpdate;
+        static readonly Color PlateYellow = Color.FromArgb(232, 176, 32);
+        static string PlateText { get { return AppInfo.Version; } }
+        void PaintVersionPlate(Graphics g)
+        {
+            var box = updateMark;
+            if (box.IsEmpty) return;
+            Func<float, float> V = v => U(v * 1.1f);
+            var f = NornsFonts.Body(V(5));
+            float sp = V(0.72f), ty = box.Top + box.Height / 2 - f.GetHeight(g) / 2;
+            // a newer version: the settings' accent, blinking every 2.4 s with quick edges and a held light (owner, 28.10.2026)
+            double a = 1; var col = PlateYellow;
+            if (updateState == 3)
+            {
+                double t = DemoSeconds ?? clock.Elapsed.TotalSeconds, c = 0.5 + 0.5 * Math.Cos(t * Math.PI * 2 / 2.4);
+                double e = Math.Max(0, Math.Min(1, (c - 0.25) / 0.5)); e = e * e * (3 - 2 * e);
+                a = 0.15 + 0.85 * e; col = BodyTheme.Accent;
+                SoftGlow(g, new PointF(box.Left + box.Width / 2, box.Top + box.Height / 2), box.Width * 0.7f, col, (int)(e * 60));
+            }
+            if (hoverUpdate || ShowHoverUpdate) using (var hb = new SolidBrush(Color.FromArgb(40, col))) g.FillRectangle(hb, box);
+            using (var pen = new Pen(Color.FromArgb((int)(217 * a), col), Math.Max(1f, V(0.5f)))) g.DrawRectangle(pen, box.X, box.Y, box.Width, box.Height);
+            using (var yb = new SolidBrush(Color.FromArgb((int)(255 * a), col))) Spaced(g, PlateText, f, yb, box.Left + V(3), ty, sp);
+        }
+        public bool ShowHoverUpdate;   // selftest
         RectangleF spawnChip; bool hoverSpawns, downSpawns;
         public bool ShowHoverSpawns;   // selftest
 
@@ -1308,6 +1487,7 @@ namespace TheNorns
             x = Badge(g, FormatIsk(tr.TotalSessionIsk), bf, x, r.Top, bh, true, "Σ") + U(4);
             Glow(g, FormatIsk(tr.CurrentAnomalyIsk), NornsFonts.Screen(U(9)), BodyTheme.Ink, r.Right, r.Top, true);
 
+            if (Compact) { PaintIskRow(g, RectangleF.FromLTRB(r.Left, r.Top + bh + U(5), r.Right, r.Bottom)); return; }
             // the heat grid: every bounty tick of the anomaly (all clients), filled column by column, 10 rows
             const int Rows = 10, Cols = 26;
             var grid = RectangleF.FromLTRB(r.Left, r.Top + bh + U(5), r.Right, r.Bottom);
@@ -1340,11 +1520,11 @@ namespace TheNorns
                         }
                     target = wsum > 0 ? 0.6 * raw[i] + 0.4 * sum / wsum : raw[i];
                     // a slow shimmer, each cell on its own beat
-                    target *= 0.9 + 0.1 * Math.Sin(secs * cellBeat[i] + cellPhase[i]);
+                    if (!Potato) target *= 0.9 + 0.1 * Math.Sin(secs * cellBeat[i] + cellPhase[i]);
                 }
                 // every cell fades towards its target at its own pace: new ticks appear and a reset clears the grid
                 // unevenly, not all at once (snapped in self-tests)
-                if (DemoNow != null) { cellHeat[i] = (float)target; cellLit[i] = (float)presence; }
+                if (DemoNow != null || Potato) { cellHeat[i] = (float)target; cellLit[i] = (float)presence; }
                 else { cellHeat[i] += (float)((target - cellHeat[i]) * cellPace[i]); cellLit[i] += (float)((presence - cellLit[i]) * cellPace[i]); }
                 double t = cellHeat[i], lit = cellLit[i];
                 if (lit < 0.999) using (var b = new SolidBrush(Color.FromArgb((int)(89 * (1 - lit)), 30, 32, 20))) g.FillEllipse(b, cell);
@@ -1356,8 +1536,50 @@ namespace TheNorns
                 if (kind != 0) t = Math.Max(t, 0.75);
                 SoftGlow(g, new PointF(cx, cy), d / 2 + U(3 + (float)t * 7), c, (int)(t * t * 255 * lit * 0.3));
                 using (var b = new SolidBrush(Color.FromArgb((int)((0.6 + t * 0.4) * 255 * lit), c))) g.FillEllipse(b, cell);
-                using (var lg = new LinearGradientBrush(cell, Color.FromArgb((int)(56 * lit), 255, 255, 255), Color.FromArgb((int)(71 * lit), 0, 0, 0), 90f)) g.FillEllipse(lg, cell);
+                if (!Potato) using (var lg = new LinearGradientBrush(cell, Color.FromArgb((int)(56 * lit), 255, 255, 255), Color.FromArgb((int)(71 * lit), 0, 0, 0), 90f)) g.FillEllipse(lg, cell);
                 if (i == count - 1) using (var pen = new Pen(BodyTheme.Ink, Math.Max(1f, U(0.5f)))) g.DrawEllipse(pen, cell);
+            }
+        }
+
+        // compact: the grid folded into one row - each dot is one column of the full grid (10 ticks), at their average
+        // ISK. A column with a commander's or a titan's tick takes its colour outright, full and a little larger, drawn
+        // over its neighbours (owner, 28.10.2026)
+        void PaintIskRow(Graphics g, RectangleF r)
+        {
+            const int Rows = 10, Cols = 26;
+            var tr = stats.Tracker; var ticks = tr.Bounties;
+            float gap = U(1.5f), cw = (r.Width - gap * (Cols - 1)) / Cols, d = Math.Min(cw, r.Height);
+            int first = Math.Max(0, ticks.Count - Rows * Cols), count = ticks.Count - first;
+            var sorted = ticks.Skip(first).OrderBy(v => v).ToList(); long median = sorted.Count > 0 ? sorted[sorted.Count / 2] : 0;
+            var marked = new List<Tuple<RectangleF, Color, bool>>();   // drawn last: on top
+            for (int col = 0; col < Cols; col++)
+            {
+                float cx = r.Left + col * (cw + gap) + cw / 2, cy = r.Top + r.Height / 2;
+                var cell = new RectangleF(cx - d / 2, cy - d / 2, d, d);
+                int a = col * Rows, b = Math.Min(count, a + Rows);
+                if (a >= count) { using (var e = new SolidBrush(Color.FromArgb(89, 30, 32, 20))) g.FillEllipse(e, cell); continue; }
+                double avg = 0; int kind = 0;
+                for (int i = a; i < b; i++)
+                {
+                    avg += ticks[first + i];
+                    if (first + i < tr.BountyTimes.Count && ticks[first + i] >= 4 * median) kind = Math.Max(kind, stats.KindNear(tr.BountyTimes[first + i]));
+                }
+                avg /= b - a;
+                double t = Math.Max(0, Math.Min(1, (Math.Log(Math.Max(1, avg)) - Math.Log(3000)) / (Math.Log(270000) - Math.Log(3000))));
+                if (kind != 0) { marked.Add(Tuple.Create(RectangleF.Inflate(cell, d * 0.15f, d * 0.15f), kind == 2 ? AlarmRed : BodyTheme.Accent2Light, b == count)); continue; }
+                var c = HeatColor(t);
+                SoftGlow(g, new PointF(cx, cy), d / 2 + U(3 + (float)t * 7), c, (int)(t * t * 255 * 0.3));
+                using (var br = new SolidBrush(Color.FromArgb((int)((0.6 + t * 0.4) * 255), c))) g.FillEllipse(br, cell);
+                if (!Potato) using (var lg = new LinearGradientBrush(cell, Color.FromArgb(56, 255, 255, 255), Color.FromArgb(71, 0, 0, 0), 90f)) g.FillEllipse(lg, cell);
+                if (b == count) using (var pen = new Pen(BodyTheme.Ink, Math.Max(1f, U(0.5f)))) g.DrawEllipse(pen, cell);
+            }
+            foreach (var m in marked)
+            {
+                var mc = m.Item1;
+                SoftGlow(g, new PointF(mc.X + mc.Width / 2, mc.Y + mc.Height / 2), mc.Width / 2 + U(9), m.Item2, 110);
+                using (var br = new SolidBrush(m.Item2)) g.FillEllipse(br, mc);
+                if (!Potato) using (var lg = new LinearGradientBrush(mc, Color.FromArgb(56, 255, 255, 255), Color.FromArgb(71, 0, 0, 0), 90f)) g.FillEllipse(lg, mc);
+                if (m.Item3) using (var pen = new Pen(BodyTheme.Ink, Math.Max(1f, U(0.5f)))) g.DrawEllipse(pen, mc);
             }
         }
 
@@ -1522,6 +1744,29 @@ namespace TheNorns
                 f.Stats.Spawns.Add(Tuple.Create(now.AddMinutes(-24), "Shadow Serpentis Flotilla Admiral"));
                 save(f, "dps_window.png");
                 f.ShowHoverSpawns = true; save(f, "dps_spawns_hover.png"); f.ShowHoverSpawns = false;
+                // the version plate as it is, then blinking for a newer version (bright, dim, under the mouse); the General
+                // switch; About with the download key
+                save(f, "dps_version_plate.png");
+                Potato = true; if (f.shell != null) { f.shell.Dispose(); f.shell = null; }
+                save(f, "dps_potato.png");
+                f.DemoSettings(true, null, false, "general"); save(f, "dps_potato_general.png"); f.DemoSettings(false, null, false);
+                Potato = false; if (f.shell != null) { f.shell.Dispose(); f.shell = null; }
+                Compact = true; f.Size = new Size(f.DesiredWidth, f.DesiredHeight); if (f.shell != null) { f.shell.Dispose(); f.shell = null; }
+                save(f, "dps_compact.png");
+                f.DemoSettings(true, null, false, "general"); save(f, "dps_compact_general.png"); f.DemoSettings(false, null, false);
+                Compact = false; f.Size = new Size(f.DesiredWidth, f.DesiredHeight); if (f.shell != null) { f.shell.Dispose(); f.shell = null; }
+                f.DemoUpdate("1.3.0");
+                var keepSecs = f.DemoSeconds;
+                f.DemoSeconds = 0; save(f, "dps_version_plate_new_bright.png");
+                f.DemoSeconds = 1.2; save(f, "dps_version_plate_new_dim.png");
+                f.ShowHoverUpdate = true; save(f, "dps_version_plate_hover.png"); f.ShowHoverUpdate = false;
+                var pd = Path.Combine(dir, "plate_frames"); Directory.CreateDirectory(pd);
+                var band = Rectangle.Intersect(Rectangle.Round(RectangleF.FromLTRB(f.Width * 0.5f, f.BandRect.Top - f.U(4), f.Width, f.BandRect.Bottom + f.U(4))), new Rectangle(0, 0, f.Width, f.Height));
+                for (int i = 0; i < 60; i++) { f.DemoSeconds = i * 0.08; using (var fr = f.Draw()) using (var c = fr.Clone(band, fr.PixelFormat)) c.Save(Path.Combine(pd, i.ToString("00") + ".png"), ImageFormat.Png); }
+                f.DemoSeconds = keepSecs;
+                f.DemoSettings(true, null, false, "general"); save(f, "dps_update_general.png");
+                f.DemoSettings(true, null, false, "about"); save(f, "dps_update_about.png");
+                f.DemoSettings(false, null, false);
                 var r = f.Stats.Smartbombs(now);
                 sb.AppendLine(string.Format(CultureInfo.InvariantCulture, "smartbombs: pilot {0}, modules {1}, total {2:0} DPS, per module {3}",
                     r.Pilot, r.Modules, r.Total, string.Join(" ", r.Dps.Select(v => v.ToString("0", CultureInfo.InvariantCulture)))));
@@ -1583,6 +1828,23 @@ namespace TheNorns
                     f.DemoHeat = 0.45; save(f, "dps_titan_heating.png");
                     f.DemoHeat = 1; save(f, "dps_titan_hot.png");
                     f.DemoHeat = null;
+                    f.DemoHeatY = 0.45; save(f, "dps_dread_heating.png");
+                    f.DemoHeatY = 1; save(f, "dps_dread_hot.png");
+                    f.DemoHeatY = null;
+                    // compact: one commander and one titan in the site (the other demo spawns' ticks made ordinary)
+                    var keepB = f.Stats.Tracker.Bounties.ToList(); int keptC = 0, keptT = 0;
+                    long med = keepB.OrderBy(v => v).ElementAt(keepB.Count / 2);
+                    for (int qi = 0; qi < bt.Count; qi++)
+                    {
+                        bool c1 = qi % 23 == 5, t2 = !c1 && qi % 37 == 11;
+                        if (c1 && keptC++ == 2) continue;
+                        if (t2 && keptT++ == 4) continue;
+                        if (c1 || t2) f.Stats.Tracker.Bounties[qi] = med;
+                    }
+                    Compact = true; f.Size = new Size(f.DesiredWidth, f.DesiredHeight); if (f.shell != null) { f.shell.Dispose(); f.shell = null; }
+                    save(f, "dps_compact_commander_titan.png");
+                    for (int qi = 0; qi < keepB.Count; qi++) f.Stats.Tracker.Bounties[qi] = keepB[qi];
+                    Compact = false; f.Size = new Size(f.DesiredWidth, f.DesiredHeight); if (f.shell != null) { f.shell.Dispose(); f.shell = null; }
                 }
                 // the damage display for other factions
                 foreach (var fa in new[] { "Guristas", "Sleepers", "Rogue Drones", "Angel Cartel" }) { f.Stats.DetectedFaction = fa; save(f, "dps_damage_" + fa.Replace(" ", "_").ToLowerInvariant() + ".png"); }
@@ -1610,6 +1872,14 @@ namespace TheNorns
                 f.DemoQuiet = 1; f.DemoTimerA = 0.45f; f.DemoCount = 0.15f; save(f, "dps_timer_2_fade_in.png");
                 f.DemoTimerA = 1; f.DemoCount = 0.5f; save(f, "dps_timer_3_counting.png");
                 f.DemoCount = 1; save(f, "dps_timer_3_clear_time.png");
+                // a re-warp of 0:48 (no hits between the warps): red, 00:48 at once, then down to 00:00 in real time
+                var keepPrev = f.Stats.Tracker.PrevWarpTime;
+                f.Stats.Tracker.PrevWarpTime = f.Stats.Tracker.LastWarpTime.AddSeconds(-48); f.DemoRewarp = true;
+                f.DemoCount = 0; save(f, "dps_rewarp_0.png");
+                f.DemoCount = 0.3f; save(f, "dps_rewarp_1.png");
+                f.DemoCount = 0.6f; save(f, "dps_rewarp_2.png");
+                f.DemoCount = 1; save(f, "dps_rewarp_3.png");
+                f.DemoRewarp = null; f.Stats.Tracker.PrevWarpTime = keepPrev;
                 f.DemoTimerA = 0.4f; save(f, "dps_timer_4_first_hit.png");
                 f.DemoTimerA = 0; f.DemoQuiet = 0.5f; save(f, "dps_timer_5_back.png");
                 f.DemoQuiet = null; f.DemoTimerA = null; f.DemoCount = null;
@@ -1633,6 +1903,36 @@ namespace TheNorns
                 save(f, "dps_waiting.png");
                 f.DemoNoClients = true; f.DemoSeconds = 0.035; save(f, "dps_no_clients_flash.png");
                 f.DemoSeconds = 4.6; save(f, "dps_no_clients_dark.png");
+                // the power display's short circuit: 40 frames, 40 ms apart, cropped and 3x
+                {
+                    var pr = Rectangle.Round(RectangleF.Inflate(f.PowerRect, f.U(3), f.U(3)));
+                    const int n = 40; int z = 3;
+                    double t0 = 0; while (ShortLine(t0) == null && t0 < 60) t0 += 0.01; t0 = Math.Max(0, t0 - 0.2);   // from just before the first broken line
+                    using (var strip = new Bitmap(pr.Width * z * 8, (pr.Height * z + 18) * (n / 8), PixelFormat.Format32bppArgb))
+                    using (var sg = Graphics.FromImage(strip))
+                    using (var tf = new Font("Segoe UI", 11, GraphicsUnit.Pixel))
+                    {
+                        sg.Clear(Color.FromArgb(38, 40, 46)); sg.InterpolationMode = InterpolationMode.NearestNeighbor;
+                        for (int i = 0; i < n; i++)
+                        {
+                            f.DemoSeconds = t0 + i * 0.04;
+                            using (var fr = f.Draw())
+                            {
+                                int cx = (i % 8) * pr.Width * z, cy = (i / 8) * (pr.Height * z + 18);
+                                sg.DrawImage(fr, new Rectangle(cx, cy, pr.Width * z, pr.Height * z), pr, GraphicsUnit.Pixel);
+                                sg.DrawString((int)Math.Round((t0 + i * 0.04) * 1000) + " ms", tf, Brushes.Gainsboro, cx + 4, cy + pr.Height * z + 2);
+                            }
+                        }
+                        strip.Save(Path.Combine(dir, "power_short_storyboard.png"), ImageFormat.Png);
+                    }
+                    // the top strip (lamp and both small displays) for 8 s at 40 ms, for an animated preview
+                    var top = new Rectangle(0, 0, f.Width, (int)(pr.Bottom + f.U(6)));
+                    var fd = Path.Combine(dir, "short_frames"); Directory.CreateDirectory(fd);
+                    for (int i = 0; i < 200; i++) { f.DemoSeconds = t0 + i * 0.04; using (var fr = f.Draw()) using (var c = fr.Clone(top, fr.PixelFormat)) c.Save(Path.Combine(fd, i.ToString("000") + ".png"), ImageFormat.Png); }
+                    var frames = new StringBuilder();
+                    for (int i = 0; i < 125; i++) frames.Append(i == 0 ? "" : ",").Append(ShortLevel(i * 0.04).ToString("0.00", CultureInfo.InvariantCulture));
+                    File.WriteAllText(Path.Combine(dir, "power_short_levels.txt"), frames.ToString());
+                }
                 var lv = new StringBuilder("no-client lamp, 0.05 s steps over one burst: ");
                 for (double t = 0; t < 5.2; t += 0.05) lv.Append(AlarmLevel(t) > 0.5 ? "#" : AlarmLevel(t) > 0.05 ? "+" : ".");
                 sb.AppendLine(lv.ToString());

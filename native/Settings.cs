@@ -22,11 +22,24 @@ namespace TheNorns
         double resetShownUntil = -1;
         bool demoResetShown;
         public bool? DemoLogDirOk;   // selftest: the folder mark
+        // the tabs scroll (owner, 28.10.2026: more pages will come): TabsShown at a time, the arrow keys side by side on
+        // the left; tabFirst = the first one shown, tabShift = where the row is drawn (glides to tabFirst)
+        const int TabsShown = 4;
+        int tabFirst; float tabShift; RectangleF tabRow;
+        void ShowTab(string p)
+        {
+            int k = Array.FindIndex(Pages, x => x[0] == p);
+            if (k < tabFirst) tabFirst = k; else if (k >= tabFirst + TabsShown) tabFirst = k - TabsShown + 1;
+            tabFirst = Math.Max(0, Math.Min(Math.Max(0, Pages.Length - TabsShown), tabFirst));
+        }
+        void ScrollTabs(int by) { tabFirst = Math.Max(0, Math.Min(Math.Max(0, Pages.Length - TabsShown), tabFirst + by)); }
 
         void ToggleSettings()
         {
             settingsOpen = !settingsOpen;
             hotSpot = downSpot = null; spots.Clear();
+            if (settingsOpen) { ShowTab(page); tabShift = tabFirst; }   // the open page's tab in view
+            if (Compact) Size = new Size(DesiredWidth, DesiredHeight);   // compact: full height while the settings are open
             tip.Hide(this);
         }
 
@@ -49,10 +62,25 @@ namespace TheNorns
             if (id == "dir:detect") { SetLogDir(""); return; }
             if (id == "reset") { stats.Tracker.ResetAll(); resetShownUntil = clock.Elapsed.TotalSeconds + 2.5; return; }
             if (id.StartsWith("lang:")) SetLanguage(id.Substring(5));
-            if (id.StartsWith("page:")) { page = id.Substring(5); storage = null; sessions = null; }
+            if (id.StartsWith("page:")) { page = id.Substring(5); storage = null; sessions = null; ShowTab(page); }
+            if (id == "tabs:prev") ScrollTabs(-1);
+            if (id == "tabs:next") ScrollTabs(1);
             if (id == "data") OpenDataFolder();
             if (id.StartsWith("about:")) { aboutView = id.Substring(6); newsScroll = 0; }
-            if (id == "update") CheckForUpdates();
+            if (id == "update") { if (updateState == 3) OpenReleasePage(); else CheckForUpdates(false); }
+            if (id == "updatestart") { UpdateAtStart = !UpdateAtStart; SaveApp("update_check", UpdateAtStart); }
+            if (id == "compact")
+            {
+                Compact = !Compact; SaveApp("compact", Compact);
+                Size = new Size(DesiredWidth, DesiredHeight);
+                if (shell != null) { shell.Dispose(); shell = null; }
+            }
+            if (id == "potato")
+            {
+                Potato = !Potato; SaveApp("potato", Potato);
+                timer.Interval = Potato ? PotatoInterval : 40;
+                if (shell != null) { shell.Dispose(); shell = null; }   // the hull drawn again, plain or shaded
+            }
             if (id.StartsWith("scale:"))
             {
                 UiScale = float.Parse(id.Substring(6), CultureInfo.InvariantCulture);
@@ -60,6 +88,8 @@ namespace TheNorns
                 var r = Right; Size = new Size(DesiredWidth, DesiredHeight); Left = r - Width;   // grows to the left: the right edge stays
                 if (shell != null) { shell.Dispose(); shell = null; }
             }
+            if (id == "spawnsound") { SpawnSound = !SpawnSound; SaveApp("spawn_sound", SpawnSound); if (SpawnSound) PlayAlert(); }
+            if (id == "playalert") PlayAlert();
             if (id == "remember") { RememberPos = !RememberPos; SaveApp("remember_position", RememberPos); if (RememberPos) SavePos(); }
         }
 
@@ -111,7 +141,11 @@ namespace TheNorns
         string aboutView = "news";   // news, credits, legal
         float newsScroll;            // What's new: lines scrolled with the wheel
         int updateState;             // 0 not checked, 1 checking, 2 up to date, 3 newer found, 4 failed, 5 no release page yet
-        string updateLatest;
+        string updateLatest, updatePage;
+        // the update check at start (owner, 27.10.2026: on by default, a switch in General; before, only on the key)
+        public static bool UpdateAtStart = !(AppSetting("update_check") is bool) || (bool)AppSetting("update_check");
+        public void DemoUpdate(string version) { updateLatest = version; updatePage = ReleasesPage; updateState = 3; }
+        const string ReleasesPage = "https://github.com/MadisonCatfish/the-norns/releases/latest";
         public string DemoAboutView { set { aboutView = value; } }
 
         // where releases are published (GitHub Releases API); empty until the repository is public
@@ -123,21 +157,22 @@ namespace TheNorns
             {
                 case 1: return L.T("Checking…");
                 case 2: return L.T("Up to date");
-                case 3: return L.F("{0} is out", updateLatest);
+                case 3: return L.F("Download {0}", updateLatest);
                 case 4: return L.T("Check failed");
                 case 5: return L.T("No release page yet");
                 default: return L.T("Check for updates");
             }
         }
 
-        void CheckForUpdates()
+        // quiet (the check at start): nothing shows unless a newer version is found
+        void CheckForUpdates(bool quiet)
         {
-            if (updateState == 1) return;
-            if (ReleasesApi == "") { updateState = 5; return; }
-            updateState = 1;
+            if (updateState == 1 || updateState == 3) return;
+            if (ReleasesApi == "") { if (!quiet) updateState = 5; return; }
+            if (!quiet) updateState = 1;
             new System.Threading.Thread(() =>
             {
-                int st; string latest = null;
+                int st; string latest = null, html = null;
                 try
                 {
                     System.Net.ServicePointManager.SecurityProtocol |= System.Net.SecurityProtocolType.Tls12;
@@ -147,13 +182,22 @@ namespace TheNorns
                         var json = wc.DownloadString(ReleasesApi);
                         var o = new System.Web.Script.Serialization.JavaScriptSerializer().DeserializeObject(json) as Dictionary<string, object>;
                         latest = o != null && o.ContainsKey("tag_name") ? Convert.ToString(o["tag_name"]).TrimStart('v') : null;
+                        html = o != null && o.ContainsKey("html_url") ? Convert.ToString(o["html_url"]) : null;
                     }
-                    var mine = AppInfo.Version + (AppInfo.Channel != "" ? "-" + AppInfo.Channel : "");
-                    st = latest == null ? 4 : string.Equals(latest, mine, StringComparison.OrdinalIgnoreCase) ? 2 : 3;
+                    Version a, b;
+                    bool newer = latest != null && Version.TryParse(latest.Split('-')[0], out a) && Version.TryParse(AppInfo.Version, out b) && a > b;
+                    st = latest == null ? 4 : newer ? 3 : 2;
                 }
                 catch { st = 4; }
-                try { BeginInvoke((Action)(() => { updateLatest = latest; updateState = st; })); } catch { }
+                if (quiet && st != 3) st = 0;   // at start: up to date or no network says nothing
+                try { BeginInvoke((Action)(() => { updateLatest = latest; updatePage = html ?? ReleasesPage; updateState = st; })); } catch { }
             }) { IsBackground = true }.Start();
+        }
+
+        // the release page in the default browser: the download is the user's, nothing installs by itself
+        void OpenReleasePage()
+        {
+            try { System.Diagnostics.Process.Start(updatePage ?? ReleasesPage); } catch { }
         }
 
         static string changelog;
@@ -199,6 +243,7 @@ namespace TheNorns
         protected override void OnMouseWheel(System.Windows.Forms.MouseEventArgs e)
         {
             base.OnMouseWheel(e);
+            if (settingsOpen && tabRow.Contains(e.Location)) { ScrollTabs(-Math.Sign(e.Delta)); Render(); return; }   // the wheel over the tabs scrolls them
             if (!settingsOpen || page != "about" || aboutView != "news") return;
             newsScroll = Math.Max(0, Math.Min(Math.Max(0, newsHeight - newsBox), newsScroll - Math.Sign(e.Delta) * U(24)));
             Render();
@@ -218,7 +263,7 @@ namespace TheNorns
             return L.F("{0} is a free, independent, fan-made tool. It is not affiliated with, endorsed or sponsored by CCP hf. EVE, EVE Online and CCP are trademarks or registered trademarks of CCP hf.", AppInfo.Name) + "\n\n" +
                    L.T("• It never sends anything to the game: no key presses, no clicks, no screen reading.") + "\n" +
                    L.T("• It does not read game memory, network traffic or cache files, and does not change the EVE client or its settings.") + "\n" +
-                   L.T("• It collects no data. The only network request is the update check, and only when you press it.");
+                   L.F("• It collects no data. The only network request is the update check: at start (it can be turned off in {0}) and when you press it.", L.T("General"));
         }
 
         // a small key in a row of three: lit = the one shown
@@ -291,6 +336,8 @@ namespace TheNorns
         public void DemoSettings(bool open, string hot, bool resetShown, string showPage = "general")
         {
             settingsOpen = open; page = showPage; hotSpot = hot; demoResetShown = resetShown; spots.Clear();
+            tabFirst = 0; ShowTab(page); tabShift = tabFirst;
+            if (Size.Height != DesiredHeight) Size = new Size(DesiredWidth, DesiredHeight);
         }
 
         // ノルン as a key: under the mouse the name itself turns accent (owner, 27.10.2026: no bar under it)
@@ -340,37 +387,62 @@ namespace TheNorns
             float y = c.Top + Math.Max(th, U(13)) + U(6);
             line(y); y += U(7);
 
-            // the pages: a row of tabs, the open one lit
-            float tw = c.Width / Pages.Length;
+            // the pages: the two arrow keys side by side on the left (Material arrow_left / arrow_right, dim when there is
+            // nothing more that way), then TabsShown tabs, the open one's label in the accent (owner, 28.10.2026)
+            float ak = U(14), ah = U(13), ay = y - U(1.5f);
+            for (int a = 0; a < 2; a++)
+            {
+                string id = a == 0 ? "tabs:prev" : "tabs:next";
+                bool can = a == 0 ? tabFirst > 0 : tabFirst + TabsShown < Pages.Length, hot = can && hotSpot == id;
+                var kr = new RectangleF(c.Left + a * (ak + U(3)), ay, ak, ah);
+                using (var p = Round(kr, 5))
+                {
+                    using (var b = new SolidBrush(hot ? Color.FromArgb(26, BodyTheme.Ink) : Color.FromArgb(12, BodyTheme.Ink))) g.FillPath(b, p);
+                    using (var pen = new Pen(Color.FromArgb(can ? 50 : 22, BodyTheme.Ink), 1f)) g.DrawPath(pen, p);
+                }
+                float ic = U(10);
+                using (var b = new SolidBrush(can ? BodyTheme.Ink : Color.FromArgb(60, BodyTheme.Ink)))
+                    MaterialIcon.Draw(g, a == 0 ? MaterialIcon.ArrowLeft : MaterialIcon.ArrowRight, new RectangleF(kr.Left + (kr.Width - ic) / 2, kr.Top + (kr.Height - ic) / 2, ic, ic), b);
+                if (can) spots.Add(Tuple.Create(id, kr));
+            }
+            float rowLeft = c.Left + 2 * ak + U(3) + U(4);
+            tabRow = RectangleF.FromLTRB(rowLeft, y - U(2), c.Right, y + U(12));
+            float tw = tabRow.Width / TabsShown;
+            tabShift = Potato || SelfTesting ? tabFirst : tabShift + (tabFirst - tabShift) * 0.35f;
+            if (Math.Abs(tabFirst - tabShift) < 0.01f) tabShift = tabFirst; else Invalidate();
+            var tabClip = g.Save();
+            g.SetClip(tabRow);
             for (int k = 0; k < Pages.Length; k++)
             {
                 string id = "page:" + Pages[k][0], label = L.T(Pages[k][1]);
                 bool on = page == Pages[k][0], hot = hotSpot == id;
-                var tr = new RectangleF(c.Left + k * tw, y - U(2), tw - U(3), U(14));
+                var tr = new RectangleF(rowLeft + (k - tabShift) * tw, y - U(2), tw - U(3), U(14));
+                if (tr.Right <= tabRow.Left || tr.Left >= tabRow.Right) continue;
                 if (hot && !on) using (var p = Round(tr, 5)) using (var b = new SolidBrush(Color.FromArgb(22, BodyTheme.Ink))) g.FillPath(b, p);
                 var f = TitleFont(label, U(6));
                 var up = label.ToUpperInvariant();
                 float w = Math.Min(tr.Width - U(4), g.MeasureString(up, f, 1000, StringFormat.GenericTypographic).Width);
-                using (var b = new SolidBrush(on ? BodyTheme.Ink : hot ? Color.FromArgb(200, 203, 210) : Color.FromArgb(130, 133, 140)))
+                using (var b = new SolidBrush(on ? BodyTheme.Accent : hot ? Color.FromArgb(200, 203, 210) : Color.FromArgb(130, 133, 140)))
                     g.DrawString(up, f, b, new RectangleF(tr.Left + (tr.Width - w) / 2, tr.Top + U(2.5f), w + U(1), f.GetHeight(g) + U(1)),
                         new StringFormat(StringFormat.GenericTypographic) { Trimming = StringTrimming.EllipsisCharacter, FormatFlags = StringFormatFlags.NoWrap });
-                if (on) using (var b = new SolidBrush(BodyTheme.Accent)) g.FillRectangle(b, tr.Left + (tr.Width - w) / 2, tr.Bottom - U(1.5f), w, U(1.2f));
-                spots.Add(Tuple.Create(id, tr));
+                var hit = RectangleF.Intersect(tr, tabRow);
+                if (hit.Width > tw / 2) spots.Add(Tuple.Create(id, hit));
             }
+            g.Restore(tabClip);
             y += U(16);
             line(y); y += U(8);
 
             if (page == "general")
             {
-                // language: the six, two columns, a lamp lit at the one in use
+                // language: the six, three columns (owner, 28.10.2026), a lamp lit at the one in use
                 var lt = L.T("Language");
                 Glow(g, lt, TitleFont(lt, U(6.5f)), Muted, c.Left, y);
                 y += U(11);
-                float colW = c.Width / 2, rowH = U(16);
+                float colW = c.Width / 3, rowH = U(16);
                 for (int i = 0; i < L.Languages.Length; i++)
                 {
                     string code = L.Languages[i][0], name = L.Languages[i][1];
-                    var row = new RectangleF(c.Left + (i % 2) * colW, y + (i / 2) * rowH, colW - U(4), rowH - U(2));
+                    var row = new RectangleF(c.Left + (i / 2) * colW, y + (i % 2) * rowH, colW - U(4), rowH - U(2));
                     string id = "lang:" + code;
                     bool hot = hotSpot == id, cur = L.Code == code;
                     if (hot) using (var p = Round(row, 6)) using (var b = new SolidBrush(Color.FromArgb(22, BodyTheme.Ink))) g.FillPath(b, p);
@@ -382,7 +454,7 @@ namespace TheNorns
                         g.DrawString(name, nf, b, lx + d + U(6), ly - nf.GetHeight(g) / 2, StringFormat.GenericTypographic);
                     spots.Add(Tuple.Create(id, row));
                 }
-                y += 3 * rowH + U(6);
+                y += 2 * rowH + U(6);
 
                 // window: the body's size and whether it comes back where it was
                 var wt = L.T("Window");
@@ -419,6 +491,62 @@ namespace TheNorns
                 var rf = TextFont(rl, U(7.5f));
                 using (var b = new SolidBrush(rh ? BodyTheme.Ink : Color.FromArgb(200, 203, 210))) g.DrawString(rl, rf, b, lx2 + dd + U(6), ly2 - rf.GetHeight(g) / 2, StringFormat.GenericTypographic);
                 spots.Add(Tuple.Create("remember", rr));
+                y += U(19) - 3;   // 3 px tighter (owner, 28.10.2026)
+                var ul = L.T("Check for updates at start");
+                var ur = new RectangleF(c.Left, y, c.Width, U(15));
+                bool uh = hotSpot == "updatestart";
+                if (uh) using (var p = Round(ur, 6)) using (var b = new SolidBrush(Color.FromArgb(22, BodyTheme.Ink))) g.FillPath(b, p);
+                float ly3 = ur.Top + ur.Height / 2;
+                if (UpdateAtStart) SoftGlow(g, new PointF(lx2 + dd / 2, ly3), dd / 2 + U(4), BodyTheme.Accent, 140);
+                using (var b = new SolidBrush(UpdateAtStart ? BodyTheme.Accent : Color.FromArgb(46, 48, 30))) g.FillEllipse(b, lx2, ly3 - dd / 2, dd, dd);
+                var uf = TextFont(ul, U(7.5f));
+                using (var b = new SolidBrush(uh ? BodyTheme.Ink : Color.FromArgb(200, 203, 210))) g.DrawString(ul, uf, b, lx2 + dd + U(6), ly3 - uf.GetHeight(g) / 2, StringFormat.GenericTypographic);
+                spots.Add(Tuple.Create("updatestart", ur));
+                y += U(19) - 3;
+                var pl = L.T("Potato mode: low CPU, no effects");
+                var prr = new RectangleF(c.Left, y, c.Width, U(15));
+                bool ph = hotSpot == "potato";
+                if (ph) using (var p = Round(prr, 6)) using (var b = new SolidBrush(Color.FromArgb(22, BodyTheme.Ink))) g.FillPath(b, p);
+                float ly4 = prr.Top + prr.Height / 2;
+                if (Potato) SoftGlow(g, new PointF(lx2 + dd / 2, ly4), dd / 2 + U(4), BodyTheme.Accent, 140);
+                using (var b = new SolidBrush(Potato ? BodyTheme.Accent : Color.FromArgb(46, 48, 30))) g.FillEllipse(b, lx2, ly4 - dd / 2, dd, dd);
+                var pf = TextFont(pl, U(7.5f));
+                using (var b = new SolidBrush(ph ? BodyTheme.Ink : Color.FromArgb(200, 203, 210))) g.DrawString(pl, pf, b, lx2 + dd + U(6), ly4 - pf.GetHeight(g) / 2, StringFormat.GenericTypographic);
+                spots.Add(Tuple.Create("potato", prr));
+                y += U(19) - 3;
+                var cl = L.T("Compact mode");
+                var crr = new RectangleF(c.Left, y, c.Width, U(15));
+                bool ch = hotSpot == "compact";
+                if (ch) using (var p = Round(crr, 6)) using (var b = new SolidBrush(Color.FromArgb(22, BodyTheme.Ink))) g.FillPath(b, p);
+                float ly5 = crr.Top + crr.Height / 2;
+                if (Compact) SoftGlow(g, new PointF(lx2 + dd / 2, ly5), dd / 2 + U(4), BodyTheme.Accent, 140);
+                using (var b = new SolidBrush(Compact ? BodyTheme.Accent : Color.FromArgb(46, 48, 30))) g.FillEllipse(b, lx2, ly5 - dd / 2, dd, dd);
+                var cf = TextFont(cl, U(7.5f));
+                using (var b = new SolidBrush(ch ? BodyTheme.Ink : Color.FromArgb(200, 203, 210))) g.DrawString(cl, cf, b, lx2 + dd + U(6), ly5 - cf.GetHeight(g) / 2, StringFormat.GenericTypographic);
+                spots.Add(Tuple.Create("compact", crr));
+                y += U(19) - 3;
+                // the sound when a titan or a dreadnought spawns (off by default), and a key to hear it
+                var pk = new RectangleF(c.Right - U(29), y, U(29), U(15));
+                var sr = new RectangleF(c.Left, y, pk.Left - U(4) - c.Left, U(15));
+                bool sh = hotSpot == "spawnsound";
+                if (sh) using (var p = Round(sr, 6)) using (var b = new SolidBrush(Color.FromArgb(22, BodyTheme.Ink))) g.FillPath(b, p);
+                float sd = U(5.5f), sx = sr.Left + U(5), sy = sr.Top + sr.Height / 2;
+                if (SpawnSound) SoftGlow(g, new PointF(sx + sd / 2, sy), sd / 2 + U(4), BodyTheme.Accent, 140);
+                using (var b = new SolidBrush(SpawnSound ? BodyTheme.Accent : Color.FromArgb(46, 48, 30))) g.FillEllipse(b, sx, sy - sd / 2, sd, sd);
+                var sl2 = L.T("Sound on a titan or dreadnought");
+                var sf3 = TextFont(sl2, U(7.5f));
+                using (var b = new SolidBrush(sh ? BodyTheme.Ink : Color.FromArgb(200, 203, 210))) g.DrawString(sl2, sf3, b, sx + sd + U(6), sy - sf3.GetHeight(g) / 2, StringFormat.GenericTypographic);
+                spots.Add(Tuple.Create("spawnsound", sr));
+                // the play key, like the size keys (Material play_arrow)
+                bool ph2 = hotSpot == "playalert";
+                using (var p = Round(pk, 5))
+                {
+                    using (var b = new SolidBrush(ph2 ? Color.FromArgb(26, BodyTheme.Ink) : Color.FromArgb(12, BodyTheme.Ink))) g.FillPath(b, p);
+                    using (var pen = new Pen(Color.FromArgb(50, BodyTheme.Ink), 1f)) g.DrawPath(pen, p);
+                }
+                float ic2 = U(9);
+                using (var b = new SolidBrush(BodyTheme.Ink)) MaterialIcon.Draw(g, MaterialIcon.Play, new RectangleF(pk.Left + (pk.Width - ic2) / 2, pk.Top + (pk.Height - ic2) / 2, ic2, ic2), b);
+                spots.Add(Tuple.Create("playalert", pk));
             }
             else if (page == "logs")
             {
@@ -526,7 +654,7 @@ namespace TheNorns
                 using (var b = new SolidBrush(BodyTheme.Accent)) g.DrawString(vt, NornsFonts.Body(U(6.5f)), b, c.Left, y + U(14), StringFormat.GenericTypographic);
                 // the update check: only when pressed (nothing goes to the network otherwise)
                 var uk = new RectangleF(c.Right - U(118), y, U(118), U(19));
-                PaintWideKey(g, uk, MaterialIcon.Refresh, UpdateLabel(), "update", updateState == 2);
+                PaintWideKey(g, uk, updateState == 3 ? MaterialIcon.Download : MaterialIcon.Refresh, UpdateLabel(), "update", updateState == 2 || updateState == 3);
                 y += U(27);
                 float kh = U(17), kw = (c.Width - 2 * U(4)) / 3, ky = c.Bottom - U(12) - kh;
                 var subs = new[] { new[] { "news", "What's new" }, new[] { "credits", "Credits" }, new[] { "legal", "Legal & info" } };

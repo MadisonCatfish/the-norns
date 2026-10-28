@@ -113,5 +113,11 @@
   "Open app data folder": "Apri cartella dei dati",
   "All sessions": "Tutte le sessioni",
   "This session": "Questa sessione",
-  "No sites done yet. Every session is kept here from now on.": "Ancora nessun sito fatto. D'ora in poi ogni sessione resta qui."
+  "No sites done yet. Every session is kept here from now on.": "Ancora nessun sito fatto. D'ora in poi ogni sessione resta qui.",
+  "Check for updates at start": "Cerca aggiornamenti all'avvio",
+  "Download {0}": "Scarica {0}",
+  "• It collects no data. The only network request is the update check: at start (it can be turned off in {0}) and when you press it.": "• Non raccoglie alcun dato. L'unica richiesta di rete è il controllo degli aggiornamenti: all'avvio (si può disattivare in {0}) e quando lo premi.",
+  "Potato mode: low CPU, no effects": "Modalità patata: poca CPU, niente effetti",
+  "Compact mode": "Modalità compatta",
+  "Sound on a titan or dreadnought": "Suono per un titano o una dreadnought"
 }

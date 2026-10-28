@@ -395,10 +395,15 @@ namespace TheNorns
         public readonly List<Tuple<DateTime, string>> Spawns = new List<Tuple<DateTime, string>>();
         readonly Dictionary<string, DateTime> spawnSeen = new Dictionary<string, DateTime>(StringComparer.OrdinalIgnoreCase);
         static readonly Regex TitanName = new Regex(@"\bTitan\b", RegexOptions.IgnoreCase), CommanderName = new Regex(@"\bCommander\b|^(Shadow Serpentis|Dread Guristas|Dark Blood|True Sansha|Domination)\b", RegexOptions.IgnoreCase);   // + faction spawns
+        // the pirate factions' dreadnoughts (owner, 28.10.2026): a rare spawn like a commander on the grid, and they heat the
+        // hull in yellow
+        static readonly Regex DreadName = new Regex(@"\b(Angel|Domination|Blood|Dark Blood|Guristas|Dread Guristas|Sansha's|True Sansha's|Serpentis|Shadow Serpentis) Dreadnought\b", RegexOptions.IgnoreCase);
+        public static bool IsDread(string npc) { return !string.IsNullOrEmpty(npc) && DreadName.IsMatch(npc); }
         public static int SpecialKind(string npc)
         {
             if (string.IsNullOrEmpty(npc)) return 0;
             if (TitanName.IsMatch(npc)) return 2;
+            if (IsDread(npc)) return 1;
             return CommanderName.IsMatch(npc) ? 1 : 0;
         }
         // a bounty tick at t is the commander's / titan's when one was being hit in the 4 s before it (titan wins)
@@ -411,6 +416,10 @@ namespace TheNorns
         // the last hit to or from a titan
         public DateTime LastTitan { get { var t = DateTime.MinValue; foreach (var x in special) if (x.Item2 == 2 && x.Item1 > t) t = x.Item1; return t; } }
         public void DemoSpecial(DateTime t, int kind) { special.Add(Tuple.Create(t, kind)); }
+        // the last hit to or from a dreadnought
+        public DateTime LastDread = DateTime.MinValue;
+        // the titans and dreadnoughts spawned (they sound the alert), and when the last one came
+        public int LoudSpawns; public DateTime LastLoudSpawn = DateTime.MinValue;
         public readonly AnomalyTracker Tracker = new AnomalyTracker();
         // outgoing DPS counts only this weapon (the Norns body shows "EFF. DPS · VORTON PROJECTOR"); null = every weapon
         public string OutWeapon = "Vorton";
@@ -588,8 +597,13 @@ namespace TheNorns
                     if (sk != 0)
                     {
                         special.Add(Tuple.Create(e.T, sk));
+                        if (IsDread(e.Other) && e.T > LastDread) LastDread = e.T;
                         DateTime seen;
-                        if (!spawnSeen.TryGetValue(e.Other, out seen) || (e.T - seen).TotalMinutes > 10) Spawns.Add(Tuple.Create(e.T, e.Other));
+                        if (!spawnSeen.TryGetValue(e.Other, out seen) || (e.T - seen).TotalMinutes > 10)
+                        {
+                            Spawns.Add(Tuple.Create(e.T, e.Other));
+                            if (sk == 2 || IsDread(e.Other)) { LoudSpawns++; LastLoudSpawn = e.T; }
+                        }
                         if (!spawnSeen.ContainsKey(e.Other) || e.T > spawnSeen[e.Other]) spawnSeen[e.Other] = e.T;
                     }
                     var f = IdentifyFaction(e.Other);
@@ -795,6 +809,9 @@ namespace TheNorns
         public const string Check = "M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z";
         public const string Folder = "M10 4H4c-1.1 0-1.99.9-1.99 2L2 18c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V8c0-1.1-.9-2-2-2h-8l-2-2z";
         public const string Search = "M15.5 14h-.79l-.28-.27C15.41 12.59 16 11.11 16 9.5 16 5.91 13.09 3 9.5 3S3 5.91 3 9.5 5.91 16 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z";
+        public const string Download = "M5 20h14v-2H5v2zM19 9h-4V3H9v6H5l7 7 7-7z";
+        public const string Play = "M8 5v14l11-7z";
+        public const string ArrowLeft = "M14 7l-5 5 5 5V7z", ArrowRight = "M10 17l5-5-5-5v10z";
         public const string Star = "M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z";
         public const string Close = "M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z";
 

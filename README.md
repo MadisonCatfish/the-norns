@@ -15,6 +15,7 @@ It runs 100% locally on your PC: no cloud, no account, no telemetry. It only **r
 - It never sends anything to the game: no key presses, no clicks, no screen capture / OCR.
 - It does not read game memory, network traffic or cache files.
 - It does not modify the EVE client or its settings.
+- The only network request is the update check (the GitHub Releases API): at start and when you press it. It can be turned off in Settings → General.
 
 ---
 
@@ -45,6 +46,8 @@ Whether you are just training skills for your Skybreakers / Stormbringers or fin
 
 ### 4. Smart Grid Alerts
 - 🚨 **Titan / Capital on Grid:** Within seconds of taking or dealing damage to a Titan spawn, the entire hardware hull heats up to glowing bright red — giving you immediate warning to align out and save your fleet.
+- 🟡 **Dreadnought on Grid:** A pirate faction dreadnought (Angel / Domination, Blood / Dark Blood, Guristas / Dread Guristas, Sansha's / True Sansha's, Serpentis / Shadow Serpentis) heats the hull the same way, in a rich yellow.
+- 🔊 **Alert sound:** Three short pulses when a titan or a dreadnought spawns. Off by default; Settings → General, with a ▶ key to hear it.
 - 💎 **Faction Commander Spawns:** Never leave an Asteroid Commander Battleship (Shadow Serpentis, Dread Guristas, Dark Blood, True Sansha, Domination) behind unlooted again. Alerts you the moment a commander appears on grid, and counts the session's rare spawns (★) next to the anomaly counter and in the session statistics.
 
 ### 5. NPC Faction & Damage Profile Breakdown
@@ -54,7 +57,10 @@ Whether you are just training skills for your Skybreakers / Stormbringers or fin
 ### 6. Hardware Body UI
 - Industrial Mordu's Legion steel-blue hardware body with a recessed OLED display.
 - Drag by any part of the hull or the display.
-- Hardware LOG lamp indicates active log tailing and pulses red when no EVE clients are found.
+- Hardware LOG lamp indicates active log tailing; when no EVE client is found, the small power display flickers red like a short circuit.
+- The version plate on the bottom band blinks when a newer release is out; a click opens About → Download.
+- **Compact mode:** a shorter body for many-client screens — no power display or printed band, and the ISK grid folded into one row of column averages.
+- **Potato mode:** 5 fps, no glow or shimmer, a plain hull: about 3.5 % of one CPU core instead of about 30 %.
 - Click the **ノルン** badge to open in-place settings: UI scaling (100% / 125% / 150%), log directory detection, session history, and update checks.
 
 ### 7. Multi-Language Support
@@ -73,16 +79,15 @@ Available in 6 languages, auto-detected or selectable:
 - **Competition Mode:** For multiple fleet packs operating in the same system, replacing the smartbombing battleship with a fast and agile frigate anchor.
 - **Classic Mode:** For players dedicated to 2010-era pure smartbombing battleship fleets (Machariel, Praxis, Rokh without EDENCOM).
 - **Chinese (中文) Localization.**
-- **Compact & "Potato" Modes:** Minimal footprint and ultra-low rendering modes for heavy multi-client rigs.
 - **Customizable UI Themes:** Player-selectable colorways and skins.
 
 ---
 
 ## Install
 
-Run `TheNorns-Setup-1.2.0.exe`. It installs for your Windows user profile, requires no administrator privileges, and can be cleanly uninstalled from Windows Settings → Apps. 
+Run `TheNorns-Setup-1.3.0.exe`. It installs for your Windows user profile, requires no administrator privileges, and can be cleanly uninstalled from Windows Settings → Apps. 
 
-Alternatively, extract `TheNorns-1.2.0-portable.zip` and run `TheNorns.exe` directly.
+Alternatively, extract `TheNorns-1.3.0-portable.zip` and run `TheNorns.exe` directly.
 
 Your settings and session statistics are stored in `%LOCALAPPDATA%\The Norns`.
 
@@ -95,7 +100,7 @@ powershell -ExecutionPolicy Bypass -File native\build.ps1 -Out <folder>         
 powershell -ExecutionPolicy Bypass -File native\build.ps1 -Out <folder> -Setup   # + installer and portable zip
 ```
 
-Self-tests: `TheNorns.exe --selftest-dps <folder>` and `TheNorns-Setup-1.2.0.exe --selftest <folder>`.
+Self-tests: `TheNorns.exe --selftest-dps <folder>` and `TheNorns-Setup-1.3.0.exe --selftest <folder>`.
 
 ## Credits
 

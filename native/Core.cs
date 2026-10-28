@@ -16,16 +16,16 @@ using System.Windows.Forms;
 [assembly: System.Reflection.AssemblyTitle("The Norns")]
 [assembly: System.Reflection.AssemblyProduct("The Norns")]
 [assembly: System.Reflection.AssemblyDescription("A DPS meter for EVE Online from the combat log. Not affiliated with CCP hf.")]
-[assembly: System.Reflection.AssemblyVersion("1.2.0.0")]
-[assembly: System.Reflection.AssemblyFileVersion("1.2.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersion("1.2.0")]
+[assembly: System.Reflection.AssemblyVersion("1.3.0.0")]
+[assembly: System.Reflection.AssemblyFileVersion("1.3.0.0")]
+[assembly: System.Reflection.AssemblyInformationalVersion("1.3.0")]
 
 namespace TheNorns
 {
     static class AppInfo
     {
         public const string Name = "The Norns";   // the app's name everywhere the user sees it
-        public const string Version = "1.2.0";
+        public const string Version = "1.3.0";
         // semantic versioning MAJOR.MINOR.PATCH; Channel "" = a stable release, "beta" / "rc.1" for previews
         public const string Channel = "";
         public static string VersionText { get { return Version + (Channel != "" ? " " + Channel : ""); } }
