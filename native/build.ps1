@@ -8,7 +8,8 @@ param([string]$Out = "", [switch]$Setup)
 $ErrorActionPreference = "Stop"
 $here = Split-Path -Parent $MyInvocation.MyCommand.Path
 $root = Split-Path -Parent $here
-$csc = Get-ChildItem "${env:ProgramFiles(x86)}\Microsoft Visual Studio\*\*\MSBuild\Current\Bin\Roslyn\csc.exe" |
+# Build Tools install under Program Files (x86); the full Visual Studio 2022 (GitHub's windows runners) under Program Files
+$csc = Get-ChildItem "${env:ProgramFiles(x86)}\Microsoft Visual Studio\*\*\MSBuild\Current\Bin\Roslyn\csc.exe", "$env:ProgramFiles\Microsoft Visual Studio\*\*\MSBuild\Current\Bin\Roslyn\csc.exe" -ErrorAction SilentlyContinue |
     Select-Object -First 1 -ExpandProperty FullName
 if (-not $csc) { throw "Roslyn csc.exe not found (install Visual Studio Build Tools)" }
 $fw = "$env:WINDIR\Microsoft.NET\Framework64\v4.0.30319"
