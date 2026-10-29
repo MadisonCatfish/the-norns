@@ -104,6 +104,8 @@ powershell -ExecutionPolicy Bypass -File native\build.ps1 -Out <folder>         
 powershell -ExecutionPolicy Bypass -File native\build.ps1 -Out <folder> -Setup   # + installer and portable zip
 ```
 
+The release files are built the same way by GitHub Actions (`.github/workflows/build.yml`, Visual Studio 2022 on a Windows runner) on every pushed `v*` tag, and can be started by hand from the Actions tab.
+
 Self-tests: `TheNorns.exe --selftest-dps <folder>` and `TheNorns-Setup-1.3.0.exe --selftest <folder>`.
 
 ## Credits
@@ -111,6 +113,26 @@ Self-tests: `TheNorns.exe --selftest-dps <folder>` and `TheNorns-Setup-1.3.0.exe
 - Orbitron and Space Grotesk (SIL OFL 1.1), Zarame Gothic by _mokuzai_ (SIL OFL 1.1, outlines of ノルン embedded).
 - The power display animation after loadersz by lumberjacque (MIT).
 - License copies are in `licenses\`.
+
+## Privacy
+
+The Norns collects no data about you, your characters or your game: no account, no telemetry, no analytics.
+
+The only network request is the update check: an HTTPS request to the GitHub Releases API (`api.github.com/repos/MadisonCatfish/the-norns/releases/latest`) at start and when you press "Check for updates" in About. It sends nothing but the request itself; GitHub sees your IP address and the app's user agent, as with any visit (see the [GitHub Privacy Statement](https://docs.github.com/site-policy/privacy-policies/github-general-privacy-statement)). Turn it off in Settings → General → "Check for updates at start".
+
+Settings and session statistics stay on your PC, in `%LOCALAPPDATA%\The Norns`.
+
+## Code signing policy
+
+Free code signing provided by [SignPath.io](https://about.signpath.io/), certificate by [SignPath Foundation](https://signpath.org/).
+
+The application was submitted on 29.10.2026; releases are signed once it is approved. Signed files are built from this repository by GitHub Actions (`.github/workflows/build.yml`), and every release is approved by hand before it is signed.
+
+Team roles:
+- Committers and reviewers: [MadisonCatfish](https://github.com/MadisonCatfish)
+- Approvers: [MadisonCatfish](https://github.com/MadisonCatfish)
+
+Privacy policy: see [Privacy](#privacy) above.
 
 ## Legal
 
