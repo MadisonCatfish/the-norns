@@ -146,7 +146,6 @@
   "Under the Lightning rod number: what the runner takes per second against this repair; red means it is losing hit points.": "Bajo el número de Lightning rod: lo que recibe el runner por segundo frente a esta reparación; en rojo, está perdiendo puntos de vida.",
   "Anchor — a frigate runner. DPS — Thunderchilds with Vorton projectors.": "Ancla — un runner fragata. DPS — Thunderchild con Vorton projectors.",
   "Anchor — a smartbombing battleship. DPS — Thunderchilds with Vorton projectors.": "Ancla — un acorazado con smartbombs. DPS — Thunderchild con Vorton projectors.",
-  "Live client on the power display, client switching": "Cliente activo en la minipantalla, cambio de clientes",
   "Hotkeys": "Atajos",
   "Next client": "Cliente siguiente",
   "Previous client": "Cliente anterior",
@@ -154,5 +153,7 @@
   "none": "ninguna",
   "taken": "ocupada",
   "Click a field and press the keys. Backspace clears it, Esc leaves it as it was. A key another program already holds can't be used.": "Haz clic en un campo y pulsa las teclas. Retroceso lo borra, Esc lo deja como estaba. No se puede usar una tecla que ya tiene otro programa.",
-  "The EVE client uses this key by default:": "El cliente de EVE usa esta tecla por defecto:"
+  "The EVE client uses this key by default:": "El cliente de EVE usa esta tecla por defecto:",
+  "Client switching": "Cambio de clientes",
+  "Live client on the power display instead of the animation": "Cliente activo en la minipantalla en lugar de la animación"
 }

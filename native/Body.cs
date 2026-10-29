@@ -529,7 +529,7 @@ namespace TheNorns
                 if (fleet != null)
                 {
                     var area = PreviewArea;
-                    fleet.Preview.Sync(this, area, Compact ? IntPtr.Zero : fleet.Clients.Active, () => PowerLid(bmp, area));
+                    fleet.Preview.Sync(this, area, Compact || !FleetPreview ? IntPtr.Zero : fleet.Clients.Active, () => PowerLid(bmp, area));
                 }
             }
         }
@@ -1885,14 +1885,15 @@ namespace TheNorns
                 }
                 // Settings -> Eve-O (EveO.cs): off; on with Ctrl+2 forward; setting the previous key; a key another program holds
                 {
-                    bool keepF = FleetOn;
+                    bool keepF = FleetOn, keepP = FleetPreview; FleetPreview = true;
                     f.DemoKeys = new Dictionary<string, string[]> { { "fleet_next", new[] { "Control+2" } }, { "fleet_prev", new string[0] } };
                     FleetOn = false; f.DemoSettings(true, null, false, "eveo"); save(f, "dps_settings_eveo_off.png");
                     FleetOn = true; f.DemoSettings(true, null, false, "eveo"); save(f, "dps_settings_eveo.png");
+                    FleetPreview = false; save(f, "dps_settings_eveo_nopreview.png"); FleetPreview = true;
                     f.keyCapture = "fleet_prev"; save(f, "dps_settings_eveo_capture.png"); f.keyCapture = null;
                     f.DemoKeys["fleet_prev"] = new[] { "2" }; f.DemoKeyState = new Dictionary<string, string> { { "fleet_prev", "taken" } };
                     save(f, "dps_settings_eveo_taken.png");
-                    f.DemoKeys = null; f.DemoKeyState = null; FleetOn = keepF;
+                    f.DemoKeys = null; f.DemoKeyState = null; FleetOn = keepF; FleetPreview = keepP;
                 }
                 f.DemoSettings(true, "lang:de", false); save(f, "dps_settings_hover.png");
                 // the body at 100 % and 150 %

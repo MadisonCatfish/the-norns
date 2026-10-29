@@ -80,6 +80,8 @@ namespace TheNorns
     partial class DpsForm
     {
         public static bool FleetOn = Fleet.Enabled;
+        // the live client on the power display (owner, 29.10.2026: it can be turned off - the animation stays); on by default
+        public static bool FleetPreview = !(AppSetting("fleet_preview") is bool) || (bool)AppSetting("fleet_preview");
         string keyCapture;   // the hotkey being set: "fleet_next" or "fleet_prev"; null while none
         public Dictionary<string, string[]> DemoKeys;   // selftest: the keys instead of config.json
         public Dictionary<string, string> DemoKeyState;   // selftest: "taken" for a key another program holds
@@ -115,6 +117,7 @@ namespace TheNorns
                 if (FleetOn) StartFleet(); else StopFleet();
                 return true;
             }
+            if (id == "eveo:preview") { FleetPreview = !FleetPreview; SaveApp("fleet_preview", FleetPreview); return true; }   // the next frame hides or shows it
             if (id.StartsWith("eveo:key:"))
             {
                 keyCapture = id.Substring(9);
@@ -166,17 +169,10 @@ namespace TheNorns
 
         void PaintEveO(Graphics g, RectangleF c, float y)
         {
-            // on / off: a lamp row as on General
-            var ol = L.T("Live client on the power display, client switching");
-            var orr = new RectangleF(c.Left, y, c.Width, U(15));
-            bool oh = hotSpot == "eveo:on";
-            if (oh) using (var p = Round(orr, 6)) using (var b = new SolidBrush(Color.FromArgb(22, BodyTheme.Ink))) g.FillPath(b, p);
-            float dd = U(5.5f), lx = orr.Left + U(5), ly = orr.Top + orr.Height / 2;
-            if (FleetOn) SoftGlow(g, new PointF(lx + dd / 2, ly), dd / 2 + U(4), BodyTheme.Accent, 140);
-            using (var b = new SolidBrush(FleetOn ? BodyTheme.Accent : Color.FromArgb(46, 48, 30))) g.FillEllipse(b, lx, ly - dd / 2, dd, dd);
-            var of = TextFont(ol, U(7.5f));
-            using (var b = new SolidBrush(oh ? BodyTheme.Ink : Color.FromArgb(200, 203, 210))) g.DrawString(ol, of, b, lx + dd + U(6), ly - of.GetHeight(g) / 2, StringFormat.GenericTypographic);
-            spots.Add(Tuple.Create("eveo:on", orr));
+            // on / off, and the live client on the power display: lamp rows as on General
+            LampRow(g, c, y, "eveo:on", FleetOn, L.T("Client switching"));
+            y += U(19) - 3;
+            LampRow(g, c, y, "eveo:preview", FleetPreview, L.T("Live client on the power display instead of the animation"));
             y += U(23);
 
             // the hotkeys: a label and a key-like field each
@@ -198,6 +194,19 @@ namespace TheNorns
             var hf = TextFont(hint, U(6.6f));
             var hh = g.MeasureString(hint, hf, (int)c.Width).Height;
             using (var b = new SolidBrush(Color.FromArgb(150, BodyTheme.Ink))) g.DrawString(hint, hf, b, new RectangleF(c.Left, y, c.Width, hh + U(2)));
+        }
+
+        void LampRow(Graphics g, RectangleF c, float y, string id, bool on, string text)
+        {
+            var r = new RectangleF(c.Left, y, c.Width, U(15));
+            bool hot = hotSpot == id;
+            if (hot) using (var p = Round(r, 6)) using (var b = new SolidBrush(Color.FromArgb(22, BodyTheme.Ink))) g.FillPath(b, p);
+            float dd = U(5.5f), lx = r.Left + U(5), ly = r.Top + r.Height / 2;
+            if (on) SoftGlow(g, new PointF(lx + dd / 2, ly), dd / 2 + U(4), BodyTheme.Accent, 140);
+            using (var b = new SolidBrush(on ? BodyTheme.Accent : Color.FromArgb(46, 48, 30))) g.FillEllipse(b, lx, ly - dd / 2, dd, dd);
+            var f = TextFont(text, U(7.5f));
+            using (var b = new SolidBrush(hot ? BodyTheme.Ink : Color.FromArgb(200, 203, 210))) g.DrawString(text, f, b, lx + dd + U(6), ly - f.GetHeight(g) / 2, StringFormat.GenericTypographic);
+            spots.Add(Tuple.Create(id, r));
         }
 
         void WarnBadge(Graphics g, RectangleF r, string id)

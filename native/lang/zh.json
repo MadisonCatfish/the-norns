@@ -146,7 +146,6 @@
   "Under the Lightning rod number: what the runner takes per second against this repair; red means it is losing hit points.": "Lightning rod 数字下方：runner 每秒承受的伤害与这个修复量相比；红色表示它在掉血。",
   "Anchor — a frigate runner. DPS — Thunderchilds with Vorton projectors.": "Anchor — 一艘护卫舰 runner。DPS — 装备 Vorton projector 的 Thunderchild。",
   "Anchor — a smartbombing battleship. DPS — Thunderchilds with Vorton projectors.": "Anchor — 一艘使用 smartbomb 的战列舰。DPS — 装备 Vorton projector 的 Thunderchild。",
-  "Live client on the power display, client switching": "在迷你显示屏上显示当前客户端，切换客户端",
   "Hotkeys": "快捷键",
   "Next client": "下一个客户端",
   "Previous client": "上一个客户端",
@@ -154,5 +153,7 @@
   "none": "无",
   "taken": "已被占用",
   "Click a field and press the keys. Backspace clears it, Esc leaves it as it was. A key another program already holds can't be used.": "点击字段并按下按键。Backspace 清空，Esc 保持原样。其他程序已占用的按键无法使用。",
-  "The EVE client uses this key by default:": "EVE 客户端默认使用此按键："
+  "The EVE client uses this key by default:": "EVE 客户端默认使用此按键：",
+  "Client switching": "切换客户端",
+  "Live client on the power display instead of the animation": "在迷你显示屏上显示当前客户端，代替动画"
 }
