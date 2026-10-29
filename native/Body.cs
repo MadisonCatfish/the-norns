@@ -970,7 +970,7 @@ namespace TheNorns
         {
             if (string.IsNullOrEmpty(name)) return;
             var text = name.ToUpperInvariant();
-            var f = NornsFonts.Screen(U(5.6f));
+            var f = NornsFonts.Screen(U(7));   // 25 % larger than at first (owner, 29.10.2026)
             float th = f.GetHeight(g), bandH = th + U(5.5f);
             var band = RectangleF.FromLTRB(face.Left, face.Bottom - bandH, face.Right, face.Bottom);
             using (var lg = new LinearGradientBrush(RectangleF.Inflate(band, 0, 1), Color.FromArgb(0, 0, 0, 0), Color.FromArgb(200, 0, 0, 0), 90f)) g.FillRectangle(lg, band);
@@ -985,9 +985,10 @@ namespace TheNorns
                     g.DrawString(text, f, b, new RectangleF(face.Left + pad, ty, avail, th + U(1)), new StringFormat(StringFormat.GenericTypographic) { Trimming = StringTrimming.EllipsisCharacter, FormatFlags = StringFormatFlags.NoWrap });
                 else
                 {
-                    // the running line: from the left edge on, then again after a gap, about a glass's width a second
+                    // the running line: from the left edge on, then again after a gap; 39 units a second (15 % slower than
+                    // at first, owner 29.10.2026)
                     float gap = U(18), loop = tw + gap;
-                    float x = face.Left + pad - (float)(secs * U(46) % loop);
+                    float x = face.Left + pad - (float)(secs * U(39.1f) % loop);
                     g.DrawString(text, f, b, x, ty, StringFormat.GenericTypographic);
                     g.DrawString(text, f, b, x + loop, ty, StringFormat.GenericTypographic);
                 }
