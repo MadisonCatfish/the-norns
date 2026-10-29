@@ -231,6 +231,7 @@ namespace TheNorns
                 AutoScaleMode = AutoScaleMode.None; BackColor = System.Drawing.Color.Black; TopMost = true;
             }
             readonly bool layered;
+            public Action<int> Wheel;   // should Windows send the wheel here and not to the body under it
             protected override bool ShowWithoutActivation { get { return true; } }
             protected override CreateParams CreateParams
             {
@@ -246,6 +247,7 @@ namespace TheNorns
             {
                 if (m.Msg == 0x84 /* WM_NCHITTEST */) { m.Result = (IntPtr)(-1) /* HTTRANSPARENT: to the body under it */; return; }
                 if (m.Msg == 0x21 /* WM_MOUSEACTIVATE */) { m.Result = (IntPtr)3 /* MA_NOACTIVATE */; return; }
+                if (m.Msg == 0x20A /* WM_MOUSEWHEEL */ && Wheel != null) { Wheel((short)((m.WParam.ToInt64() >> 16) & 0xFFFF)); m.Result = IntPtr.Zero; return; }
                 base.WndProc(ref m);
             }
         }
@@ -255,6 +257,7 @@ namespace TheNorns
         System.Drawing.Rectangle placed;
         System.Drawing.Size lastClient, lastDest;
         public Action<string> Log;
+        public Action<int> Wheel;
 
         public bool Shown { get { return thumb != IntPtr.Zero; } }
 
@@ -263,7 +266,7 @@ namespace TheNorns
         {
             if (src != IntPtr.Zero && (!IsWindow(src) || IsIconic(src))) src = IntPtr.Zero;
             if (src == IntPtr.Zero || face.Width < 4 || face.Height < 4 || !body.Visible) { Hide(); return; }
-            if (host == null) { host = new Glass(false); this.lid = new Glass(true); }
+            if (host == null) { host = new Glass(false) { Wheel = d => { if (Wheel != null) Wheel(d); } }; this.lid = new Glass(true); }
             var at = new System.Drawing.Rectangle(body.Left + face.X, body.Top + face.Y, face.Width, face.Height);
             if (!host.Visible) { host.Bounds = at; this.lid.Bounds = at; host.Show(body); this.lid.Show(host); placed = at; }
             else Follow(at);
@@ -342,6 +345,43 @@ namespace TheNorns
         }
     }
 
+    // Step 4: a client to the front, as EVE-O does it: restored when minimized (asynchronously - a busy client can't hold
+    // the app up), then SetForegroundWindow and SetFocus; SwitchToThisWindow when Windows refuses the foreground. Only on
+    // the user's own input (the wheel over the power display; later the owner's squares on the hull): Windows lets the
+    // process that got the last input bring a window forward.
+    static class ClientSwitch
+    {
+        [DllImport("user32.dll")] static extern bool IsWindow(IntPtr h);
+        [DllImport("user32.dll")] static extern bool IsIconic(IntPtr h);
+        [DllImport("user32.dll")] static extern bool ShowWindowAsync(IntPtr h, int cmd);
+        [DllImport("user32.dll")] static extern bool SetForegroundWindow(IntPtr h);
+        [DllImport("user32.dll")] static extern IntPtr SetFocus(IntPtr h);
+        [DllImport("user32.dll")] static extern void SwitchToThisWindow(IntPtr h, bool altTab);
+        const int SwRestore = 9;
+
+        // what happened, for the trace
+        public static string Activate(IntPtr h)
+        {
+            var sw = System.Diagnostics.Stopwatch.StartNew();
+            if (!IsWindow(h)) return "gone";
+            bool restored = IsIconic(h) && ShowWindowAsync(h, SwRestore);
+            bool front = SetForegroundWindow(h);
+            SetFocus(h);
+            if (!front) SwitchToThisWindow(h, false);
+            bool inFront = ForegroundWatch.GetForegroundWindow() == h;
+            return (restored ? "restored, " : "") + (front ? "foreground" : "refused, SwitchToThisWindow") + (inFront ? ", in front" : ", not in front yet") + ", " + sw.Elapsed.TotalMilliseconds.ToString("0.0") + " ms";
+        }
+
+        // the wheel's notches (120 a notch; a touchpad sends parts): up = the previous client (-1), down = the next (+1)
+        public static List<int> Wheel(ref int sum, int delta)
+        {
+            var steps = new List<int>();
+            sum += delta;
+            while (Math.Abs(sum) >= 120) { int up = Math.Sign(sum); sum -= up * 120; steps.Add(-up); }
+            return steps;
+        }
+    }
+
     // the module as the body holds it: made only when it is switched on (or for --fleet-trace)
     sealed class Fleet : IDisposable
     {
@@ -356,6 +396,7 @@ namespace TheNorns
         {
             Clients = new ClientTracker(ConfiguredOrder());
             if (TracePath != null) { Clients.Changed += Trace; Preview.Log = Write; }
+            Preview.Wheel = Wheel;
             Poll();
             Clients.OnForeground(ForegroundWatch.GetForegroundWindow());
             watch = new ForegroundWatch(Clients.OnForeground);
@@ -371,6 +412,21 @@ namespace TheNorns
 
         public void Poll() { Clients.Update(ClientWindows.Find()); }
 
+        // the wheel over the power display: a client per notch, in the cycle's order. The tracker takes the new client at
+        // once (Windows' foreground event confirms it a moment later), so quick notches walk on instead of repeating
+        int wheel;
+        public void Wheel(int delta)
+        {
+            foreach (var dir in ClientSwitch.Wheel(ref wheel, delta))
+            {
+                var w = Clients.Next(dir);
+                if (w == null) { Write("switch " + (dir > 0 ? "next" : "previous") + ": no client"); continue; }
+                var how = ClientSwitch.Activate(w.Hwnd);
+                Clients.OnForeground(w.Hwnd);
+                Write("switch " + (dir > 0 ? "next" : "previous") + " -> " + w + ": " + how);
+            }
+        }
+
         void Trace()
         {
             var a = Clients.ActiveClient;
@@ -383,6 +439,7 @@ namespace TheNorns
 
         void Write(string line)
         {
+            if (TracePath == null) return;
             try { File.AppendAllText(TracePath, DateTime.Now.ToString("HH:mm:ss.fff") + "  " + line + Environment.NewLine); }
             catch { }
         }
@@ -440,6 +497,12 @@ namespace TheNorns
             var c219 = LivePreview.Crop(new System.Drawing.Size(3440, 1440), glass);
             check(c219.Height == 1440 && c219.Width == 2715 && c219.Left == 362, "21:9 client: cut at the sides " + c219);
             check(LivePreview.Crop(System.Drawing.Size.Empty, glass).IsEmpty, "no client size: nothing to cut");
+
+            // the wheel: a notch is 120; up is the previous client, down the next; a touchpad's parts add up
+            int sum = 0;
+            check(string.Join(",", ClientSwitch.Wheel(ref sum, 120)) == "-1", "a notch up: the previous client");
+            check(string.Join(",", ClientSwitch.Wheel(ref sum, -240)) == "1,1", "two notches down: two clients on");
+            check(ClientSwitch.Wheel(ref sum, 60).Count == 0 && string.Join(",", ClientSwitch.Wheel(ref sum, 60)) == "-1" && sum == 0, "two half notches make one");
             return sb.ToString();
         }
     }

@@ -245,6 +245,7 @@ namespace TheNorns
         protected override void OnMouseWheel(System.Windows.Forms.MouseEventArgs e)
         {
             base.OnMouseWheel(e);
+            if (fleet != null && !Compact && PowerRect.Contains(e.Location)) { fleet.Wheel(e.Delta); return; }   // the client module: the wheel flips clients
             if (settingsOpen && tabRow.Contains(e.Location)) { ScrollTabs(-Math.Sign(e.Delta)); Render(); return; }   // the wheel over the tabs scrolls them
             if (!settingsOpen || page != "about" || aboutView != "news") return;
             newsScroll = Math.Max(0, Math.Min(Math.Max(0, newsHeight - newsBox), newsScroll - Math.Sign(e.Delta) * U(24)));
