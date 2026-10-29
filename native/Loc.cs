@@ -1,4 +1,5 @@
-// Loc.cs - the app's languages (player 25.10.2026): English, Ukrainian, Spanish, German, Italian, French.
+// Loc.cs - the app's languages (player 25.10.2026): English, Ukrainian, Spanish, German, Italian, French; Chinese
+// (Simplified) for 1.5.0.
 // UI text goes through L.T("English text"); the translations are native\lang\<code>.json embedded in the exe
 // (English text -> translation), a missing entry shows the English. Game terms stay as players say them with the
 // English client the app works with (Siege, lock, overview, fleet warp, cap ...). The combat log stays English.
@@ -21,7 +22,16 @@ namespace TheNorns
         {
             new[] { "en", "English" }, new[] { "uk", "Українська" }, new[] { "es", "Español" },
             new[] { "de", "Deutsch" }, new[] { "it", "Italiano" }, new[] { "fr", "Français" },
+            new[] { "zh", "简体中文" },
         };
+
+        // the embedded fonts (Orbitron, Space Grotesk) are Latin only: Ukrainian and Chinese are drawn in a Windows font,
+        // Segoe UI for Cyrillic, Microsoft YaHei UI for Chinese (on every Windows since Vista, nothing to embed)
+        public static bool Latin { get { return Code != "uk" && Code != "zh"; } }
+        public static string SysFamily { get { return Code == "zh" ? "Microsoft YaHei UI" : "Segoe UI"; } }
+        public static bool Cyrillic(string s) { return s.Any(ch => ch >= 'Ѐ' && ch <= 'ӿ'); }
+        // Chinese: the ideographs, their punctuation and full-width forms (not the kana of ノルン in the credits)
+        public static bool Cjk(string s) { return s.Any(ch => ch >= '　' && ch <= '〿' || ch >= '一' && ch <= '鿿' || ch >= '豈' && ch <= '﫿' || ch >= '＀' && ch <= '￯'); }
         public static string Code = "en";
         static Dictionary<string, string> map = new Dictionary<string, string>();
         static Dictionary<string, string> back = new Dictionary<string, string>();

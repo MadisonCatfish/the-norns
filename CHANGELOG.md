@@ -2,6 +2,7 @@
 
 ## 1.5.0 — unreleased
 
+- Chinese (Simplified): the seventh language, drawn in Microsoft YaHei UI from Windows (the embedded fonts have no Chinese). Settings → General shows the languages in four columns.
 - Formula cards slide in smoothly: a frame of the tilted card now takes about 4 ms instead of 32 ms (the perspective is copied pixel by pixel, the shadow drawn once).
 
 ## 1.4.0 — unreleased

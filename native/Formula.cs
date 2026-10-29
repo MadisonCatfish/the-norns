@@ -249,7 +249,7 @@ namespace TheNorns
         }
 
         // the card: a thin rim of the hull around a black OLED glass; the title in Orbitron caps, the text in Space Grotesk
-        // (Segoe UI in Ukrainian - the embedded fonts have no Cyrillic), made smaller until it fits
+        // (a Windows font in Ukrainian and Chinese - the embedded fonts have no Cyrillic or CJK), made smaller until it fits
         static Bitmap DrawCard(Size size, FormulaText text, bool hoverClose, bool downClose, float scroll, out float maxScroll)
         {
             maxScroll = 0;
@@ -297,12 +297,12 @@ namespace TheNorns
                 var whole = L.T(text.Body);
                 var paras = whole != text.Body || L.Code == "en" ? whole.Split('\n') : text.Body.Split('\n').Select(p => p.StartsWith("# ") ? "# " + L.T(p.Substring(2)) : L.T(p)).ToArray();
                 var area = RectangleF.FromLTRB(x, lineY + U(9), glass.Right - pad, glass.Bottom - pad);
-                bool latin = L.Code != "uk";
+                bool latin = L.Latin;
                 if (text.Scroll) { maxScroll = DrawScrolling(g, paras, area, latin, scroll); return bmp; }
                 for (float scale = 1f; scale > 0.6f; scale -= 0.04f)
                 {
-                    Font lead = latin ? NornsFonts.Body(U(8.6f) * scale) : new Font("Segoe UI", U(8.2f) * scale, GraphicsUnit.Pixel);
-                    Font body = latin ? NornsFonts.Body(U(7.6f) * scale) : new Font("Segoe UI", U(7.3f) * scale, GraphicsUnit.Pixel);
+                    Font lead = latin ? NornsFonts.Body(U(8.6f) * scale) : new Font(L.SysFamily, U(8.2f) * scale, GraphicsUnit.Pixel);
+                    Font body = latin ? NornsFonts.Body(U(7.6f) * scale) : new Font(L.SysFamily, U(7.3f) * scale, GraphicsUnit.Pixel);
                     float y = area.Top, gap = U(5.5f) * scale;
                     var heights = new List<float>();
                     for (int i = 0; i < paras.Length; i++) { float hh = g.MeasureString(paras[i], i == 0 ? lead : body, (int)area.Width).Height; heights.Add(hh); y += hh + gap; }
@@ -328,9 +328,9 @@ namespace TheNorns
         // returns how far it can scroll
         static float DrawScrolling(Graphics g, string[] paras, RectangleF area, bool latin, float scroll)
         {
-            Font lead = latin ? NornsFonts.Body(U(8.6f)) : new Font("Segoe UI", U(8.2f), GraphicsUnit.Pixel);
-            Font body = latin ? NornsFonts.Body(U(7.6f)) : new Font("Segoe UI", U(7.3f), GraphicsUnit.Pixel);
-            Font head = NornsFonts.Screen(U(7));
+            Font lead = latin ? NornsFonts.Body(U(8.6f)) : new Font(L.SysFamily, U(8.2f), GraphicsUnit.Pixel);
+            Font body = latin ? NornsFonts.Body(U(7.6f)) : new Font(L.SysFamily, U(7.3f), GraphicsUnit.Pixel);
+            Font head = latin ? NornsFonts.Screen(U(7)) : new Font(L.SysFamily, U(7), FontStyle.Bold, GraphicsUnit.Pixel);
             float gap = U(5.5f), textW = area.Width - U(8);
             var heights = new float[paras.Length]; float total = 0;
             for (int i = 0; i < paras.Length; i++)
@@ -366,7 +366,7 @@ namespace TheNorns
                 using (var p = Theme.Round(new RectangleF(area.Right - U(2.5f), barY, U(2.5f), barH), U(1.25f), 1f))
                 using (var b = new SolidBrush(Color.FromArgb(150, BodyTheme.Ink))) g.FillPath(b, p);
             }
-            if (!latin) { lead.Dispose(); body.Dispose(); }
+            if (!latin) { lead.Dispose(); body.Dispose(); head.Dispose(); }
             return max;
         }
 

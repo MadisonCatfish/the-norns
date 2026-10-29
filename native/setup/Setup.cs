@@ -378,17 +378,18 @@ namespace TheNorns
         public static GraphicsPath Round(RectangleF r, float logicalRadius) { return Theme.Round(r, logicalRadius * 0.6f * 1.25f * K, 0.6f); }
 
         // type: Orbitron caps on the screen's headings, Space Grotesk for the rest; Segoe UI where those have no glyphs
-        // (Ukrainian - neither font has Cyrillic)
-        static bool Latin { get { return L.Code != "uk"; } }
-        public static Font HeadFont(float px) { return Latin ? NornsFonts.Screen(px * K) : Cached("Segoe UI Semibold", px * 0.92f * K); }
-        public static Font TextFont { get { return Latin ? NornsFonts.Body(13f * K) : Cached("Segoe UI", 12.5f * K); } }
-        public static Font SmallFont { get { return Latin ? NornsFonts.Body(11.5f * K) : Cached("Segoe UI", 11f * K); } }
-        public static Font KeyFont { get { return Latin ? NornsFonts.Body(11.5f * K) : Cached("Segoe UI Semibold", 10.5f * K); } }
+        // (Ukrainian, Chinese - neither font has Cyrillic or CJK; Loc.cs)
+        static bool Latin { get { return L.Latin; } }
+        static bool Zh { get { return L.Code == "zh"; } }
+        public static Font HeadFont(float px) { return Latin ? NornsFonts.Screen(px * K) : Zh ? Cached(L.SysFamily, px * 0.92f * K, FontStyle.Bold) : Cached("Segoe UI Semibold", px * 0.92f * K); }
+        public static Font TextFont { get { return Latin ? NornsFonts.Body(13f * K) : Cached(L.SysFamily, 12.5f * K); } }
+        public static Font SmallFont { get { return Latin ? NornsFonts.Body(11.5f * K) : Cached(L.SysFamily, 11f * K); } }
+        public static Font KeyFont { get { return Latin ? NornsFonts.Body(11.5f * K) : Zh ? Cached(L.SysFamily, 10.5f * K, FontStyle.Bold) : Cached("Segoe UI Semibold", 10.5f * K); } }
         static readonly Dictionary<string, Font> fonts = new Dictionary<string, Font>();
-        static Font Cached(string family, float px)
+        static Font Cached(string family, float px, FontStyle style = FontStyle.Regular)
         {
-            var key = family + "|" + px; Font f;
-            if (!fonts.TryGetValue(key, out f)) fonts[key] = f = new Font(family, px, GraphicsUnit.Pixel);
+            var key = family + "|" + px + "|" + style; Font f;
+            if (!fonts.TryGetValue(key, out f)) fonts[key] = f = new Font(family, px, style, GraphicsUnit.Pixel);
             return f;
         }
 

@@ -359,17 +359,22 @@ namespace TheNorns
             }
         }
 
-        // Ukrainian: the embedded fonts have no Cyrillic
+        // Ukrainian and Chinese: the embedded fonts have no Cyrillic or CJK (Loc.cs)
         static readonly Dictionary<string, Font> sysFonts = new Dictionary<string, Font>();
-        static Font Sys(string family, float px)
+        static Font Sys(string family, float px, FontStyle style = FontStyle.Regular)
         {
-            var key = family + "|" + px; Font f;
-            if (!sysFonts.TryGetValue(key, out f)) sysFonts[key] = f = new Font(family, px, GraphicsUnit.Pixel);
+            var key = family + "|" + px + "|" + style; Font f;
+            if (!sysFonts.TryGetValue(key, out f)) sysFonts[key] = f = new Font(family, px, style, GraphicsUnit.Pixel);
             return f;
         }
-        static bool Cyrillic(string s) { return s.Any(ch => ch >= 'Ѐ' && ch <= 'ӿ'); }
-        Font TitleFont(string text, float px) { return Cyrillic(text) ? Sys("Segoe UI Semibold", px * 0.95f) : NornsFonts.Screen(px); }
-        Font TextFont(string text, float px) { return Cyrillic(text) ? Sys("Segoe UI", px * 0.95f) : NornsFonts.Body(px); }
+        Font TitleFont(string text, float px)
+        {
+            return L.Cjk(text) ? Sys("Microsoft YaHei UI", px * 0.95f, FontStyle.Bold) : L.Cyrillic(text) ? Sys("Segoe UI Semibold", px * 0.95f) : NornsFonts.Screen(px);
+        }
+        Font TextFont(string text, float px)
+        {
+            return L.Cjk(text) ? Sys("Microsoft YaHei UI", px * 0.95f) : L.Cyrillic(text) ? Sys("Segoe UI", px * 0.95f) : NornsFonts.Body(px);
+        }
 
         void PaintSettings(Graphics g, RectangleF c)
         {
@@ -436,11 +441,12 @@ namespace TheNorns
 
             if (page == "general")
             {
-                // language: the six, three columns (owner, 28.10.2026), a lamp lit at the one in use
+                // language: the seven, four columns of two (owner, 28.10.2026: three columns; 29.10.2026: four, for
+                // Chinese), a lamp lit at the one in use
                 var lt = L.T("Language");
                 Glow(g, lt, TitleFont(lt, U(6.5f)), Muted, c.Left, y);
                 y += U(11);
-                float colW = c.Width / 3, rowH = U(16);
+                float colW = c.Width / 4, rowH = U(16);
                 for (int i = 0; i < L.Languages.Length; i++)
                 {
                     string code = L.Languages[i][0], name = L.Languages[i][1];
@@ -571,7 +577,7 @@ namespace TheNorns
                 if (dir.StartsWith(docs + "\\", StringComparison.OrdinalIgnoreCase)) dir = "Documents" + dir.Substring(docs.Length);
                 var field = new RectangleF(c.Left, y, c.Width - U(16), U(17));
                 using (var p = Round(field, 5)) using (var b = new SolidBrush(Color.FromArgb(16, 17, 20))) using (var pen = new Pen(Color.FromArgb(40, BodyTheme.Ink), 1f)) { g.FillPath(b, p); g.DrawPath(pen, p); }
-                var df = NornsFonts.Body(U(6.5f));
+                var df = TextFont(dir, U(6.5f));   // a user folder may be named in Cyrillic or Chinese
                 using (var b = new SolidBrush(Color.FromArgb(200, 203, 210)))
                     g.DrawString(dir, df, b, new RectangleF(field.Left + U(5), field.Top + (field.Height - df.GetHeight(g)) / 2, field.Width - U(10), df.GetHeight(g) + U(1)),
                         new StringFormat { Trimming = StringTrimming.EllipsisPath, FormatFlags = StringFormatFlags.NoWrap });
@@ -593,7 +599,7 @@ namespace TheNorns
                 var dt = L.T("App data");
                 Glow(g, dt, TitleFont(dt, U(6.5f)), Muted, c.Left, y);
                 y += U(11);
-                var df = NornsFonts.Body(U(6.5f));
+                var df = TextFont(AppInfo.DataDir, U(6.5f));
                 using (var b = new SolidBrush(Color.FromArgb(150, BodyTheme.Ink)))
                     g.DrawString(Shown(AppInfo.DataDir), df, b, new RectangleF(c.Left, y, c.Width, df.GetHeight(g) + U(1)), new StringFormat { Trimming = StringTrimming.EllipsisPath, FormatFlags = StringFormatFlags.NoWrap });
                 y += U(13);
