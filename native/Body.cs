@@ -287,12 +287,7 @@ namespace TheNorns
             if (standalone) Icon = AppInfo.Icon;
             Size = new Size(DesiredWidth, DesiredHeight);
             StartSessionStats();
-            if (Fleet.TracePath != null || (!SelfTesting && Fleet.Enabled))
-            {
-                fleet = new Fleet();
-                LocationChanged += (s, e) => { var a = PreviewArea; a.Offset(Location); fleet.Preview.Follow(a); };
-                VisibleChanged += (s, e) => { if (!Visible) fleet.Preview.Hide(); };
-            }
+            if (Fleet.TracePath != null || (!SelfTesting && FleetOn)) StartFleet();   // the client module (Fleet.cs, EveO.cs)
             timer.Tick += (s, e) =>
             {
                 var now = DateTime.UtcNow;
@@ -1883,6 +1878,17 @@ namespace TheNorns
                         FormulaWindow.SaveDemo(mb, HelpRunner, 1, Path.Combine(dir, "dps_settings_modes_help_scrolled.png"), 150 * Theme.K * UiScale);
                     }
                     Competition = keepC; RunnerResists = keepR; RunnerRepair = keepRep; VortonShot = keepS;
+                }
+                // Settings -> Eve-O (EveO.cs): off; on with Ctrl+2 forward; setting the previous key; a key another program holds
+                {
+                    bool keepF = FleetOn;
+                    f.DemoKeys = new Dictionary<string, string[]> { { "fleet_next", new[] { "Control+2" } }, { "fleet_prev", new string[0] } };
+                    FleetOn = false; f.DemoSettings(true, null, false, "eveo"); save(f, "dps_settings_eveo_off.png");
+                    FleetOn = true; f.DemoSettings(true, null, false, "eveo"); save(f, "dps_settings_eveo.png");
+                    f.keyCapture = "fleet_prev"; save(f, "dps_settings_eveo_capture.png"); f.keyCapture = null;
+                    f.DemoKeys["fleet_prev"] = new[] { "2" }; f.DemoKeyState = new Dictionary<string, string> { { "fleet_prev", "taken" } };
+                    save(f, "dps_settings_eveo_taken.png");
+                    f.DemoKeys = null; f.DemoKeyState = null; FleetOn = keepF;
                 }
                 f.DemoSettings(true, "lang:de", false); save(f, "dps_settings_hover.png");
                 // the body at 100 % and 150 %

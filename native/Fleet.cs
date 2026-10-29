@@ -477,7 +477,8 @@ namespace TheNorns
         public readonly ClientTracker Clients;
         public readonly LivePreview Preview = new LivePreview();
         readonly ForegroundWatch watch;
-        readonly Hotkeys keys;
+        Hotkeys keys;
+        readonly Dictionary<string, string> keyState = new Dictionary<string, string>();   // setting -> "ok", "taken", "not a key"
 
         public Fleet()
         {
@@ -487,21 +488,42 @@ namespace TheNorns
             Poll();
             Clients.OnForeground(ForegroundWatch.GetForegroundWindow());
             watch = new ForegroundWatch(Clients.OnForeground);
+            ReloadKeys();
+        }
+
+        // the hotkeys from config.json, again (Settings -> Eve-O changed them); a --fleet-trace run with neither set takes
+        // 1 / 2, as the owner's EVE-O has them
+        public void ReloadKeys()
+        {
+            SuspendKeys();
             keys = new Hotkeys(dir => Step(dir, "key"));
-            bool none = !Configured("fleet_next").Any() && !Configured("fleet_prev").Any();
+            bool none = !Configured("fleet_next").Any(k => k.Trim() != "") && !Configured("fleet_prev").Any(k => k.Trim() != "");
             Bind("fleet_next", 1, none ? "1" : null); Bind("fleet_prev", -1, none ? "2" : null);
         }
 
-        // the keys from config.json; a --fleet-trace run with neither set takes 1 / 2, as the owner's EVE-O has them
+        // while a key is being set in Settings: none held, so its keys reach the field
+        public void SuspendKeys()
+        {
+            if (keys != null) { keys.Dispose(); keys = null; }
+            keyState.Clear();
+        }
+
+        public string KeyState(string setting) { string s; return keyState.TryGetValue(setting, out s) ? s : null; }
+
         void Bind(string setting, int dir, string testKey)
         {
-            var list = Configured(setting).ToList();
+            var list = Configured(setting).Where(k => k.Trim() != "").ToList();
             if (list.Count == 0 && TracePath != null && testKey != null) list.Add(testKey);
-            foreach (var k in list) Write("key " + (dir > 0 ? "next" : "previous") + " " + k + ": " + keys.Add(k, dir));
+            foreach (var k in list)
+            {
+                var r = keys.Add(k, dir);
+                if (r != "ok" || !keyState.ContainsKey(setting)) keyState[setting] = r;   // the field shows the worst
+                Write("key " + (dir > 0 ? "next" : "previous") + " " + k + ": " + r);
+            }
         }
 
         // config.json "app": a string or a list of strings ("fleet_order": [ "Pilot-1", "Pilot-2" ], "fleet_next": "1")
-        static IEnumerable<string> Configured(string setting)
+        public static IEnumerable<string> Configured(string setting)
         {
             var v = DpsForm.AppSetting(setting);
             if (v is string) return new[] { (string)v };
@@ -545,7 +567,7 @@ namespace TheNorns
             catch { }
         }
 
-        public void Dispose() { watch.Dispose(); keys.Dispose(); Preview.Dispose(); }
+        public void Dispose() { watch.Dispose(); SuspendKeys(); Preview.Dispose(); }
 
         // selftest: the tracker on made-up windows
         public static string SelfTest()

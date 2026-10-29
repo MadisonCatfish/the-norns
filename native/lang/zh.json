@@ -145,5 +145,13 @@
   "How much damage the Thunderchilds put through the runner, per second.\nThe big number counts the Vorton hits on the runner in all the Thunderchilds' combat logs over the last 10 seconds, multiplies them by the damage of one shot (Settings → Modes) and divides by 10. Each shot arcs on to the NPCs with that damage.\nThe red line is the runner's ECG: every Vorton hit on it kicks the line, the bigger the hit the higher the peak, and the trace runs to the left.\nThe thin white line does the same for the NPCs' hits on the runner, from its own combat log.\nUnder the number: what the runner takes per second against its repair. Red means it is losing hit points.": "Thunderchild 每秒经 runner 传导的伤害。\n大数字统计过去 10 秒内所有 Thunderchild combat log 中 Vorton 命中 runner 的次数，乘以单发伤害（设置 → 模式），再除以 10。每一发都会以这个伤害弹射到 NPC 身上。\n红线是 runner 的心电图：每次 Vorton 命中都会让线跳起，命中越大峰越高，轨迹向左移动。\n细白线对 NPC 命中 runner 做同样的事，数据来自 runner 自己的 combat log。\n数字下方：runner 每秒承受的伤害与它的修复量相比。红色表示它在掉血。",
   "Under the Lightning rod number: what the runner takes per second against this repair; red means it is losing hit points.": "Lightning rod 数字下方：runner 每秒承受的伤害与这个修复量相比；红色表示它在掉血。",
   "Anchor — a frigate runner. DPS — Thunderchilds with Vorton projectors.": "Anchor — 一艘护卫舰 runner。DPS — 装备 Vorton projector 的 Thunderchild。",
-  "Anchor — a smartbombing battleship. DPS — Thunderchilds with Vorton projectors.": "Anchor — 一艘使用 smartbomb 的战列舰。DPS — 装备 Vorton projector 的 Thunderchild。"
+  "Anchor — a smartbombing battleship. DPS — Thunderchilds with Vorton projectors.": "Anchor — 一艘使用 smartbomb 的战列舰。DPS — 装备 Vorton projector 的 Thunderchild。",
+  "Live client on the power display, client switching": "在迷你显示屏上显示当前客户端，切换客户端",
+  "Hotkeys": "快捷键",
+  "Next client": "下一个客户端",
+  "Previous client": "上一个客户端",
+  "Press keys…": "请按键…",
+  "none": "无",
+  "taken": "已被占用",
+  "Click a field and press the keys. Backspace clears it, Esc leaves it as it was. A key another program already holds can't be used.": "点击字段并按下按键。Backspace 清空，Esc 保持原样。其他程序已占用的按键无法使用。"
 }

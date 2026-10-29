@@ -145,5 +145,13 @@
   "How much damage the Thunderchilds put through the runner, per second.\nThe big number counts the Vorton hits on the runner in all the Thunderchilds' combat logs over the last 10 seconds, multiplies them by the damage of one shot (Settings → Modes) and divides by 10. Each shot arcs on to the NPCs with that damage.\nThe red line is the runner's ECG: every Vorton hit on it kicks the line, the bigger the hit the higher the peak, and the trace runs to the left.\nThe thin white line does the same for the NPCs' hits on the runner, from its own combat log.\nUnder the number: what the runner takes per second against its repair. Red means it is losing hit points.": "Cuánto daño hacen pasar los Thunderchild a través del runner, por segundo.\nEl número grande cuenta los impactos Vorton sobre el runner en los registros de combate de todos los Thunderchild de los últimos 10 segundos, los multiplica por el daño de un disparo (Settings → Modes) y divide entre 10. Cada disparo salta a los NPC con ese daño.\nLa línea roja es el ECG del runner: cada impacto Vorton empuja la línea, cuanto mayor el impacto, más alto el pico, y el trazo corre hacia la izquierda.\nLa línea blanca fina hace lo mismo con los impactos de los NPC sobre el runner, de su propio registro de combate.\nBajo el número: lo que recibe el runner por segundo frente a su reparación. En rojo, está perdiendo puntos de vida.",
   "Under the Lightning rod number: what the runner takes per second against this repair; red means it is losing hit points.": "Bajo el número de Lightning rod: lo que recibe el runner por segundo frente a esta reparación; en rojo, está perdiendo puntos de vida.",
   "Anchor — a frigate runner. DPS — Thunderchilds with Vorton projectors.": "Ancla — un runner fragata. DPS — Thunderchild con Vorton projectors.",
-  "Anchor — a smartbombing battleship. DPS — Thunderchilds with Vorton projectors.": "Ancla — un acorazado con smartbombs. DPS — Thunderchild con Vorton projectors."
+  "Anchor — a smartbombing battleship. DPS — Thunderchilds with Vorton projectors.": "Ancla — un acorazado con smartbombs. DPS — Thunderchild con Vorton projectors.",
+  "Live client on the power display, client switching": "Cliente activo en la minipantalla, cambio de clientes",
+  "Hotkeys": "Atajos",
+  "Next client": "Cliente siguiente",
+  "Previous client": "Cliente anterior",
+  "Press keys…": "Pulsa las teclas…",
+  "none": "ninguna",
+  "taken": "ocupada",
+  "Click a field and press the keys. Backspace clears it, Esc leaves it as it was. A key another program already holds can't be used.": "Haz clic en un campo y pulsa las teclas. Retroceso lo borra, Esc lo deja como estaba. No se puede usar una tecla que ya tiene otro programa."
 }

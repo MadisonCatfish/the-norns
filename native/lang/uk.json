@@ -145,5 +145,13 @@
   "How much damage the Thunderchilds put through the runner, per second.\nThe big number counts the Vorton hits on the runner in all the Thunderchilds' combat logs over the last 10 seconds, multiplies them by the damage of one shot (Settings → Modes) and divides by 10. Each shot arcs on to the NPCs with that damage.\nThe red line is the runner's ECG: every Vorton hit on it kicks the line, the bigger the hit the higher the peak, and the trace runs to the left.\nThe thin white line does the same for the NPCs' hits on the runner, from its own combat log.\nUnder the number: what the runner takes per second against its repair. Red means it is losing hit points.": "Скільки урону Thunderchild проводять через runner за секунду.\nВелике число рахує влучання Vorton по runner у бойових логах усіх Thunderchild за останні 10 секунд, множить їх на урон одного пострілу (Settings → Modes) і ділить на 10. Кожен постріл перескакує на NPC з цим уроном.\nЧервона лінія — це ЕКГ runner: кожне влучання Vorton штовхає лінію, що сильніше влучання, то вищий пік, а запис біжить ліворуч.\nТонка біла лінія робить те саме для влучань NPC по runner, з його власного бойового логу.\nПід числом: скільки runner отримує за секунду проти своєї відкачки. Червоним — він втрачає HP.",
   "Under the Lightning rod number: what the runner takes per second against this repair; red means it is losing hit points.": "Під числом Lightning rod: скільки runner отримує за секунду проти цієї відкачки; червоним — він втрачає HP.",
   "Anchor — a frigate runner. DPS — Thunderchilds with Vorton projectors.": "Якір — фрегат-runner. DPS — Thunderchild з Vorton projectors.",
-  "Anchor — a smartbombing battleship. DPS — Thunderchilds with Vorton projectors.": "Якір — лінкор зі smartbombs. DPS — Thunderchild з Vorton projectors."
+  "Anchor — a smartbombing battleship. DPS — Thunderchilds with Vorton projectors.": "Якір — лінкор зі smartbombs. DPS — Thunderchild з Vorton projectors.",
+  "Live client on the power display, client switching": "Активний клієнт на мінідисплеї, перемикання клієнтів",
+  "Hotkeys": "Гарячі клавіші",
+  "Next client": "Наступний клієнт",
+  "Previous client": "Попередній клієнт",
+  "Press keys…": "Натисніть клавіші…",
+  "none": "немає",
+  "taken": "зайнята",
+  "Click a field and press the keys. Backspace clears it, Esc leaves it as it was. A key another program already holds can't be used.": "Клацніть поле й натисніть клавіші. Backspace очищає його, Esc залишає як було. Клавішу, яку вже тримає інша програма, використати не можна."
 }

@@ -145,5 +145,13 @@
   "How much damage the Thunderchilds put through the runner, per second.\nThe big number counts the Vorton hits on the runner in all the Thunderchilds' combat logs over the last 10 seconds, multiplies them by the damage of one shot (Settings → Modes) and divides by 10. Each shot arcs on to the NPCs with that damage.\nThe red line is the runner's ECG: every Vorton hit on it kicks the line, the bigger the hit the higher the peak, and the trace runs to the left.\nThe thin white line does the same for the NPCs' hits on the runner, from its own combat log.\nUnder the number: what the runner takes per second against its repair. Red means it is losing hit points.": "Quanto danno le Thunderchild fanno passare attraverso il runner, al secondo.\nIl numero grande conta i colpi Vorton sul runner nei log di combattimento di tutte le Thunderchild negli ultimi 10 secondi, li moltiplica per il danno di un colpo (Settings → Modes) e divide per 10. Ogni colpo salta sugli NPC con quel danno.\nLa linea rossa è l'ECG del runner: ogni colpo Vorton spinge la linea, più forte il colpo più alto il picco, e la traccia scorre verso sinistra.\nLa linea bianca sottile fa lo stesso per i colpi degli NPC sul runner, dal suo log di combattimento.\nSotto il numero: quanto subisce il runner al secondo rispetto alla sua riparazione. In rosso sta perdendo punti struttura.",
   "Under the Lightning rod number: what the runner takes per second against this repair; red means it is losing hit points.": "Sotto il numero di Lightning rod: quanto subisce il runner al secondo rispetto a questa riparazione; in rosso sta perdendo punti struttura.",
   "Anchor — a frigate runner. DPS — Thunderchilds with Vorton projectors.": "Ancora — un runner fregata. DPS — Thunderchild con Vorton projectors.",
-  "Anchor — a smartbombing battleship. DPS — Thunderchilds with Vorton projectors.": "Ancora — una corazzata con smartbombs. DPS — Thunderchild con Vorton projectors."
+  "Anchor — a smartbombing battleship. DPS — Thunderchilds with Vorton projectors.": "Ancora — una corazzata con smartbombs. DPS — Thunderchild con Vorton projectors.",
+  "Live client on the power display, client switching": "Client attivo sul mini display, cambio dei client",
+  "Hotkeys": "Tasti rapidi",
+  "Next client": "Client successivo",
+  "Previous client": "Client precedente",
+  "Press keys…": "Premi i tasti…",
+  "none": "nessuno",
+  "taken": "occupato",
+  "Click a field and press the keys. Backspace clears it, Esc leaves it as it was. A key another program already holds can't be used.": "Fai clic su un campo e premi i tasti. Backspace lo svuota, Esc lo lascia com'era. Un tasto già usato da un altro programma non si può usare."
 }

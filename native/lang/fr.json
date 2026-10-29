@@ -145,5 +145,13 @@
   "How much damage the Thunderchilds put through the runner, per second.\nThe big number counts the Vorton hits on the runner in all the Thunderchilds' combat logs over the last 10 seconds, multiplies them by the damage of one shot (Settings → Modes) and divides by 10. Each shot arcs on to the NPCs with that damage.\nThe red line is the runner's ECG: every Vorton hit on it kicks the line, the bigger the hit the higher the peak, and the trace runs to the left.\nThe thin white line does the same for the NPCs' hits on the runner, from its own combat log.\nUnder the number: what the runner takes per second against its repair. Red means it is losing hit points.": "Combien de dégâts les Thunderchild font passer par le runner, par seconde.\nLe grand nombre compte les tirs Vorton sur le runner dans les journaux de combat de tous les Thunderchild sur les 10 dernières secondes, les multiplie par les dégâts d'un tir (Settings → Modes) et divise par 10. Chaque tir rebondit sur les NPC avec ces dégâts.\nLa ligne rouge est l'ECG du runner : chaque tir Vorton fait bondir la ligne, plus le tir est fort plus le pic est haut, et le tracé défile vers la gauche.\nLa fine ligne blanche fait de même pour les tirs des NPC sur le runner, d'après son propre journal de combat.\nSous le nombre : ce que le runner encaisse par seconde face à sa réparation. En rouge, il perd des points de vie.",
   "Under the Lightning rod number: what the runner takes per second against this repair; red means it is losing hit points.": "Sous le nombre de Lightning rod : ce que le runner encaisse par seconde face à cette réparation ; en rouge, il perd des points de vie.",
   "Anchor — a frigate runner. DPS — Thunderchilds with Vorton projectors.": "Ancre — un runner frégate. DPS — Thunderchild avec Vorton projectors.",
-  "Anchor — a smartbombing battleship. DPS — Thunderchilds with Vorton projectors.": "Ancre — un cuirassé à smartbombs. DPS — Thunderchild avec Vorton projectors."
+  "Anchor — a smartbombing battleship. DPS — Thunderchilds with Vorton projectors.": "Ancre — un cuirassé à smartbombs. DPS — Thunderchild avec Vorton projectors.",
+  "Live client on the power display, client switching": "Client actif sur le mini-écran, changement de client",
+  "Hotkeys": "Raccourcis",
+  "Next client": "Client suivant",
+  "Previous client": "Client précédent",
+  "Press keys…": "Appuyez sur les touches…",
+  "none": "aucun",
+  "taken": "prise",
+  "Click a field and press the keys. Backspace clears it, Esc leaves it as it was. A key another program already holds can't be used.": "Cliquez sur un champ et appuyez sur les touches. Retour arrière le vide, Échap le laisse tel quel. Une touche déjà prise par un autre programme ne peut pas servir."
 }
