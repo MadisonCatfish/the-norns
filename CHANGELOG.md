@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.5.0 — unreleased
+
+- Formula cards slide in smoothly: a frame of the tilted card now takes about 4 ms instead of 32 ms (the perspective is copied pixel by pixel, the shadow drawn once).
+
 ## 1.4.0 — unreleased
 
 - Competition mode (Settings → Modes): for several fleet packs in one system. The anchor is a frigate runner that the Thunderchilds' Vorton projectors hit, and the lightning arcs on to the NPCs. The runner's resists, repair and one Vorton shot's damage (EM and Kinetic, per ship on average) are entered in a small window; a "?" card explains the formula and every field.

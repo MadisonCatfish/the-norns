@@ -154,40 +154,97 @@ namespace TheNorns
 
         static double Ease(double p) { p = Math.Max(0, Math.Min(1, p)); return 1 - Math.Pow(1 - p, 3); }
 
-        // the whole layered window at animation state e (0 = below and tilted back, 1 = in place): the shadow under the card,
-        // then the card drawn row by row, each row a little narrower towards the top (a perspective GDI+ can't do in one call)
-        static Bitmap Frame(Bitmap card, Size window, double e)
+        // the shadow under the card at full strength (alpha only), drawn once per window size: a frame moves and fades it
+        static Size shadowSize; static byte[] shadowA;
+        static byte[] Shadow(Size window, Size card)
         {
-            var bmp = new Bitmap(window.Width, window.Height, PixelFormat.Format32bppArgb);
-            using (var g = Graphics.FromImage(bmp))
+            if (shadowA != null && shadowSize == window) return shadowA;
+            int W = window.Width, H = window.Height;
+            var a = new byte[W * H];
+            using (var bmp = new Bitmap(W, H, PixelFormat.Format32bppArgb))
             {
-                g.SmoothingMode = SmoothingMode.AntiAlias;
-                float m = Margin, alpha = (float)Math.Min(1, e * 1.6);
-                float dy = (float)((1 - e) * U(70));
-                // the shadow: lies under the floating card, wider and softer the higher the card floats
-                var sr = new RectangleF(m + U(4), m + U(10) + dy * 0.4f, card.Width - U(8), card.Height - U(4));
-                for (int i = 0; i < 6; i++)
+                using (var g = Graphics.FromImage(bmp))
                 {
-                    var r = RectangleF.Inflate(sr, U(2.5f) * i, U(2.5f) * i);
-                    using (var path = Theme.Round(r, U(12) + U(2.5f) * i, 0.6f))
-                    using (var b = new SolidBrush(Color.FromArgb((int)(alpha * (34 - i * 5)), 0, 0, 0))) g.FillPath(b, path);
-                }
-                if (e >= 0.999) { g.DrawImageUnscaled(card, (int)m, (int)m); return bmp; }
-                float top = (float)(0.72 + 0.28 * e), sy = (float)(0.88 + 0.12 * e);
-                float h = card.Height * sy, cx = m + card.Width / 2f, y0 = m + card.Height - h + dy;
-                g.InterpolationMode = InterpolationMode.HighQualityBilinear; g.PixelOffsetMode = PixelOffsetMode.Half;
-                using (var ia = new ImageAttributes())
-                {
-                    ia.SetColorMatrix(new ColorMatrix { Matrix33 = alpha });
-                    ia.SetWrapMode(WrapMode.TileFlipXY);
-                    for (int r = 0; r < (int)Math.Ceiling(h); r++)
+                    g.SmoothingMode = SmoothingMode.AntiAlias;
+                    float m = Margin;
+                    var sr = new RectangleF(m + U(4), m + U(10), card.Width - U(8), card.Height - U(4));
+                    for (int i = 0; i < 6; i++)
                     {
-                        float f = top + (1 - top) * (r / h), w = card.Width * f;
-                        int src = Math.Min(card.Height - 1, (int)(r / sy));
-                        g.DrawImage(card, new Rectangle((int)(cx - w / 2), (int)(y0 + r), (int)Math.Round(w), 1), 0, src, card.Width, 1, GraphicsUnit.Pixel, ia);
+                        var r = RectangleF.Inflate(sr, U(2.5f) * i, U(2.5f) * i);
+                        using (var path = Theme.Round(r, U(12) + U(2.5f) * i, 0.6f))
+                        using (var b = new SolidBrush(Color.FromArgb(34 - i * 5, 0, 0, 0))) g.FillPath(b, path);
+                    }
+                }
+                var d = bmp.LockBits(new Rectangle(0, 0, W, H), ImageLockMode.ReadOnly, PixelFormat.Format32bppArgb);
+                unsafe
+                {
+                    for (int y = 0; y < H; y++)
+                    {
+                        byte* row = (byte*)d.Scan0 + y * d.Stride;
+                        for (int x = 0; x < W; x++) a[y * W + x] = row[x * 4 + 3];
+                    }
+                }
+                bmp.UnlockBits(d);
+            }
+            shadowSize = window; shadowA = a;
+            return a;
+        }
+
+        // premultiplied ARGB pixel helpers: p scaled by k/256, and a + (b - a) * f/256
+        static uint Mul(uint p, int k) { return (((p & 0xFF00FF) * (uint)k >> 8) & 0xFF00FF) | ((((p >> 8) & 0xFF00FF) * (uint)k) & 0xFF00FF00); }
+        static uint Lerp(uint a, uint b, int f) { return f == 0 ? a : Mul(a, 256 - f) + Mul(b, f); }
+
+        // the whole layered window at animation state e (0 = below and tilted back, 1 = in place): the shadow under the card,
+        // then the card copied row by row, each row a little narrower towards the top (a perspective GDI+ can't do in one
+        // call; one DrawImage per row cost ~32 ms a frame, the direct copy a few)
+        static unsafe Bitmap Frame(Bitmap card, Size window, double e)
+        {
+            int W = window.Width, H = window.Height, cw = card.Width, ch = card.Height;
+            float m = Margin, alpha = (float)Math.Min(1, e * 1.6);
+            float dy = (float)((1 - e) * U(70));
+            int a256 = (int)(alpha * 256 + 0.5f);
+            var bmp = new Bitmap(W, H, PixelFormat.Format32bppPArgb);
+            var d = bmp.LockBits(new Rectangle(0, 0, W, H), ImageLockMode.WriteOnly, PixelFormat.Format32bppPArgb);
+            var s = card.LockBits(new Rectangle(0, 0, cw, ch), ImageLockMode.ReadOnly, PixelFormat.Format32bppPArgb);
+            try
+            {
+                // the shadow: lies under the floating card, lower the higher the card floats
+                byte[] sh = Shadow(window, card.Size);
+                int sdy = (int)Math.Round(dy * 0.4f);
+                for (int y = 0; y < H; y++)
+                {
+                    uint* row = (uint*)((byte*)d.Scan0 + y * d.Stride);
+                    int sy0 = y - sdy;
+                    if (sy0 < 0 || sy0 >= H) { for (int x = 0; x < W; x++) row[x] = 0; continue; }
+                    for (int x = 0, i = sy0 * W; x < W; x++, i++) row[x] = (uint)(sh[i] * a256 >> 8) << 24;
+                }
+                bool flat = e >= 0.999;
+                float top = flat ? 1 : (float)(0.72 + 0.28 * e), sy = flat ? 1 : (float)(0.88 + 0.12 * e);
+                float h = ch * sy, cx = m + cw / 2f, y0 = m + ch - h + dy;
+                for (int r = 0; r < (int)Math.Ceiling(h); r++)
+                {
+                    int ty = (int)(y0 + r);
+                    if (ty < 0 || ty >= H) continue;
+                    float f = top + (1 - top) * (r / h), w = cw * f;
+                    int wi = (int)Math.Round(w), x0 = (int)(cx - w / 2);
+                    if (wi <= 0) continue;
+                    uint* src = (uint*)((byte*)s.Scan0 + Math.Min(ch - 1, (int)(r / sy)) * s.Stride);
+                    uint* dst = (uint*)((byte*)d.Scan0 + ty * d.Stride);
+                    float step = (float)cw / wi;
+                    for (int i = 0; i < wi; i++)
+                    {
+                        int tx = x0 + i;
+                        if (tx < 0 || tx >= W) continue;
+                        float fx = Math.Max(0, Math.Min(cw - 1, (i + 0.5f) * step - 0.5f));
+                        int ix = (int)fx, fr = (int)((fx - ix) * 256);
+                        uint p = Lerp(src[ix], src[Math.Min(cw - 1, ix + 1)], fr);
+                        if (a256 < 256) p = Mul(p, a256);
+                        int pa = (int)(p >> 24);
+                        dst[tx] = pa == 255 ? p : p + Mul(dst[tx], 256 - pa);
                     }
                 }
             }
+            finally { card.UnlockBits(s); bmp.UnlockBits(d); }
             return bmp;
         }
 
@@ -333,5 +390,26 @@ namespace TheNorns
                 bmp.Save(path, ImageFormat.Png);
             }
         }
+
+        // selftest: the average time of one animation frame (the frame and its HBITMAP for the layered window)
+        public static string Bench(Size main, FormulaText text)
+        {
+            float maxScroll;
+            var cs = CardSize(main, text); var size = new Size((int)cs.Width, (int)cs.Height);
+            var win = new Size(size.Width + 2 * (int)Margin, size.Height + 2 * (int)Margin);
+            using (var card = DrawCard(size, text, false, false, 0, out maxScroll))
+            {
+                const int n = 28;
+                var sw = Stopwatch.StartNew();
+                for (int i = 0; i < n; i++)
+                    using (var f = Frame(card, win, Ease(i / (double)n)))
+                    {
+                        IntPtr h = f.GetHbitmap(Color.FromArgb(0)); DeleteObject(h);
+                    }
+                return string.Format(System.Globalization.CultureInfo.InvariantCulture, "formula frame {0}x{1} ({2}): {3:0.0} ms",
+                    win.Width, win.Height, text.Title, sw.Elapsed.TotalMilliseconds / n);
+            }
+        }
+        [System.Runtime.InteropServices.DllImport("gdi32.dll")] static extern bool DeleteObject(IntPtr o);
     }
 }

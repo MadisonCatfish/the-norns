@@ -1994,6 +1994,8 @@ namespace TheNorns
                     FormulaWindow.SaveDemo(b, FormulaWindow.Smartbombs, 0.45, Path.Combine(dir, "dps_formula_opening.png"));
                     FormulaWindow.SaveDemo(b, FormulaWindow.Smartbombs, 1, Path.Combine(dir, "dps_formula_smartbombs.png"));
                     FormulaWindow.SaveDemo(b, FormulaWindow.Vorton, 1, Path.Combine(dir, "dps_formula_vorton.png"));
+                    sb.AppendLine(FormulaWindow.Bench(b.Size, FormulaWindow.Smartbombs));
+                    sb.AppendLine(FormulaWindow.Bench(b.Size, HelpRunner));
                 }
             }
             // the owner's log 21:22 - 21:24: after the warp a cut cycle (5,5,10,14,14), one with NPCs dying mid-volley
