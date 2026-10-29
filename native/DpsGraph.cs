@@ -390,7 +390,7 @@ namespace TheNorns
         // the rare spawns (owner 27.10.2026): an asteroid belt's commander battleship (1) and a titan (2), by their name;
         // every hit to or from one is kept with its time
         readonly List<Tuple<DateTime, int>> special = new List<Tuple<DateTime, int>>();
-        // the rare spawns of this run (commanders, faction NPCs, titans): one per NPC name, a name seen again after
+        // the ★ spawns of this run (commanders, faction NPCs; owner, 29.10.2026: no titans or dreadnoughts): one per NPC name, a name seen again after
         // 10 minutes without it is a new spawn. Kept for the whole run (the session statistics count them)
         public readonly List<Tuple<DateTime, string>> Spawns = new List<Tuple<DateTime, string>>();
         readonly Dictionary<string, DateTime> spawnSeen = new Dictionary<string, DateTime>(StringComparer.OrdinalIgnoreCase);
@@ -653,8 +653,8 @@ namespace TheNorns
                         DateTime seen;
                         if (!spawnSeen.TryGetValue(e.Other, out seen) || (e.T - seen).TotalMinutes > 10)
                         {
-                            Spawns.Add(Tuple.Create(e.T, e.Other));
-                            if (sk == 2 || IsDread(e.Other)) { LoudSpawns++; LastLoudSpawn = e.T; }
+                            if (sk == 2 || IsDread(e.Other)) { LoudSpawns++; LastLoudSpawn = e.T; }   // the alert, not a ★
+                            else Spawns.Add(Tuple.Create(e.T, e.Other));
                         }
                         if (!spawnSeen.ContainsKey(e.Other) || e.T > spawnSeen[e.Other]) spawnSeen[e.Other] = e.T;
                     }
