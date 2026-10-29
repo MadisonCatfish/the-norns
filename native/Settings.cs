@@ -22,17 +22,36 @@ namespace TheNorns
         double resetShownUntil = -1;
         bool demoResetShown;
         public bool? DemoLogDirOk;   // selftest: the folder mark
-        // the tabs scroll (owner, 28.10.2026: more pages will come): TabsShown at a time, the arrow keys side by side on
-        // the left; tabFirst = the first one shown, tabShift = where the row is drawn (glides to tabFirst)
+        // the tabs scroll (owner, 28.10.2026: more pages will come), the arrow keys side by side on the left; tabFirst =
+        // the first one shown, tabShift = where the row is drawn (glides to tabFirst). Each tab is as wide as its label
+        // plus the gap (owner, 29.10.2026: the gap 40% less than in the four equal cells before); tabX = where each one
+        // starts, from the last frame (null before it: four to a row)
         const int TabsShown = 4;
         int tabFirst; float tabShift; RectangleF tabRow;
+        float[] tabX; float tabGap;
+        // the last first tab that still leaves no room at the right
+        int TabsMaxFirst()
+        {
+            if (tabX == null) return Math.Max(0, Pages.Length - TabsShown);
+            int f = 0;
+            while (f < Pages.Length - 1 && tabX[Pages.Length] - tabGap - tabX[f] > tabRow.Width) f++;
+            return f;
+        }
         void ShowTab(string p)
         {
             int k = Array.FindIndex(Pages, x => x[0] == p);
-            if (k < tabFirst) tabFirst = k; else if (k >= tabFirst + TabsShown) tabFirst = k - TabsShown + 1;
-            tabFirst = Math.Max(0, Math.Min(Math.Max(0, Pages.Length - TabsShown), tabFirst));
+            if (k < tabFirst) tabFirst = k;
+            else if (tabX == null) { if (k >= tabFirst + TabsShown) tabFirst = k - TabsShown + 1; }
+            else while (tabFirst < k && tabX[k + 1] - tabGap - tabX[tabFirst] > tabRow.Width) tabFirst++;
+            tabFirst = Math.Max(0, Math.Min(TabsMaxFirst(), tabFirst));
         }
-        void ScrollTabs(int by) { tabFirst = Math.Max(0, Math.Min(Math.Max(0, Pages.Length - TabsShown), tabFirst + by)); }
+        void ScrollTabs(int by) { tabFirst = Math.Max(0, Math.Min(TabsMaxFirst(), tabFirst + by)); }
+        // the row's offset at a (gliding) first tab
+        float TabOffset(float s)
+        {
+            int i = Math.Min((int)s, Pages.Length - 1);
+            return tabX[i] + (tabX[Math.Min(i + 1, Pages.Length)] - tabX[i]) * (s - i);
+        }
 
         void ToggleSettings()
         {
@@ -401,12 +420,29 @@ namespace TheNorns
             line(y); y += U(7);
 
             // the pages: the two arrow keys side by side on the left (Material arrow_left / arrow_right, dim when there is
-            // nothing more that way), then TabsShown tabs, the open one's label in the accent (owner, 28.10.2026)
+            // nothing more that way), then the tabs, the open one's label in the accent (owner, 28.10.2026); the one cut at
+            // the right edge fades into the black, so more can be seen to be there (owner, 29.10.2026)
             float ak = U(14), ah = U(13), ay = y - U(1.5f);
+            float rowLeft = c.Left + 2 * ak + U(3) + U(4);
+            tabRow = RectangleF.FromLTRB(rowLeft, y - U(2), c.Right, y + U(12));
+            var ups = new string[Pages.Length]; var fonts = new Font[Pages.Length]; var lw = new float[Pages.Length];
+            for (int k = 0; k < Pages.Length; k++)
+            {
+                var label = L.T(Pages[k][1]);
+                fonts[k] = TitleFont(label, U(6));
+                ups[k] = label.ToUpperInvariant();
+                lw[k] = g.MeasureString(ups[k], fonts[k], 1000, StringFormat.GenericTypographic).Width;
+            }
+            bool firstRow = tabX == null;
+            tabGap = Math.Max(U(5), 0.6f * (tabRow.Width / TabsShown - lw.Average()));
+            tabX = new float[Pages.Length + 1];
+            for (int k = 0; k < Pages.Length; k++) tabX[k + 1] = tabX[k] + lw[k] + tabGap;
+            if (firstRow) { ShowTab(page); tabShift = tabFirst; }
+            tabFirst = Math.Min(tabFirst, TabsMaxFirst());
             for (int a = 0; a < 2; a++)
             {
                 string id = a == 0 ? "tabs:prev" : "tabs:next";
-                bool can = a == 0 ? tabFirst > 0 : tabFirst + TabsShown < Pages.Length, hot = can && hotSpot == id;
+                bool can = a == 0 ? tabFirst > 0 : tabFirst < TabsMaxFirst(), hot = can && hotSpot == id;
                 var kr = new RectangleF(c.Left + a * (ak + U(3)), ay, ak, ah);
                 using (var p = Round(kr, 5))
                 {
@@ -418,28 +454,30 @@ namespace TheNorns
                     MaterialIcon.Draw(g, a == 0 ? MaterialIcon.ArrowLeft : MaterialIcon.ArrowRight, new RectangleF(kr.Left + (kr.Width - ic) / 2, kr.Top + (kr.Height - ic) / 2, ic, ic), b);
                 if (can) spots.Add(Tuple.Create(id, kr));
             }
-            float rowLeft = c.Left + 2 * ak + U(3) + U(4);
-            tabRow = RectangleF.FromLTRB(rowLeft, y - U(2), c.Right, y + U(12));
-            float tw = tabRow.Width / TabsShown;
             tabShift = Potato || SelfTesting ? tabFirst : tabShift + (tabFirst - tabShift) * 0.35f;
             if (Math.Abs(tabFirst - tabShift) < 0.01f) tabShift = tabFirst; else Invalidate();
             var tabClip = g.Save();
             g.SetClip(tabRow);
             for (int k = 0; k < Pages.Length; k++)
             {
-                string id = "page:" + Pages[k][0], label = L.T(Pages[k][1]);
+                string id = "page:" + Pages[k][0], up = ups[k];
                 bool on = page == Pages[k][0], hot = hotSpot == id;
-                var tr = new RectangleF(rowLeft + (k - tabShift) * tw, y - U(2), tw - U(3), U(14));
+                var f = fonts[k];
+                var tr = new RectangleF(rowLeft + tabX[k] - TabOffset(tabShift), y - U(2), lw[k] + tabGap - U(3), U(14));
                 if (tr.Right <= tabRow.Left || tr.Left >= tabRow.Right) continue;
                 if (hot && !on) using (var p = Round(tr, 5)) using (var b = new SolidBrush(Color.FromArgb(22, BodyTheme.Ink))) g.FillPath(b, p);
-                var f = TitleFont(label, U(6));
-                var up = label.ToUpperInvariant();
-                float w = Math.Min(tr.Width - U(4), g.MeasureString(up, f, 1000, StringFormat.GenericTypographic).Width);
-                using (var b = new SolidBrush(on ? BodyTheme.Accent : hot ? Color.FromArgb(200, 203, 210) : Color.FromArgb(130, 133, 140)))
-                    g.DrawString(up, f, b, new RectangleF(tr.Left + (tr.Width - w) / 2, tr.Top + U(2.5f), w + U(1), f.GetHeight(g) + U(1)),
+                float w = Math.Min(tabRow.Width - U(4), lw[k]);
+                var ink = on ? BodyTheme.Accent : hot ? Color.FromArgb(200, 203, 210) : Color.FromArgb(130, 133, 140);
+                var lr = new RectangleF(tr.Left + (tr.Width - w) / 2, tr.Top + U(2.5f), w + U(1), f.GetHeight(g) + U(1));
+                // cut at the right edge: the label from its colour to the black at the edge, the fade 10% longer than the part shown
+                Brush lb = lr.Right > tabRow.Right && lr.Left < tabRow.Right - U(2)
+                    ? (Brush)new LinearGradientBrush(new PointF(tabRow.Right - 1.1f * (tabRow.Right - lr.Left) - 1, 0), new PointF(tabRow.Right, 0), ink, Color.FromArgb(0, ink))
+                    : new SolidBrush(ink);
+                using (lb)
+                    g.DrawString(up, f, lb, lr,
                         new StringFormat(StringFormat.GenericTypographic) { Trimming = StringTrimming.EllipsisCharacter, FormatFlags = StringFormatFlags.NoWrap });
                 var hit = RectangleF.Intersect(tr, tabRow);
-                if (hit.Width > tw / 2) spots.Add(Tuple.Create(id, hit));
+                if (hit.Width > tr.Width / 2) spots.Add(Tuple.Create(id, hit));
             }
             g.Restore(tabClip);
             y += U(16);
