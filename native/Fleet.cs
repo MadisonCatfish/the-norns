@@ -407,7 +407,7 @@ namespace TheNorns
         struct Placement { public int Length, Flags, ShowCmd; public System.Drawing.Point Min, Max; public System.Drawing.Rectangle Normal; }
         [DllImport("user32.dll")] static extern bool GetWindowPlacement(IntPtr h, ref Placement p);
         [DllImport("user32.dll")] static extern bool SetWindowPlacement(IntPtr h, ref Placement p);
-        const int SwShowMinNoActive = 7, WpfAsync = 4;
+        const int SwShowMinNoActive = 7, SwShowMaximized = 3, WpfAsync = 4, WpfRestoreToMaximized = 2;
 
         // the placement alone still showed Windows' minimize animation (test build mn1): the window's DWM transitions are
         // switched off first - a window attribute, nothing in the client's process; switched back on with the setting
@@ -429,6 +429,9 @@ namespace TheNorns
             if (still.Add(h)) Transitions(h, false);
             var p = new Placement { Length = Marshal.SizeOf(typeof(Placement)) };
             if (!GetWindowPlacement(h, ref p)) return false;
+            // a maximized client must come back maximized: without WPF_RESTORETOMAXIMIZED the restore gave it its normal
+            // size first, and the client jerked while resizing (test build mn2)
+            if (p.ShowCmd == SwShowMaximized) p.Flags |= WpfRestoreToMaximized;
             p.ShowCmd = SwShowMinNoActive; p.Flags |= WpfAsync;
             return SetWindowPlacement(h, ref p);
         }
