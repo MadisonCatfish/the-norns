@@ -342,6 +342,57 @@ namespace TheNorns
         }
     }
 
+    // Step 3: the body sticks to edges while it is dragged (WM_MOVING): the monitors (whole and without the taskbar) and
+    // the EVE clients' windows, inside or outside. An edge catches within Capture px and lets go beyond Release, measured
+    // from where the body would be without sticking, so dragging on always breaks free; Shift drags freely. Each axis on
+    // its own; a window's side counts only where the body is level with it.
+    sealed class Snapper
+    {
+        public int Capture = 8, Release = 16;
+        readonly List<System.Drawing.Rectangle> targets = new List<System.Drawing.Rectangle>();
+        int? x, y;   // the left / top an edge holds the body at; null while free
+
+        public void Begin(IEnumerable<System.Drawing.Rectangle> to) { targets.Clear(); targets.AddRange(to); x = y = null; }
+
+        public System.Drawing.Rectangle Move(System.Drawing.Rectangle raw, bool free)
+        {
+            if (free) { x = y = null; return raw; }
+            x = Axis(x, raw.Left, raw.Width, targets.Where(t => raw.Top < t.Bottom + Capture && raw.Bottom > t.Top - Capture).SelectMany(t => new[] { t.Left, t.Right }));
+            y = Axis(y, raw.Top, raw.Height, targets.Where(t => raw.Left < t.Right + Capture && raw.Right > t.Left - Capture).SelectMany(t => new[] { t.Top, t.Bottom }));
+            return new System.Drawing.Rectangle(x ?? raw.Left, y ?? raw.Top, raw.Width, raw.Height);
+        }
+
+        // one axis: the body from pos to pos + size against the edges' coordinates; the held start, or null
+        int? Axis(int? held, int pos, int size, IEnumerable<int> edges)
+        {
+            if (held.HasValue && Math.Abs(pos - held.Value) <= Release) return held;
+            int? best = null;
+            foreach (var e in edges)
+                foreach (var at in new[] { e, e - size })   // the body's near side or its far side on the edge
+                    if (Math.Abs(at - pos) <= Capture && (best == null || Math.Abs(at - pos) < Math.Abs(best.Value - pos))) best = at;
+            return best;
+        }
+
+        [DllImport("dwmapi.dll")] static extern int DwmGetWindowAttribute(IntPtr h, int attr, out RECT r, int size);
+        [DllImport("user32.dll")] static extern bool GetWindowRect(IntPtr h, out RECT r);
+        [DllImport("user32.dll")] static extern bool IsIconic(IntPtr h);
+        [StructLayout(LayoutKind.Sequential)] struct RECT { public int L, T, R, B; }
+
+        // what a drag can stick to: every monitor, with and without the taskbar, and the open clients' visible frames
+        // (DWM's frame bounds: GetWindowRect would add the invisible resize border)
+        public static IEnumerable<System.Drawing.Rectangle> Targets(IEnumerable<ClientWindow> clients)
+        {
+            foreach (var s in Screen.AllScreens) { yield return s.Bounds; if (s.WorkingArea != s.Bounds) yield return s.WorkingArea; }
+            foreach (var c in clients)
+            {
+                if (IsIconic(c.Hwnd)) continue;
+                RECT r;
+                if (DwmGetWindowAttribute(c.Hwnd, 9 /* DWMWA_EXTENDED_FRAME_BOUNDS */, out r, Marshal.SizeOf(typeof(RECT))) != 0 && !GetWindowRect(c.Hwnd, out r)) continue;
+                if (r.R > r.L && r.B > r.T) yield return System.Drawing.Rectangle.FromLTRB(r.L, r.T, r.R, r.B);
+            }
+        }
+    }
+
     // the module as the body holds it: made only when it is switched on (or for --fleet-trace)
     sealed class Fleet : IDisposable
     {
@@ -350,6 +401,7 @@ namespace TheNorns
 
         public readonly ClientTracker Clients;
         public readonly LivePreview Preview = new LivePreview();
+        public readonly Snapper Snap = new Snapper { Capture = (int)Math.Round(8 * Theme.K), Release = (int)Math.Round(16 * Theme.K) };
         readonly ForegroundWatch watch;
 
         public Fleet()
@@ -440,6 +492,22 @@ namespace TheNorns
             var c219 = LivePreview.Crop(new System.Drawing.Size(3440, 1440), glass);
             check(c219.Height == 1440 && c219.Width == 2715 && c219.Left == 362, "21:9 client: cut at the sides " + c219);
             check(LivePreview.Crop(System.Drawing.Size.Empty, glass).IsEmpty, "no client size: nothing to cut");
+
+            // sticking while dragged: a 1920 x 1080 monitor, a second one at its left, a client window, one far below
+            Func<int, int, int, int, System.Drawing.Rectangle> R = (l, tp, w, h) => new System.Drawing.Rectangle(l, tp, w, h);
+            var s = new Snapper { Capture = 8, Release = 16 };
+            s.Begin(new[] { R(0, 0, 1920, 1080), R(-1600, 100, 1600, 900), R(1000, 100, 800, 600), R(200, 3000, 800, 600) });
+            Func<int, int, string> at = (lx, ty) => { var r = s.Move(R(lx, ty, 300, 400), false); return r.Left + "," + r.Top; };
+            check(at(5, 300) == "0,300", "the monitor's left edge catches the body 5 px away");
+            check(at(14, 300) == "0,300", "it holds while the drag is within 16 px");
+            check(at(17, 300) == "17,300", "it lets go beyond 16 px");
+            check(at(12, 300) == "12,300", "a free body 12 px away is not caught");
+            check(at(1614, 300) == "1620,300", "the monitor's right edge catches the body's right side");
+            check(at(697, 300) == "700,300", "a client window's left side holds the body's right side against it");
+            check(at(1100, 704) == "1100,700", "a client window's bottom holds the body's top under it");
+            check(s.Move(R(697, 300, 300, 400), true).Left == 697, "Shift: free");
+            s.Begin(new[] { R(200, 3000, 800, 600) });
+            check(at(195, 300) == "195,300", "a window far below: its sides do not count");
             return sb.ToString();
         }
     }

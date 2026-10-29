@@ -382,8 +382,23 @@ namespace TheNorns
                 if (hit == HTCAPTION || hit == HTCLIENT) { SetCursor((OnPulse(PointToClient(Cursor.Position)) ? PulseCursor(pulseClock.Elapsed.TotalSeconds) : BluePointer).Handle); m.Result = (IntPtr)1; return; }
             }
             if (m.Msg == WM_EXITSIZEMOVE && Standalone) SavePos();
+            // the client module (Fleet.cs): the body sticks to monitor and client edges while it is dragged
+            if (fleet != null && Standalone)
+            {
+                if (m.Msg == WM_ENTERSIZEMOVE) fleet.Snap.Begin(Snapper.Targets(fleet.Clients.All));
+                if (m.Msg == WM_MOVING)
+                {
+                    var r = (MoveRect)Marshal.PtrToStructure(m.LParam, typeof(MoveRect));
+                    var to = fleet.Snap.Move(Rectangle.FromLTRB(r.L, r.T, r.R, r.B), (ModifierKeys & Keys.Shift) != 0);
+                    Marshal.StructureToPtr(new MoveRect { L = to.Left, T = to.Top, R = to.Right, B = to.Bottom }, m.LParam, false);
+                    m.Result = (IntPtr)1;
+                    return;
+                }
+            }
             base.WndProc(ref m);
         }
+        const int WM_ENTERSIZEMOVE = 0x0231, WM_MOVING = 0x0216;
+        [StructLayout(LayoutKind.Sequential)] struct MoveRect { public int L, T, R, B; }
 
         protected override void OnMouseMove(MouseEventArgs e)
         {
