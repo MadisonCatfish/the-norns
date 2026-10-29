@@ -945,7 +945,9 @@ namespace TheNorns
                 {
                     var dotColor = noClients ? Mix(Color.FromArgb(12, 13, 16), AlarmRed, shortLevel) : Color.FromArgb(225, 255, 0);
                     if (!noClients || shortLevel > 0)
-                        PowerAnim.Draw(g, new PointF(face.Left + face.Width / 2, face.Top + face.Height / 2), face.Height * 1.89f, following || noClients ? animSecs : 0, dotColor, K * Scale);
+                        // it runs while a log is followed - and always while the client module is on (owner, 29.10.2026: with
+                        // the live picture turned off the animation stood still)
+                        PowerAnim.Draw(g, new PointF(face.Left + face.Width / 2, face.Top + face.Height / 2), face.Height * 1.89f, following || noClients || fleet != null ? animSecs : 0, dotColor, K * Scale);
                     var line = noClients ? ShortLine(secs) : null;
                     if (line != null)
                     {

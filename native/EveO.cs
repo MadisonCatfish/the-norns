@@ -117,7 +117,12 @@ namespace TheNorns
                 if (FleetOn) StartFleet(); else StopFleet();
                 return true;
             }
-            if (id == "eveo:minimize") { Fleet.MinimizeOthers = !Fleet.MinimizeOthers; SaveApp("fleet_minimize", Fleet.MinimizeOthers); return true; }
+            if (id == "eveo:minimize")
+            {
+                Fleet.MinimizeOthers = !Fleet.MinimizeOthers; SaveApp("fleet_minimize", Fleet.MinimizeOthers);
+                if (!Fleet.MinimizeOthers) ClientSwitch.TransitionsBack();   // the clients animate as before
+                return true;
+            }
             if (id.StartsWith("eveo:pin:"))
             {
                 var n = id.Substring(9);

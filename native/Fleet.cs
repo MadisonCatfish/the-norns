@@ -409,9 +409,24 @@ namespace TheNorns
         [DllImport("user32.dll")] static extern bool SetWindowPlacement(IntPtr h, ref Placement p);
         const int SwShowMinNoActive = 7, WpfAsync = 4;
 
+        // the placement alone still showed Windows' minimize animation (test build mn1): the window's DWM transitions are
+        // switched off first - a window attribute, nothing in the client's process; switched back on with the setting
+        [DllImport("dwmapi.dll")] static extern int DwmSetWindowAttribute(IntPtr h, int attr, ref int value, int size);
+        const int DwmwaTransitionsForceDisabled = 3;
+        static readonly HashSet<IntPtr> still = new HashSet<IntPtr>();
+
+        static void Transitions(IntPtr h, bool on) { int v = on ? 0 : 1; DwmSetWindowAttribute(h, DwmwaTransitionsForceDisabled, ref v, 4); }
+
+        public static void TransitionsBack()
+        {
+            foreach (var h in still) if (IsWindow(h)) Transitions(h, true);
+            still.Clear();
+        }
+
         public static bool Minimize(IntPtr h)
         {
             if (!IsWindow(h) || IsIconic(h)) return false;
+            if (still.Add(h)) Transitions(h, false);
             var p = new Placement { Length = Marshal.SizeOf(typeof(Placement)) };
             if (!GetWindowPlacement(h, ref p)) return false;
             p.ShowCmd = SwShowMinNoActive; p.Flags |= WpfAsync;
@@ -603,7 +618,7 @@ namespace TheNorns
             catch { }
         }
 
-        public void Dispose() { watch.Dispose(); SuspendKeys(); Preview.Dispose(); }
+        public void Dispose() { watch.Dispose(); SuspendKeys(); Preview.Dispose(); ClientSwitch.TransitionsBack(); }
 
         // selftest: the tracker on made-up windows
         public static string SelfTest()
