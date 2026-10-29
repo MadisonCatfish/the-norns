@@ -167,7 +167,46 @@ namespace TheNorns
             return Fleet.Configured(setting).Where(x => !string.IsNullOrWhiteSpace(x)).ToList();
         }
 
-        void PaintEveO(Graphics g, RectangleF c, float y)
+        // the page scrolls with the wheel (owner, 29.10.2026: the clients' table makes it long); a thin bar on the right
+        float eveoScroll;
+        RectangleF eveoView;
+        void PaintEveO(Graphics g, RectangleF c, float top)
+        {
+            eveoView = RectangleF.FromLTRB(c.Left, top - U(2), c.Right, c.Bottom - U(10));
+            var st = g.Save();
+            g.SetClip(eveoView);
+            int firstSpot = spots.Count;
+            var inner = RectangleF.FromLTRB(c.Left, c.Top, c.Right - U(7), c.Bottom);
+            float end = PaintEveOContent(g, inner, top - eveoScroll);
+            g.Restore(st);
+            // the keys scrolled out of view can't be clicked
+            for (int i = spots.Count - 1; i >= firstSpot; i--)
+            {
+                var r = RectangleF.Intersect(spots[i].Item2, eveoView);
+                if (r.Width <= 0 || r.Height <= 0) spots.RemoveAt(i); else spots[i] = Tuple.Create(spots[i].Item1, r);
+            }
+            float max = Math.Max(0, end + eveoScroll - eveoView.Bottom + U(4));
+            if (eveoScroll > max) { eveoScroll = max; Invalidate(); }
+            if (max > 0)
+            {
+                // the bar: its length is the part shown, its place where that part is (as on the scrolling formula cards)
+                float trackH = eveoView.Height, barH = Math.Max(U(12), trackH * trackH / (trackH + max)), barY = eveoView.Top + (trackH - barH) * eveoScroll / max;
+                using (var b = new SolidBrush(Color.FromArgb(22, BodyTheme.Ink))) g.FillRectangle(b, c.Right - U(2), eveoView.Top, U(1.5f), trackH);
+                using (var p = Theme.Round(new RectangleF(c.Right - U(2.5f), barY, U(2.5f), barH), U(1.25f), 1f))
+                using (var b = new SolidBrush(Color.FromArgb(150, BodyTheme.Ink))) g.FillPath(b, p);
+            }
+        }
+
+        // the wheel over the page (Settings.cs OnMouseWheel); false = not over it
+        bool ScrollEveO(Point p, int delta)
+        {
+            if (!settingsOpen || page != "eveo" || !eveoView.Contains(p)) return false;
+            eveoScroll = Math.Max(0, eveoScroll - Math.Sign(delta) * U(24));   // the next frame clamps it
+            return true;
+        }
+
+        // the page's content from y on; returns where it ends
+        float PaintEveOContent(Graphics g, RectangleF c, float y)
         {
             // on / off, and the live client on the power display: lamp rows as on General
             LampRow(g, c, y, "eveo:on", FleetOn, L.T("Client switching"));
@@ -194,6 +233,156 @@ namespace TheNorns
             var hf = TextFont(hint, U(6.6f));
             var hh = g.MeasureString(hint, hf, (int)c.Width).Height;
             using (var b = new SolidBrush(Color.FromArgb(150, BodyTheme.Ink))) g.DrawString(hint, hf, b, new RectangleF(c.Left, y, c.Width, hh + U(2)));
+            y += hh + U(12);
+            return PaintClientTable(g, c, y);
+        }
+
+        // ---- the clients' table: the switching order, changed by dragging a row (owner, 29.10.2026) ----
+        public List<string> DemoClients;      // selftest: the order shown
+        public HashSet<string> DemoOpen;      // selftest: which of them are open
+        List<string> openNames = new List<string>();   // the open characters at the last poll while the module is off
+        int dragRow = -1; float dragY0, dragDy, rowH;   // the row being dragged, where the drag began, how far it went
+
+        List<string> ClientOrder()
+        {
+            if (DemoClients != null) return DemoClients;
+            if (fleet != null) return fleet.Clients.Order.ToList();
+            var order = Fleet.Configured("fleet_order").Where(n => n.Trim() != "").ToList();
+            foreach (var n in openNames) if (!order.Contains(n, StringComparer.OrdinalIgnoreCase)) order.Add(n);
+            return order;
+        }
+
+        bool ClientOpen(string name)
+        {
+            if (DemoOpen != null) return DemoOpen.Contains(name);
+            if (fleet != null) return fleet.Clients.All.Any(w => !w.Login && string.Equals(w.Character, name, StringComparison.OrdinalIgnoreCase));
+            return openNames.Contains(name, StringComparer.OrdinalIgnoreCase);
+        }
+
+        // where the dragged row would land
+        int DragTarget(int count) { return Math.Max(0, Math.Min(count - 1, dragRow + (int)Math.Round(dragDy / rowH))); }
+
+        float PaintClientTable(Graphics g, RectangleF c, float y)
+        {
+            var order = ClientOrder();
+            var ct = L.T("Clients");
+            var ctf = TitleFont(ct, U(6.5f));
+            Glow(g, ct, ctf, Muted, c.Left, y);
+            if (order.Count > 0)
+            {
+                var n = order.Count.ToString();
+                var nf = NornsFonts.Screen(U(6));
+                using (var b = new SolidBrush(BodyTheme.Accent)) g.DrawString(n, nf, b, c.Left + g.MeasureString(ct.ToUpperInvariant(), ctf, 1000, StringFormat.GenericTypographic).Width + U(5), y + U(0.5f), StringFormat.GenericTypographic);
+            }
+            y += U(12);
+            rowH = U(16);
+            var box = new RectangleF(c.Left, y, c.Width, Math.Max(1, order.Count) * rowH + U(6));
+            using (var p = Round(box, 6)) using (var b = new SolidBrush(Color.FromArgb(10, BodyTheme.Ink))) g.FillPath(b, p);
+            using (var p = Round(box, 6)) using (var pen = new Pen(Color.FromArgb(28, BodyTheme.Ink), 1f)) g.DrawPath(pen, p);
+            float y0 = box.Top + U(3);
+            if (order.Count == 0)
+            {
+                var t = L.T("No EVE clients found");
+                var f = TextFont(t, U(7));
+                using (var b = new SolidBrush(Color.FromArgb(120, BodyTheme.Ink))) g.DrawString(t, f, b, box.Left + U(7), y0 + (rowH - f.GetHeight(g)) / 2, StringFormat.GenericTypographic);
+                return box.Bottom + U(6);
+            }
+            if (dragRow >= order.Count) dragRow = -1;
+            int target = dragRow >= 0 ? DragTarget(order.Count) : -1;
+            for (int i = 0; i < order.Count; i++)
+            {
+                if (i == dragRow) continue;
+                int slot = i;   // where the others stand while a row is dragged: they make room at the target
+                if (dragRow >= 0 && dragRow < i && i <= target) slot = i - 1;
+                else if (dragRow >= 0 && target <= i && i < dragRow) slot = i + 1;
+                ClientRow(g, new RectangleF(box.Left + U(3), y0 + slot * rowH, box.Width - U(6), rowH), order[i], slot, false);
+            }
+            if (dragRow >= 0)
+            {
+                // the dragged row: lifted, with the accent rim, under the mouse within the table
+                float ry = Math.Max(y0, Math.Min(y0 + (order.Count - 1) * rowH, y0 + dragRow * rowH + dragDy));
+                ClientRow(g, new RectangleF(box.Left + U(3), ry, box.Width - U(6), rowH), order[dragRow], target, true);
+            }
+            y = box.Bottom + U(5);
+            var hint = L.T("Drag a row to change the switching order.");
+            var hf = TextFont(hint, U(6.6f));
+            var hh = g.MeasureString(hint, hf, (int)c.Width).Height;
+            using (var b = new SolidBrush(Color.FromArgb(150, BodyTheme.Ink))) g.DrawString(hint, hf, b, new RectangleF(c.Left, y, c.Width, hh + U(2)));
+            return y + hh + U(4);
+        }
+
+        // a row: the drag handle (Material drag_indicator), the place in the order, the character, open or offline
+        void ClientRow(Graphics g, RectangleF r, string name, int place, bool lifted)
+        {
+            string id = "eveo:row:" + name;
+            bool hot = hotSpot == id && dragRow < 0, open = ClientOpen(name);
+            var rr = RectangleF.Inflate(r, 0, -U(1));
+            if (lifted)
+            {
+                var sh = rr; sh.Offset(0, U(2));
+                using (var p = Round(sh, 5)) using (var b = new SolidBrush(Color.FromArgb(120, 0, 0, 0))) g.FillPath(b, p);
+                using (var p = Round(rr, 5)) using (var b = new SolidBrush(Color.FromArgb(255, 22, 24, 18))) g.FillPath(b, p);
+                using (var p = Round(rr, 5)) using (var pen = new Pen(BodyTheme.Accent, 1f)) g.DrawPath(pen, p);
+            }
+            else if (hot) using (var p = Round(rr, 5)) using (var b = new SolidBrush(Color.FromArgb(22, BodyTheme.Ink))) g.FillPath(b, p);
+            float x = rr.Left + U(3), cy = rr.Top + rr.Height / 2, ic = U(8);
+            using (var b = new SolidBrush(Color.FromArgb(lifted || hot ? 200 : 90, BodyTheme.Ink))) MaterialIcon.Draw(g, MaterialIcon.DragIndicator, new RectangleF(x, cy - ic / 2, ic, ic), b);
+            x += ic + U(4);
+            var nf = NornsFonts.Screen(U(6));
+            var num = (place + 1).ToString();
+            using (var b = new SolidBrush(open ? BodyTheme.Accent : Color.FromArgb(90, BodyTheme.Ink))) g.DrawString(num, nf, b, x, cy - nf.GetHeight(g) / 2, StringFormat.GenericTypographic);
+            x += U(10);
+            var f = TextFont(name, U(7.2f));
+            using (var b = new SolidBrush(open ? BodyTheme.Ink : Color.FromArgb(110, BodyTheme.Ink)))
+                g.DrawString(name, f, b, new RectangleF(x, cy - f.GetHeight(g) / 2, rr.Right - x - U(40), f.GetHeight(g) + U(1)), new StringFormat(StringFormat.GenericTypographic) { Trimming = StringTrimming.EllipsisCharacter, FormatFlags = StringFormatFlags.NoWrap });
+            // open: a lit lamp; offline: the word
+            if (open)
+            {
+                float d = U(4.5f), lx = rr.Right - U(6) - d;
+                SoftGlow(g, new PointF(lx + d / 2, cy), d / 2 + U(3), BodyTheme.Accent, 110);
+                using (var b = new SolidBrush(BodyTheme.Accent)) g.FillEllipse(b, lx, cy - d / 2, d, d);
+            }
+            else
+            {
+                var t = L.T("offline");
+                var tf = TextFont(t, U(6));
+                float tw = g.MeasureString(t, tf, 1000, StringFormat.GenericTypographic).Width;
+                using (var b = new SolidBrush(Color.FromArgb(100, BodyTheme.Ink))) g.DrawString(t, tf, b, rr.Right - U(5) - tw, cy - tf.GetHeight(g) / 2, StringFormat.GenericTypographic);
+            }
+            if (!lifted) spots.Add(Tuple.Create(id, r));
+        }
+
+        // the mouse on a row (Body.cs): a drag begins at once; true = taken
+        bool BeginRowDrag(string spot, int y)
+        {
+            if (spot == null || !spot.StartsWith("eveo:row:")) return false;
+            var order = ClientOrder();
+            int i = order.FindIndex(n => string.Equals(n, spot.Substring(9), StringComparison.OrdinalIgnoreCase));
+            if (i < 0) return false;
+            dragRow = i; dragY0 = y; dragDy = 0;
+            return true;
+        }
+
+        bool MoveRowDrag(int y) { if (dragRow < 0) return false; dragDy = y - dragY0; Render(); return true; }
+
+        // the row let go: the order with it at its new place, kept in config.json "fleet_order" and taken by the tracker
+        bool EndRowDrag()
+        {
+            if (dragRow < 0) return false;
+            var order = ClientOrder().ToList();
+            int from = dragRow, to = DragTarget(order.Count);
+            dragRow = -1;
+            if (to != from)
+            {
+                var n = order[from]; order.RemoveAt(from); order.Insert(to, n);
+                if (DemoClients != null) DemoClients = order;
+                else
+                {
+                    SaveApp("fleet_order", order.ToArray());
+                    if (fleet != null) fleet.Clients.SetOrder(order);
+                }
+            }
+            return true;
         }
 
         void LampRow(Graphics g, RectangleF c, float y, string id, bool on, string text)

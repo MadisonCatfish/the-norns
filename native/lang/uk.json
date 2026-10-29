@@ -155,5 +155,9 @@
   "Click a field and press the keys. Backspace clears it, Esc leaves it as it was. A key another program already holds can't be used.": "Клацніть поле й натисніть клавіші. Backspace очищає його, Esc залишає як було. Клавішу, яку вже тримає інша програма, використати не можна.",
   "The EVE client uses this key by default:": "Клієнт EVE за замовчуванням використовує цю клавішу:",
   "Client switching": "Перемикання клієнтів",
-  "Live client on the power display instead of the animation": "Активний клієнт на мінідисплеї замість анімації"
+  "Live client on the power display instead of the animation": "Активний клієнт на мінідисплеї замість анімації",
+  "Clients": "Клієнти",
+  "No EVE clients found": "Клієнтів EVE не знайдено",
+  "Drag a row to change the switching order.": "Перетягніть рядок, щоб змінити порядок перемикання.",
+  "offline": "не в мережі"
 }

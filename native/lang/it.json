@@ -155,5 +155,9 @@
   "Click a field and press the keys. Backspace clears it, Esc leaves it as it was. A key another program already holds can't be used.": "Fai clic su un campo e premi i tasti. Backspace lo svuota, Esc lo lascia com'era. Un tasto già usato da un altro programma non si può usare.",
   "The EVE client uses this key by default:": "Il client di EVE usa questo tasto per impostazione predefinita:",
   "Client switching": "Cambio dei client",
-  "Live client on the power display instead of the animation": "Client attivo sul mini display al posto dell'animazione"
+  "Live client on the power display instead of the animation": "Client attivo sul mini display al posto dell'animazione",
+  "Clients": "Client",
+  "No EVE clients found": "Nessun client di EVE trovato",
+  "Drag a row to change the switching order.": "Trascina una riga per cambiare l'ordine di cambio.",
+  "offline": "offline"
 }

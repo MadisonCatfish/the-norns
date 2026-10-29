@@ -155,5 +155,9 @@
   "Click a field and press the keys. Backspace clears it, Esc leaves it as it was. A key another program already holds can't be used.": "点击字段并按下按键。Backspace 清空，Esc 保持原样。其他程序已占用的按键无法使用。",
   "The EVE client uses this key by default:": "EVE 客户端默认使用此按键：",
   "Client switching": "切换客户端",
-  "Live client on the power display instead of the animation": "在迷你显示屏上显示当前客户端，代替动画"
+  "Live client on the power display instead of the animation": "在迷你显示屏上显示当前客户端，代替动画",
+  "Clients": "客户端",
+  "No EVE clients found": "未找到 EVE 客户端",
+  "Drag a row to change the switching order.": "拖动一行以更改切换顺序。",
+  "offline": "离线"
 }

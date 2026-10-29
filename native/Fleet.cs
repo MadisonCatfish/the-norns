@@ -168,6 +168,16 @@ namespace TheNorns
             return null;
         }
 
+        // a new cycle order (Settings -> Eve-O's table); characters seen but left out keep their place at the end
+        public void SetOrder(IEnumerable<string> order)
+        {
+            var keep = Order.ToList();
+            Order.Clear();
+            foreach (var c in order) if (!string.IsNullOrEmpty(c) && !Order.Contains(c, Names)) Order.Add(c);
+            foreach (var c in keep) if (!Order.Contains(c, Names)) Order.Add(c);
+            if (Changed != null) Changed();
+        }
+
         // Toggle Skip: true when the character is now out of the cycle
         public bool ToggleSkip(string character)
         {

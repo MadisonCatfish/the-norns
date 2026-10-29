@@ -299,7 +299,7 @@ namespace TheNorns
                     try
                     {
                         if (fleet != null) { fleet.Poll(); clients = fleet.Clients.CharacterCount; }   // one look at the windows serves both
-                        else clients = Eve.FindWindows("EVE - ").Count;
+                        else { var ws = Eve.FindWindows("EVE - "); clients = ws.Count; openNames = ws.Select(w => w.Character).ToList(); }
                     }
                     catch { }
                     Follow();
@@ -383,6 +383,7 @@ namespace TheNorns
         protected override void OnMouseMove(MouseEventArgs e)
         {
             base.OnMouseMove(e);
+            if (MoveRowDrag(e.Y)) return;
             bool hn = NameRect.Contains(e.Location), hc = Standalone && CloseRect.Contains(e.Location);
             bool hv = !settingsOpen && vortonFx.Contains(e.Location), hs = !settingsOpen && sbFx.Contains(e.Location);
             bool hsp = !settingsOpen && spawnChip.Contains(e.Location);
@@ -425,6 +426,7 @@ namespace TheNorns
             {
                 downSpot = SpotAt(e.Location);
                 if (focusField != null && downSpot != "field:" + focusField) CommitField();   // a click elsewhere keeps the number
+                if (BeginRowDrag(downSpot, e.Y)) downSpot = null;   // Settings -> Eve-O: a client's row is dragged (EveO.cs)
             }
             else if (vortonFx.Contains(e.Location)) downFx = 1;
             else if (sbFx.Contains(e.Location)) downFx = 2;
@@ -435,6 +437,7 @@ namespace TheNorns
         protected override void OnMouseUp(MouseEventArgs e)
         {
             base.OnMouseUp(e);
+            if (EndRowDrag()) { Render(); return; }
             bool left = e.Button == MouseButtons.Left;
             if (downName) { downName = false; if (left && NameRect.Contains(e.Location)) ToggleSettings(); Render(); }
             if (downUpdate) { downUpdate = false; if (left && updateMark.Contains(e.Location)) { if (!settingsOpen) ToggleSettings(); page = "about"; } Render(); }
@@ -1886,6 +1889,8 @@ namespace TheNorns
                 // Settings -> Eve-O (EveO.cs): off; on with Ctrl+2 forward; setting the previous key; a key another program holds
                 {
                     bool keepF = FleetOn, keepP = FleetPreview; FleetPreview = true;
+                    f.DemoClients = Enumerable.Range(1, 7).Select(i => "Pilot-" + i).ToList();
+                    f.DemoOpen = new HashSet<string>(f.DemoClients.Where(n => n != "Pilot-6"));
                     f.DemoKeys = new Dictionary<string, string[]> { { "fleet_next", new[] { "Control+2" } }, { "fleet_prev", new string[0] } };
                     FleetOn = false; f.DemoSettings(true, null, false, "eveo"); save(f, "dps_settings_eveo_off.png");
                     FleetOn = true; f.DemoSettings(true, null, false, "eveo"); save(f, "dps_settings_eveo.png");
@@ -1893,7 +1898,14 @@ namespace TheNorns
                     f.keyCapture = "fleet_prev"; save(f, "dps_settings_eveo_capture.png"); f.keyCapture = null;
                     f.DemoKeys["fleet_prev"] = new[] { "2" }; f.DemoKeyState = new Dictionary<string, string> { { "fleet_prev", "taken" } };
                     save(f, "dps_settings_eveo_taken.png");
-                    f.DemoKeys = null; f.DemoKeyState = null; FleetOn = keepF; FleetPreview = keepP;
+                    f.DemoKeyState = null; f.DemoKeys["fleet_prev"] = new string[0];
+                    // the clients' table: scrolled to its end, then Pilot-2 dragged down two rows
+                    f.DemoSettings(true, null, false, "eveo"); f.eveoScroll = 1000;
+                    using (f.Draw()) { }   // the first frame finds how far the page goes
+                    save(f, "dps_settings_eveo_scrolled.png");
+                    f.dragRow = 1; f.dragY0 = 0; f.dragDy = f.U(16) * 2.3f; save(f, "dps_settings_eveo_drag.png");
+                    f.dragRow = -1; f.eveoScroll = 0;
+                    f.DemoClients = null; f.DemoOpen = null; f.DemoKeys = null; FleetOn = keepF; FleetPreview = keepP;
                 }
                 f.DemoSettings(true, "lang:de", false); save(f, "dps_settings_hover.png");
                 // the body at 100 % and 150 %

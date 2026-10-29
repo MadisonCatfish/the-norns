@@ -155,5 +155,9 @@
   "Click a field and press the keys. Backspace clears it, Esc leaves it as it was. A key another program already holds can't be used.": "Cliquez sur un champ et appuyez sur les touches. Retour arrière le vide, Échap le laisse tel quel. Une touche déjà prise par un autre programme ne peut pas servir.",
   "The EVE client uses this key by default:": "Le client EVE utilise cette touche par défaut :",
   "Client switching": "Changement de client",
-  "Live client on the power display instead of the animation": "Client actif sur le mini-écran au lieu de l'animation"
+  "Live client on the power display instead of the animation": "Client actif sur le mini-écran au lieu de l'animation",
+  "Clients": "Clients",
+  "No EVE clients found": "Aucun client EVE trouvé",
+  "Drag a row to change the switching order.": "Faites glisser une ligne pour changer l'ordre de changement.",
+  "offline": "hors ligne"
 }
