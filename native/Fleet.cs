@@ -401,6 +401,23 @@ namespace TheNorns
             return inFront || front;
         }
 
+        // Step 6: the client left behind minimized at once, as EVE-O does it without the animation: its placement set to
+        // minimized (SW_SHOWMINNOACTIVE - nothing else comes forward), asynchronously so a busy client can't hold the app up
+        [StructLayout(LayoutKind.Sequential)]
+        struct Placement { public int Length, Flags, ShowCmd; public System.Drawing.Point Min, Max; public System.Drawing.Rectangle Normal; }
+        [DllImport("user32.dll")] static extern bool GetWindowPlacement(IntPtr h, ref Placement p);
+        [DllImport("user32.dll")] static extern bool SetWindowPlacement(IntPtr h, ref Placement p);
+        const int SwShowMinNoActive = 7, WpfAsync = 4;
+
+        public static bool Minimize(IntPtr h)
+        {
+            if (!IsWindow(h) || IsIconic(h)) return false;
+            var p = new Placement { Length = Marshal.SizeOf(typeof(Placement)) };
+            if (!GetWindowPlacement(h, ref p)) return false;
+            p.ShowCmd = SwShowMinNoActive; p.Flags |= WpfAsync;
+            return SetWindowPlacement(h, ref p);
+        }
+
         // the wheel's notches (120 a notch; a touchpad sends parts): up = the previous client (-1), down = the next (+1)
         public static List<int> Wheel(ref int sum, int delta)
         {
@@ -555,10 +572,19 @@ namespace TheNorns
             var w = Clients.Next(dir);
             string what = from + " " + (dir > 0 ? "next" : "previous");
             if (w == null) { Write(what + ": no client"); return; }
+            var prev = Clients.ActiveClient;
             string how;
-            if (ClientSwitch.Activate(w.Hwnd, out how)) Clients.OnForeground(w.Hwnd);   // a refused one would only mislead the next step
+            bool front = ClientSwitch.Activate(w.Hwnd, out how);
+            if (front) Clients.OnForeground(w.Hwnd);   // a refused one would only mislead the next step
+            // Settings -> Eve-O: the client left behind is minimized, unless it is pinned open
+            if (front && MinimizeOthers && prev != null && prev.Hwnd != w.Hwnd && !(prev.Character != null && KeepOpen.Contains(prev.Character)))
+                how += ClientSwitch.Minimize(prev.Hwnd) ? ", " + prev + " minimized" : "";
             Write(what + " -> " + w + ": " + how);
         }
+
+        // config.json "app": { "fleet_minimize": true, "fleet_keep_open": [ "Pilot-1" ] }; off by default
+        public static bool MinimizeOthers = DpsForm.AppSetting("fleet_minimize") is bool && (bool)DpsForm.AppSetting("fleet_minimize");
+        public static readonly HashSet<string> KeepOpen = new HashSet<string>(Configured("fleet_keep_open"), StringComparer.OrdinalIgnoreCase);
 
         void Trace()
         {

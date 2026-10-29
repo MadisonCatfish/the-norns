@@ -158,6 +158,7 @@
   "Live client on the power display instead of the animation": "Активний клієнт на мінідисплеї замість анімації",
   "Clients": "Клієнти",
   "No EVE clients found": "Клієнтів EVE не знайдено",
-  "Drag a row to change the switching order.": "Перетягніть рядок, щоб змінити порядок перемикання.",
-  "offline": "не в мережі"
+  "offline": "не в мережі",
+  "Minimize the previous client on switching": "Згортати попередній клієнт при перемиканні",
+  "Drag a row to change the switching order. The pin keeps a client open when the others are minimized.": "Перетягніть рядок, щоб змінити порядок перемикання. Шпилька залишає клієнт відкритим, коли інші згортаються."
 }

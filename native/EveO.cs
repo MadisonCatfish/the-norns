@@ -117,6 +117,14 @@ namespace TheNorns
                 if (FleetOn) StartFleet(); else StopFleet();
                 return true;
             }
+            if (id == "eveo:minimize") { Fleet.MinimizeOthers = !Fleet.MinimizeOthers; SaveApp("fleet_minimize", Fleet.MinimizeOthers); return true; }
+            if (id.StartsWith("eveo:pin:"))
+            {
+                var n = id.Substring(9);
+                if (!Fleet.KeepOpen.Remove(n)) Fleet.KeepOpen.Add(n);
+                SaveApp("fleet_keep_open", Fleet.KeepOpen.ToArray());
+                return true;
+            }
             if (id == "eveo:preview") { FleetPreview = !FleetPreview; SaveApp("fleet_preview", FleetPreview); return true; }   // the next frame hides or shows it
             if (id.StartsWith("eveo:key:"))
             {
@@ -212,6 +220,8 @@ namespace TheNorns
             LampRow(g, c, y, "eveo:on", FleetOn, L.T("Client switching"));
             y += U(19) - 3;
             LampRow(g, c, y, "eveo:preview", FleetPreview, L.T("Live client on the power display instead of the animation"));
+            y += U(19) - 3;
+            LampRow(g, c, y, "eveo:minimize", Fleet.MinimizeOthers, L.T("Minimize the previous client on switching"));
             y += U(23);
 
             // the hotkeys: a label and a key-like field each
@@ -304,7 +314,7 @@ namespace TheNorns
                 ClientRow(g, new RectangleF(box.Left + U(3), ry, box.Width - U(6), rowH), order[dragRow], target, true);
             }
             y = box.Bottom + U(5);
-            var hint = L.T("Drag a row to change the switching order.");
+            var hint = L.T("Drag a row to change the switching order. The pin keeps a client open when the others are minimized.");
             var hf = TextFont(hint, U(6.6f));
             var hh = g.MeasureString(hint, hf, (int)c.Width).Height;
             using (var b = new SolidBrush(Color.FromArgb(150, BodyTheme.Ink))) g.DrawString(hint, hf, b, new RectangleF(c.Left, y, c.Width, hh + U(2)));
@@ -334,7 +344,14 @@ namespace TheNorns
             x += U(10);
             var f = TextFont(name, U(7.2f));
             using (var b = new SolidBrush(open ? BodyTheme.Ink : Color.FromArgb(110, BodyTheme.Ink)))
-                g.DrawString(name, f, b, new RectangleF(x, cy - f.GetHeight(g) / 2, rr.Right - x - U(40), f.GetHeight(g) + U(1)), new StringFormat(StringFormat.GenericTypographic) { Trimming = StringTrimming.EllipsisCharacter, FormatFlags = StringFormatFlags.NoWrap });
+                g.DrawString(name, f, b, new RectangleF(x, cy - f.GetHeight(g) / 2, rr.Right - x - U(48), f.GetHeight(g) + U(1)), new StringFormat(StringFormat.GenericTypographic) { Trimming = StringTrimming.EllipsisCharacter, FormatFlags = StringFormatFlags.NoWrap });
+            // the pin (Material push_pin): kept open when the others are minimized; lit when pinned
+            bool pinned = Fleet.KeepOpen.Contains(name), pinHot = hotSpot == "eveo:pin:" + name;
+            var pr = new RectangleF(rr.Right - U(44), cy - U(6), U(12), U(12));
+            float pi = U(8);
+            using (var b = new SolidBrush(pinned ? BodyTheme.Accent : Color.FromArgb(pinHot ? 200 : 70, BodyTheme.Ink)))
+                MaterialIcon.Draw(g, MaterialIcon.PushPin, new RectangleF(pr.Left + (pr.Width - pi) / 2, pr.Top + (pr.Height - pi) / 2, pi, pi), b);
+            if (!lifted) spots.Add(Tuple.Create("eveo:pin:" + name, pr));
             // open: a lit lamp; offline: the word
             if (open)
             {

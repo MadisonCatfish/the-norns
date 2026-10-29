@@ -1940,11 +1940,15 @@ namespace TheNorns
                     save(f, "dps_settings_eveo_taken.png");
                     f.DemoKeyState = null; f.DemoKeys["fleet_prev"] = new string[0];
                     // the clients' table: scrolled to its end, then Pilot-2 dragged down two rows
-                    f.DemoSettings(true, null, false, "eveo"); f.eveoScroll = 1000;
+                    bool keepM = Fleet.MinimizeOthers; var keepK = Fleet.KeepOpen.ToList();
+                    Fleet.MinimizeOthers = true; Fleet.KeepOpen.Clear(); Fleet.KeepOpen.Add("Pilot-1");
+                    f.DemoSettings(true, null, false, "eveo"); save(f, "dps_settings_eveo_minimize.png");
+                    f.eveoScroll = 1000;
                     using (f.Draw()) { }   // the first frame finds how far the page goes
                     save(f, "dps_settings_eveo_scrolled.png");
                     f.dragRow = 1; f.dragY0 = 0; f.dragDy = f.U(16) * 2.3f; save(f, "dps_settings_eveo_drag.png");
                     f.dragRow = -1; f.eveoScroll = 0;
+                    Fleet.MinimizeOthers = keepM; Fleet.KeepOpen.Clear(); foreach (var k in keepK) Fleet.KeepOpen.Add(k);
                     f.DemoClients = null; f.DemoOpen = null; f.DemoKeys = null; FleetOn = keepF; FleetPreview = keepP;
                 }
                 f.DemoSettings(true, "lang:de", false); save(f, "dps_settings_hover.png");

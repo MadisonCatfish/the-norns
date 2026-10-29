@@ -158,6 +158,7 @@
   "Live client on the power display instead of the animation": "Cliente activo en la minipantalla en lugar de la animación",
   "Clients": "Clientes",
   "No EVE clients found": "No se encontraron clientes de EVE",
-  "Drag a row to change the switching order.": "Arrastra una fila para cambiar el orden de cambio.",
-  "offline": "sin conexión"
+  "offline": "sin conexión",
+  "Minimize the previous client on switching": "Minimizar el cliente anterior al cambiar",
+  "Drag a row to change the switching order. The pin keeps a client open when the others are minimized.": "Arrastra una fila para cambiar el orden de cambio. La chincheta mantiene un cliente abierto cuando los demás se minimizan."
 }

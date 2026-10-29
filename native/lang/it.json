@@ -158,6 +158,7 @@
   "Live client on the power display instead of the animation": "Client attivo sul mini display al posto dell'animazione",
   "Clients": "Client",
   "No EVE clients found": "Nessun client di EVE trovato",
-  "Drag a row to change the switching order.": "Trascina una riga per cambiare l'ordine di cambio.",
-  "offline": "offline"
+  "offline": "offline",
+  "Minimize the previous client on switching": "Riduci a icona il client precedente al cambio",
+  "Drag a row to change the switching order. The pin keeps a client open when the others are minimized.": "Trascina una riga per cambiare l'ordine di cambio. La puntina tiene un client aperto quando gli altri vengono ridotti a icona."
 }
