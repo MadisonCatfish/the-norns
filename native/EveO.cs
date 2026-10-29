@@ -101,10 +101,11 @@ namespace TheNorns
             VisibleChanged -= FleetVisible;
             fleet.Dispose();
             fleet = null;
+            DisposeDock();
         }
 
-        void FleetFollow(object s, EventArgs e) { if (fleet == null) return; var a = PreviewArea; a.Offset(Location); fleet.Preview.Follow(a); }
-        void FleetVisible(object s, EventArgs e) { if (fleet != null && !Visible) fleet.Preview.Hide(); }
+        void FleetFollow(object s, EventArgs e) { if (fleet == null) return; var a = PreviewArea; a.Offset(Location); fleet.Preview.Follow(a); SyncDock(); }
+        void FleetVisible(object s, EventArgs e) { if (fleet != null && !Visible) { fleet.Preview.Hide(); HideDock(); } }
 
         // a click on the page (Activate); false = not ours
         bool ActivateEveO(string id)
@@ -130,6 +131,7 @@ namespace TheNorns
                 SaveApp("fleet_keep_open", Fleet.KeepOpen.ToArray());
                 return true;
             }
+            if (id.StartsWith("eveo:dock:")) { DockSide = id.Substring(10); SaveApp("fleet_dock", DockSide); dockShown = null; return true; }   // the next frame moves it
             if (id == "eveo:preview") { FleetPreview = !FleetPreview; SaveApp("fleet_preview", FleetPreview); return true; }   // the next frame hides or shows it
             if (id.StartsWith("eveo:key:"))
             {
@@ -227,7 +229,29 @@ namespace TheNorns
             LampRow(g, c, y, "eveo:preview", FleetPreview, L.T("Live client on the power display instead of the animation"));
             y += U(19) - 3;
             LampRow(g, c, y, "eveo:minimize", Fleet.MinimizeOthers, L.T("Minimize the previous client on switching"), "(" + L.T("may be unstable") + ")");
-            y += U(23);
+            y += U(19);
+            // the side of the body the client squares are on (Dock.cs): three keys as the window size's on General
+            var dl = L.T("Navigation panel");
+            var df = TextFont(dl, U(7.5f));
+            using (var b = new SolidBrush(Color.FromArgb(200, 203, 210))) g.DrawString(dl, df, b, c.Left, y + (U(15) - df.GetHeight(g)) / 2, StringFormat.GenericTypographic);
+            float kw = U(40), bx = c.Right - 3 * kw - 2 * U(3);
+            foreach (var side in DockSides)
+            {
+                string id = "eveo:dock:" + side;
+                var br = new RectangleF(bx, y, kw, U(15)); bx += kw + U(3);
+                bool cur = DockSide == side, hot = hotSpot == id;
+                using (var p = Round(br, 5))
+                {
+                    using (var b = new SolidBrush(cur ? Color.FromArgb(40, BodyTheme.Accent) : hot ? Color.FromArgb(26, BodyTheme.Ink) : Color.FromArgb(12, BodyTheme.Ink))) g.FillPath(b, p);
+                    using (var pen = new Pen(cur ? BodyTheme.Accent : Color.FromArgb(50, BodyTheme.Ink), 1f)) g.DrawPath(pen, p);
+                }
+                var lab = L.T(side == "left" ? "Left" : side == "top" ? "Top" : "Right");
+                var lf = TextFont(lab, U(6.5f));
+                var ls = g.MeasureString(lab, lf, 1000, StringFormat.GenericTypographic);
+                using (var b = new SolidBrush(cur ? BodyTheme.Accent : BodyTheme.Ink)) g.DrawString(lab, lf, b, br.Left + (br.Width - ls.Width) / 2, br.Top + (br.Height - ls.Height) / 2, StringFormat.GenericTypographic);
+                spots.Add(Tuple.Create(id, br));
+            }
+            y += U(15) + U(12);
 
             // the hotkeys: a label and a key-like field each
             var ht = L.T("Hotkeys");
@@ -427,15 +451,17 @@ namespace TheNorns
             spots.Add(Tuple.Create(id, r));
         }
 
+        // as big as the tabs' arrow keys (owner, 29.10.2026: the same kind of key), at the right of r, centred on its height
         void WarnBadge(Graphics g, RectangleF r, string id)
         {
+            r = new RectangleF(r.Right - U(14), r.Top + (r.Height - U(13)) / 2, U(14), U(13));
             bool hot = hotSpot == id;
             using (var p = Round(r, 5))
             {
                 using (var b = new SolidBrush(Color.FromArgb(hot ? 60 : 34, BodyTheme.Accent))) g.FillPath(b, p);
                 using (var pen = new Pen(BodyTheme.Accent, 1f)) g.DrawPath(pen, p);
             }
-            WarnTriangle(g, r.Left + r.Width / 2, r.Top + r.Height / 2 + U(0.3f), U(1.45f), BodyTheme.Accent);
+            WarnTriangle(g, r.Left + r.Width / 2, r.Top + r.Height / 2 + U(0.3f), U(1.25f), BodyTheme.Accent);
             spots.Add(Tuple.Create(id, r));
         }
 

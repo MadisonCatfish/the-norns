@@ -555,6 +555,7 @@ namespace TheNorns
                     var area = PreviewArea;
                     var active = fleet.Clients.ActiveClient;
                     fleet.Preview.Sync(this, area, Compact || !FleetPreview ? IntPtr.Zero : fleet.Clients.Active, () => PowerLid(bmp, area, active == null ? null : active.Character));
+                    SyncDock();   // the client squares right of the body (Dock.cs)
                 }
             }
         }
@@ -2188,6 +2189,17 @@ namespace TheNorns
                         strip.Save(Path.Combine(dir, "dps_fleet_name_running.png"), ImageFormat.Png);
                     }
                     f.DemoSeconds = 0; f.DemoPreviewName = null;
+                    // the client squares right of the body (Dock.cs): five clients, the second in front; eight, the first
+                    f.DemoPreviewName = "Pilot-2";
+                    f.DemoDock = Enumerable.Range(1, 5).Select(i => "Pilot-" + i).ToList(); f.DemoDockActive = 1;
+                    using (var b = f.DrawWithDock()) b.Save(Path.Combine(dir, "dps_dock.png"), ImageFormat.Png);
+                    f.DemoDock = Enumerable.Range(1, 8).Select(i => "Pilot-" + i).ToList(); f.DemoDockActive = 0; f.DemoPreviewName = "Pilot-1";
+                    using (var b = f.DrawWithDock()) b.Save(Path.Combine(dir, "dps_dock_8.png"), ImageFormat.Png);
+                    var keepSide = DockSide;
+                    DockSide = "left"; using (var b = f.DrawWithDock()) b.Save(Path.Combine(dir, "dps_dock_left.png"), ImageFormat.Png);
+                    DockSide = "top"; using (var b = f.DrawWithDock()) b.Save(Path.Combine(dir, "dps_dock_top.png"), ImageFormat.Png);
+                    DockSide = keepSide;
+                    f.DemoDock = null; f.DemoPreviewName = null;
                     // the live path: the frame without the picture, the picture where the DWM window lies, the lid over both
                     f.DemoPreview = null;
                     using (var fr = f.Draw())

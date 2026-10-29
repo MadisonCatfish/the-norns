@@ -168,6 +168,19 @@ namespace TheNorns
             return null;
         }
 
+        // the open characters in the cycle's order, at most max (the squares right of the body, Dock.cs)
+        public List<ClientWindow> Ordered(int max)
+        {
+            var list = new List<ClientWindow>();
+            foreach (var c in Order)
+            {
+                var w = byHwnd.Values.FirstOrDefault(x => !x.Login && Names.Equals(x.Character, c));
+                if (w != null) list.Add(w);
+                if (list.Count == max) break;
+            }
+            return list;
+        }
+
         // a new cycle order (Settings -> Carousel's table); characters seen but left out keep their place at the end
         public void SetOrder(IEnumerable<string> order)
         {
@@ -590,6 +603,12 @@ namespace TheNorns
             var w = Clients.Next(dir);
             string what = from + " " + (dir > 0 ? "next" : "previous");
             if (w == null) { Write(what + ": no client"); return; }
+            SwitchTo(w, what);
+        }
+
+        // one client to the front (a step, or a square right of the body clicked)
+        public void SwitchTo(ClientWindow w, string what)
+        {
             var prev = Clients.ActiveClient;
             string how;
             bool front = ClientSwitch.Activate(w.Hwnd, out how);
