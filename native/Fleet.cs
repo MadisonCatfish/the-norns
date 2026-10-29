@@ -11,6 +11,7 @@ using System.IO;
 using System.Linq;
 using System.Runtime.InteropServices;
 using System.Text;
+using System.Windows.Forms;
 
 namespace TheNorns
 {
@@ -200,6 +201,147 @@ namespace TheNorns
         public void Dispose() { if (hook != IntPtr.Zero) { UnhookWinEvent(hook); hook = IntPtr.Zero; } }
     }
 
+    // Step 2: the active client, live, on the power display. Windows' DWM draws the client's window into a small window
+    // of ours over the display's glass - the picture never passes through this app - and keeps that relationship until
+    // the client changes: the new one is made before the old one goes, so there is no empty frame. Over it a
+    // click-through layered lid carries what the body has there: its corners around the rounded glass, the glass's light
+    // marks and rim (DpsForm.PowerLid). A minimized client has no picture (DWM shows none): the display's animation is back.
+    sealed class LivePreview : IDisposable
+    {
+        [StructLayout(LayoutKind.Sequential)] struct RECT { public int L, T, R, B; }
+        [StructLayout(LayoutKind.Sequential)]
+        struct ThumbProps { public int Flags; public RECT Dest, Source; public byte Opacity; public bool Visible, ClientAreaOnly; }
+        [DllImport("dwmapi.dll")] static extern int DwmRegisterThumbnail(IntPtr dest, IntPtr source, out IntPtr thumb);
+        [DllImport("dwmapi.dll")] static extern int DwmUnregisterThumbnail(IntPtr thumb);
+        [DllImport("dwmapi.dll")] static extern int DwmUpdateThumbnailProperties(IntPtr thumb, ref ThumbProps p);
+        [DllImport("user32.dll")] static extern bool GetClientRect(IntPtr h, out RECT r);
+        [DllImport("user32.dll")] static extern bool IsIconic(IntPtr h);
+        [DllImport("user32.dll")] static extern bool IsWindow(IntPtr h);
+        [DllImport("user32.dll")] static extern bool SetWindowPos(IntPtr h, IntPtr after, int x, int y, int w, int hh, uint flags);
+        const int TnpDest = 0x1, TnpSource = 0x2, TnpOpacity = 0x4, TnpVisible = 0x8, TnpClientOnly = 0x10;
+        const uint SwpNoZOrder = 0x4, SwpNoActivate = 0x10, SwpNoOwnerZOrder = 0x200;
+
+        // the window the picture is drawn into: never active, the mouse goes through to the body
+        sealed class Glass : Form
+        {
+            public Glass(bool layered)
+            {
+                this.layered = layered;
+                FormBorderStyle = FormBorderStyle.None; ShowInTaskbar = false; StartPosition = FormStartPosition.Manual;
+                AutoScaleMode = AutoScaleMode.None; BackColor = System.Drawing.Color.Black; TopMost = true;
+            }
+            readonly bool layered;
+            protected override bool ShowWithoutActivation { get { return true; } }
+            protected override CreateParams CreateParams
+            {
+                get
+                {
+                    var cp = base.CreateParams;
+                    cp.ExStyle |= 0x80 /* TOOLWINDOW */ | 0x08000000 /* NOACTIVATE */;
+                    if (layered) cp.ExStyle |= 0x80000 /* LAYERED */ | 0x20 /* TRANSPARENT: click-through */;
+                    return cp;
+                }
+            }
+            protected override void WndProc(ref Message m)
+            {
+                if (m.Msg == 0x84 /* WM_NCHITTEST */) { m.Result = (IntPtr)(-1) /* HTTRANSPARENT: to the body under it */; return; }
+                if (m.Msg == 0x21 /* WM_MOUSEACTIVATE */) { m.Result = (IntPtr)3 /* MA_NOACTIVATE */; return; }
+                base.WndProc(ref m);
+            }
+        }
+
+        Glass host, lid;
+        IntPtr thumb, source;
+        System.Drawing.Rectangle placed;
+        System.Drawing.Size lastClient, lastDest;
+        public Action<string> Log;
+
+        public bool Shown { get { return thumb != IntPtr.Zero; } }
+
+        // every body frame: show src (IntPtr.Zero: none) in face (body coordinates); lid() draws the lid for that frame
+        public void Sync(Form body, System.Drawing.Rectangle face, IntPtr src, Func<System.Drawing.Bitmap> lid)
+        {
+            if (src != IntPtr.Zero && (!IsWindow(src) || IsIconic(src))) src = IntPtr.Zero;
+            if (src == IntPtr.Zero || face.Width < 4 || face.Height < 4 || !body.Visible) { Hide(); return; }
+            if (host == null) { host = new Glass(false); this.lid = new Glass(true); }
+            var at = new System.Drawing.Rectangle(body.Left + face.X, body.Top + face.Y, face.Width, face.Height);
+            if (!host.Visible) { host.Bounds = at; this.lid.Bounds = at; host.Show(body); this.lid.Show(host); placed = at; }
+            else Follow(at);
+            if (src != source || thumb == IntPtr.Zero) Attach(src, face.Size);
+            else Fit(face.Size, false);
+            if (thumb == IntPtr.Zero) { Hide(); return; }
+            using (var b = lid()) AppChrome.PresentLayered(this.lid, b);
+        }
+
+        // the body moved: the picture and its lid go with it at once, not at the next frame
+        public void Follow(System.Drawing.Rectangle at)
+        {
+            if (host == null || !host.Visible || at == placed) return;
+            placed = at;
+            foreach (var f in new[] { host, lid }) SetWindowPos(f.Handle, IntPtr.Zero, at.X, at.Y, at.Width, at.Height, SwpNoZOrder | SwpNoActivate | SwpNoOwnerZOrder);
+        }
+
+        void Attach(IntPtr src, System.Drawing.Size dest)
+        {
+            IntPtr old = thumb, th;
+            int hr = DwmRegisterThumbnail(host.Handle, src, out th);
+            if (hr != 0) { Note("register failed 0x" + hr.ToString("X8")); return; }   // the old picture stays until the next try
+            thumb = th; source = src;
+            Fit(dest, true);
+            if (old != IntPtr.Zero) DwmUnregisterThumbnail(old);
+        }
+
+        // the client's picture, cut to the glass's proportions, over the whole glass; sent only when a size changed
+        void Fit(System.Drawing.Size dest, bool force)
+        {
+            RECT c;
+            if (!GetClientRect(source, out c)) return;
+            var client = new System.Drawing.Size(c.R - c.L, c.B - c.T);
+            if (!force && client == lastClient && dest == lastDest) return;
+            var crop = Crop(client, dest);
+            var p = new ThumbProps
+            {
+                Flags = TnpDest | TnpSource | TnpOpacity | TnpVisible | TnpClientOnly,
+                Dest = new RECT { R = dest.Width, B = dest.Height },
+                Source = new RECT { L = crop.Left, T = crop.Top, R = crop.Right, B = crop.Bottom },
+                Opacity = 255, Visible = true, ClientAreaOnly = true
+            };
+            int hr = DwmUpdateThumbnailProperties(thumb, ref p);
+            if (hr != 0) { Note("update failed 0x" + hr.ToString("X8")); DwmUnregisterThumbnail(thumb); thumb = IntPtr.Zero; source = IntPtr.Zero; return; }   // made again next frame
+            lastClient = client; lastDest = dest;
+            Note("showing " + source.ToInt64().ToString("X") + ": client " + client.Width + "x" + client.Height + ", part " + crop + ", glass " + dest.Width + "x" + dest.Height);
+        }
+
+        public void Hide()
+        {
+            if (thumb != IntPtr.Zero) { DwmUnregisterThumbnail(thumb); thumb = IntPtr.Zero; Note("hidden"); }
+            source = IntPtr.Zero; lastClient = lastDest = System.Drawing.Size.Empty;
+            if (host != null && host.Visible) { lid.Hide(); host.Hide(); }
+        }
+
+        void Note(string s) { if (Log != null) Log("preview: " + s); }
+
+        // the part of a client (w x h) that fills the glass without bars: cut at the sides or at the top and bottom
+        public static System.Drawing.Rectangle Crop(System.Drawing.Size client, System.Drawing.Size dest)
+        {
+            if (client.Width <= 0 || client.Height <= 0 || dest.Width <= 0 || dest.Height <= 0) return new System.Drawing.Rectangle(System.Drawing.Point.Empty, client);
+            double a = (double)dest.Width / dest.Height;
+            if ((double)client.Width / client.Height > a)
+            {
+                int w = (int)Math.Round(client.Height * a);
+                return new System.Drawing.Rectangle((client.Width - w) / 2, 0, w, client.Height);
+            }
+            int h = (int)Math.Round(client.Width / a);
+            return new System.Drawing.Rectangle(0, (client.Height - h) / 2, client.Width, h);
+        }
+
+        public void Dispose()
+        {
+            Hide();
+            if (host != null) { lid.Dispose(); host.Dispose(); host = lid = null; }
+        }
+    }
+
     // the module as the body holds it: made only when it is switched on (or for --fleet-trace)
     sealed class Fleet : IDisposable
     {
@@ -207,12 +349,13 @@ namespace TheNorns
         public static string TracePath;   // --fleet-trace <file>: the module on for this run, every change written there
 
         public readonly ClientTracker Clients;
+        public readonly LivePreview Preview = new LivePreview();
         readonly ForegroundWatch watch;
 
         public Fleet()
         {
             Clients = new ClientTracker(ConfiguredOrder());
-            if (TracePath != null) Clients.Changed += Trace;
+            if (TracePath != null) { Clients.Changed += Trace; Preview.Log = Write; }
             Poll();
             Clients.OnForeground(ForegroundWatch.GetForegroundWindow());
             watch = new ForegroundWatch(Clients.OnForeground);
@@ -230,20 +373,21 @@ namespace TheNorns
 
         void Trace()
         {
-            try
-            {
-                var a = Clients.ActiveClient;
-                var line = string.Format("{0:HH:mm:ss.fff}  active: {1}  open: {2}  order: {3}  skipped: {4}  next: {5}  prev: {6}",
-                    DateTime.Now, a == null ? "-" : a.ToString(),
-                    string.Join(", ", Clients.Recent.Select(h => Clients.All.First(w => w.Hwnd == h).ToString())),
-                    string.Join(", ", Clients.Order), string.Join(", ", Clients.Skipped),
-                    Clients.Next(1) == null ? "-" : Clients.Next(1).ToString(), Clients.Next(-1) == null ? "-" : Clients.Next(-1).ToString());
-                File.AppendAllText(TracePath, line + Environment.NewLine);
-            }
+            var a = Clients.ActiveClient;
+            Write(string.Format("active: {0}  open: {1}  order: {2}  skipped: {3}  next: {4}  prev: {5}",
+                a == null ? "-" : a.ToString(),
+                string.Join(", ", Clients.Recent.Select(h => Clients.All.First(w => w.Hwnd == h).ToString())),
+                string.Join(", ", Clients.Order), string.Join(", ", Clients.Skipped),
+                Clients.Next(1) == null ? "-" : Clients.Next(1).ToString(), Clients.Next(-1) == null ? "-" : Clients.Next(-1).ToString()));
+        }
+
+        void Write(string line)
+        {
+            try { File.AppendAllText(TracePath, DateTime.Now.ToString("HH:mm:ss.fff") + "  " + line + Environment.NewLine); }
             catch { }
         }
 
-        public void Dispose() { watch.Dispose(); }
+        public void Dispose() { watch.Dispose(); Preview.Dispose(); }
 
         // selftest: the tracker on made-up windows
         public static string SelfTest()
@@ -288,6 +432,14 @@ namespace TheNorns
             t.ToggleSkip("Pilot-6");
             check(t.Next(1) == null && t.Next(-1) == null, "all skipped: no next client");
             check(changes > 0, "changes reported (" + changes + ")");
+
+            // the live picture's cut: the glass (66 x 35 here) is wider than 16:9, narrower than 21:9
+            var glass = new System.Drawing.Size(66, 35);
+            var c169 = LivePreview.Crop(new System.Drawing.Size(1600, 900), glass);
+            check(c169.Width == 1600 && c169.Height == 848 && c169.Top == 26, "16:9 client: cut at the top and bottom " + c169);
+            var c219 = LivePreview.Crop(new System.Drawing.Size(3440, 1440), glass);
+            check(c219.Height == 1440 && c219.Width == 2715 && c219.Left == 362, "21:9 client: cut at the sides " + c219);
+            check(LivePreview.Crop(System.Drawing.Size.Empty, glass).IsEmpty, "no client size: nothing to cut");
             return sb.ToString();
         }
     }

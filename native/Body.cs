@@ -287,7 +287,12 @@ namespace TheNorns
             if (standalone) Icon = AppInfo.Icon;
             Size = new Size(DesiredWidth, DesiredHeight);
             StartSessionStats();
-            if (Fleet.TracePath != null || (!SelfTesting && Fleet.Enabled)) fleet = new Fleet();
+            if (Fleet.TracePath != null || (!SelfTesting && Fleet.Enabled))
+            {
+                fleet = new Fleet();
+                LocationChanged += (s, e) => { var a = PreviewArea; a.Offset(Location); fleet.Preview.Follow(a); };
+                VisibleChanged += (s, e) => { if (!Visible) fleet.Preview.Hide(); };
+            }
             timer.Tick += (s, e) =>
             {
                 var now = DateTime.UtcNow;
@@ -522,7 +527,15 @@ namespace TheNorns
         void Render()
         {
             if (!IsHandleCreated) return;
-            using (var bmp = Draw()) AppChrome.PresentLayered(this, bmp);
+            using (var bmp = Draw())
+            {
+                AppChrome.PresentLayered(this, bmp);
+                if (fleet != null)
+                {
+                    var area = PreviewArea;
+                    fleet.Preview.Sync(this, area, Compact ? IntPtr.Zero : fleet.Clients.Active, () => PowerLid(bmp, area));
+                }
+            }
         }
 
         static string Num(double v) { return Math.Round(v).ToString("#,0", CultureInfo.InvariantCulture).Replace(",", " "); }
@@ -911,42 +924,90 @@ namespace TheNorns
             var sh = r; sh.Offset(0, U(3.5f)); sh.Inflate(-U(1), 0);
             using (var sp = Round(sh, 11)) using (var b = new SolidBrush(Color.FromArgb(120, 0, 0, 0))) g.FillPath(b, sp);
             using (var lip = Round(new RectangleF(r.X, r.Y + U(1.5f), r.Width, r.Height), 11)) using (var b = new SolidBrush(Color.FromArgb(8, 9, 11))) g.FillPath(b, lip);
-            var face = new RectangleF(r.X + U(0.6f), r.Y, r.Width - U(1.2f), r.Height);   // tilted back: the face is a touch narrower
+            var face = PowerFace;
             using (var fp = Round(face, 11))
             {
                 using (var pb = new PathGradientBrush(fp) { CenterColor = Color.FromArgb(12, 13, 16), SurroundColors = new[] { Color.FromArgb(3, 3, 4) } }) g.FillPath(pb, fp);
                 var st = g.Save();
                 g.SetClip(fp);
-                var dotColor = noClients ? Mix(Color.FromArgb(12, 13, 16), AlarmRed, shortLevel) : Color.FromArgb(225, 255, 0);
-                if (!noClients || shortLevel > 0)
-                    PowerAnim.Draw(g, new PointF(face.Left + face.Width / 2, face.Top + face.Height / 2), face.Height * 1.89f, following || noClients ? animSecs : 0, dotColor, K * Scale);
-                var line = noClients ? ShortLine(secs) : null;
-                if (line != null)
+                if (DemoPreview != null)
                 {
-                    double seed = Math.Floor(secs / 0.7);
-                    PaintLineOfBrokenPixels(g, face, line.Item1, line.Item2, seed);
-                    if (ShortHash(seed + 0.83) < 0.4) PaintLineOfBrokenPixels(g, face, line.Item1 + 2.5 * U(1) / face.Width, line.Item2 * 0.45, seed + 3);
+                    // selftest: a made-up client picture where the client module's live one lies (Fleet.cs), cut the same way
+                    var area = Rectangle.Round(face);
+                    g.InterpolationMode = InterpolationMode.HighQualityBicubic;
+                    g.DrawImage(DemoPreview, area, LivePreview.Crop(DemoPreview.Size, area.Size), GraphicsUnit.Pixel);
                 }
-                var tex = Potato ? null : GlassTexture;
-                if (tex != null)
+                else if (fleet == null || !fleet.Preview.Shown)   // under the live picture nothing needs drawing
                 {
-                    // the texture's light marks only (white, alpha = their brightness x 0.19), 150 % of the glass
-                    var cm = new ColorMatrix(new[]
+                    var dotColor = noClients ? Mix(Color.FromArgb(12, 13, 16), AlarmRed, shortLevel) : Color.FromArgb(225, 255, 0);
+                    if (!noClients || shortLevel > 0)
+                        PowerAnim.Draw(g, new PointF(face.Left + face.Width / 2, face.Top + face.Height / 2), face.Height * 1.89f, following || noClients ? animSecs : 0, dotColor, K * Scale);
+                    var line = noClients ? ShortLine(secs) : null;
+                    if (line != null)
                     {
-                        new float[] { 0, 0, 0, 0.19f * 0.30f, 0 }, new float[] { 0, 0, 0, 0.19f * 0.59f, 0 }, new float[] { 0, 0, 0, 0.19f * 0.11f, 0 },
-                        new float[] { 0, 0, 0, 0, 0 }, new float[] { 1, 1, 1, 0, 1 }
-                    });
-                    using (var ia = new ImageAttributes())
-                    {
-                        ia.SetColorMatrix(cm);
-                        float tw = face.Width * 1.5f, th = face.Height * 1.5f;
-                        g.DrawImage(tex, new Rectangle((int)(face.Left - (tw - face.Width) / 2), (int)(face.Top - (th - face.Height) / 2), (int)tw, (int)th), 0, 0, tex.Width, tex.Height, GraphicsUnit.Pixel, ia);
+                        double seed = Math.Floor(secs / 0.7);
+                        PaintLineOfBrokenPixels(g, face, line.Item1, line.Item2, seed);
+                        if (ShortHash(seed + 0.83) < 0.4) PaintLineOfBrokenPixels(g, face, line.Item1 + 2.5 * U(1) / face.Width, line.Item2 * 0.45, seed + 3);
                     }
                 }
                 g.Restore(st);
-                using (var pen = new Pen(Color.FromArgb(28, 29, 32), U(1))) g.DrawPath(pen, fp);
-                using (var pen = new Pen(Color.FromArgb(15, 255, 255, 255), 1f)) g.DrawPath(pen, fp);
+                PaintPowerGlass(g, face, fp);
             }
+        }
+
+        // tilted back: the face is a touch narrower than the display
+        RectangleF PowerFace { get { var r = PowerRect; return new RectangleF(r.X + U(0.6f), r.Y, r.Width - U(1.2f), r.Height); } }
+        public Bitmap DemoPreview;   // selftest: a client picture on the power display
+
+        // over the glass's content: the texture's light marks and the rim
+        void PaintPowerGlass(Graphics g, RectangleF face, GraphicsPath fp)
+        {
+            var tex = Potato ? null : GlassTexture;
+            if (tex != null)
+            {
+                var st = g.Save();
+                g.SetClip(fp);
+                // the texture's light marks only (white, alpha = their brightness x 0.19), 150 % of the glass
+                var cm = new ColorMatrix(new[]
+                {
+                    new float[] { 0, 0, 0, 0.19f * 0.30f, 0 }, new float[] { 0, 0, 0, 0.19f * 0.59f, 0 }, new float[] { 0, 0, 0, 0.19f * 0.11f, 0 },
+                    new float[] { 0, 0, 0, 0, 0 }, new float[] { 1, 1, 1, 0, 1 }
+                });
+                using (var ia = new ImageAttributes())
+                {
+                    ia.SetColorMatrix(cm);
+                    float tw = face.Width * 1.5f, th = face.Height * 1.5f;
+                    g.DrawImage(tex, new Rectangle((int)(face.Left - (tw - face.Width) / 2), (int)(face.Top - (th - face.Height) / 2), (int)tw, (int)th), 0, 0, tex.Width, tex.Height, GraphicsUnit.Pixel, ia);
+                }
+                g.Restore(st);
+            }
+            using (var pen = new Pen(Color.FromArgb(28, 29, 32), U(1))) g.DrawPath(pen, fp);
+            using (var pen = new Pen(Color.FromArgb(15, 255, 255, 255), 1f)) g.DrawPath(pen, fp);
+        }
+
+        // the client module's live picture (Fleet.cs) lies over the face; its lid carries what the body has there: the
+        // body's own pixels around the rounded glass (cut from this frame, so a heated hull shows too), the light marks, the rim
+        Rectangle PreviewArea { get { var f = PowerFace; return Rectangle.FromLTRB((int)Math.Floor(f.Left), (int)Math.Floor(f.Top), (int)Math.Ceiling(f.Right), (int)Math.Ceiling(f.Bottom)); } }
+        Bitmap PowerLid(Bitmap frame, Rectangle area)
+        {
+            var bmp = new Bitmap(area.Width, area.Height, PixelFormat.Format32bppArgb);
+            using (var g = Graphics.FromImage(bmp))
+            using (var cut = frame.Clone(area, frame.PixelFormat))
+            using (var tb = new TextureBrush(cut))
+            {
+                g.SmoothingMode = SmoothingMode.AntiAlias; g.PixelOffsetMode = PixelOffsetMode.HighQuality;
+                g.TranslateTransform(-area.X, -area.Y);
+                tb.TranslateTransform(area.X, area.Y);
+                var face = PowerFace;
+                using (var fp = Round(face, 11))
+                using (var corners = new GraphicsPath(FillMode.Alternate))
+                {
+                    corners.AddRectangle(area); corners.AddPath(fp, false);
+                    g.FillPath(tb, corners);
+                    PaintPowerGlass(g, face, fp);
+                }
+            }
+            return bmp;
         }
 
         // Close: a pale grey anodised key in a dark casing, red under the mouse
@@ -1990,6 +2051,54 @@ namespace TheNorns
                 var lv = new StringBuilder("no-client lamp, 0.05 s steps over one burst: ");
                 for (double t = 0; t < 5.2; t += 0.05) lv.Append(AlarmLevel(t) > 0.5 ? "#" : AlarmLevel(t) > 0.05 ? "+" : ".");
                 sb.AppendLine(lv.ToString());
+            }
+            // the client module (Fleet.cs, off by default): a client's live picture on the power display. Here a made-up
+            // 16:9 picture (no game pixels), cut to the glass as the live one is; then the lid the live one gets, over it
+            using (var pic = new Bitmap(1600, 900))
+            {
+                using (var pg = Graphics.FromImage(pic))
+                {
+                    pg.SmoothingMode = SmoothingMode.AntiAlias;
+                    using (var bg = new LinearGradientBrush(new Rectangle(0, 0, 1600, 900), Color.FromArgb(8, 14, 30), Color.FromArgb(34, 18, 44), 35f)) pg.FillRectangle(bg, 0, 0, 1600, 900);
+                    var rnd = new Random(7);
+                    for (int i = 0; i < 500; i++) using (var b = new SolidBrush(Color.FromArgb(rnd.Next(60, 230), 255, 255, 255))) pg.FillEllipse(b, rnd.Next(1600), rnd.Next(900), 3, 3);
+                    using (var b = new SolidBrush(Color.FromArgb(196, 116, 64))) pg.FillEllipse(b, 900, 200, 460, 460);
+                    using (var b = new SolidBrush(Color.FromArgb(170, 22, 26, 32))) { pg.FillRectangle(b, 30, 70, 380, 760); pg.FillRectangle(b, 1200, 560, 370, 300); }
+                    using (var b = new SolidBrush(Color.FromArgb(225, 255, 0))) pg.FillRectangle(b, 0, 0, 1600, 16);   // cut away with the top
+                }
+                Action<Bitmap, Rectangle, string> zoom = (fr, r, name) =>
+                {
+                    using (var z = new Bitmap(r.Width * 4, r.Height * 4))
+                    using (var zg = Graphics.FromImage(z))
+                    {
+                        zg.InterpolationMode = InterpolationMode.NearestNeighbor; zg.PixelOffsetMode = PixelOffsetMode.Half;
+                        zg.DrawImage(fr, new Rectangle(0, 0, z.Width, z.Height), r, GraphicsUnit.Pixel);
+                        z.Save(Path.Combine(dir, name), ImageFormat.Png);
+                    }
+                };
+                using (var f = new DpsForm(new string[0], () => null, true) { DemoNow = now, DemoSeconds = 0, DemoFollowing = true })
+                {
+                    var pr = Rectangle.Round(RectangleF.Inflate(f.PowerRect, f.U(6), f.U(6)));
+                    f.DemoPreview = pic;
+                    save(f, "dps_fleet_preview.png");
+                    using (var fr = f.Draw()) zoom(fr, pr, "dps_fleet_preview_zoom.png");
+                    // the live path: the frame without the picture, the picture where the DWM window lies, the lid over both
+                    f.DemoPreview = null;
+                    using (var fr = f.Draw())
+                    {
+                        var area = f.PreviewArea;
+                        using (var lid = f.PowerLid(fr, area))
+                        using (var g = Graphics.FromImage(fr))
+                        {
+                            g.InterpolationMode = InterpolationMode.HighQualityBicubic;
+                            g.CompositingMode = CompositingMode.SourceCopy;
+                            g.DrawImage(pic, area, LivePreview.Crop(pic.Size, area.Size), GraphicsUnit.Pixel);
+                            g.CompositingMode = CompositingMode.SourceOver;
+                            g.DrawImageUnscaled(lid, area.X, area.Y);
+                        }
+                        zoom(fr, pr, "dps_fleet_lid_zoom.png");
+                    }
+                }
             }
             // 4) the formula windows over the body: on the way in, and open
             using (var f = new DpsForm(pilots5, () => null, true) { DemoNow = now, DemoSeconds = 1.3, DemoFollowing = true })
