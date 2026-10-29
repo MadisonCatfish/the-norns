@@ -153,5 +153,6 @@
   "Press keys…": "请按键…",
   "none": "无",
   "taken": "已被占用",
-  "Click a field and press the keys. Backspace clears it, Esc leaves it as it was. A key another program already holds can't be used.": "点击字段并按下按键。Backspace 清空，Esc 保持原样。其他程序已占用的按键无法使用。"
+  "Click a field and press the keys. Backspace clears it, Esc leaves it as it was. A key another program already holds can't be used.": "点击字段并按下按键。Backspace 清空，Esc 保持原样。其他程序已占用的按键无法使用。",
+  "The EVE client uses this key by default:": "EVE 客户端默认使用此按键："
 }

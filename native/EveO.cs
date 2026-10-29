@@ -9,6 +9,74 @@ using System.Windows.Forms;
 
 namespace TheNorns
 {
+    // the EVE client's default keys (EVE University wiki, "Keyboard controls", as of Havoc 21.06 - not read from the
+    // game), written as EVE-O writes keys; a hotkey set here on one of them gets a warning next to its field.
+    // Modifier-only clicks (Ctrl, Alt, Shift) and mouse buttons are left out.
+    static class EveKeys
+    {
+        static readonly string[] Defaults =
+        {
+            // windows
+            "Alt+V|Activity Tracker", "Alt+A|Character Sheet", "Alt+E|Contacts", "Alt+D|Directional Scanner", "F12|EVE Help",
+            "Alt+F|Fitting", "Alt+S|Industry", "Alt+C|Inventory", "Alt+I|Mail", "F11|Map Browser", "F10|Map", "Alt+4|New Eden Store",
+            "Alt+G|Open Item Hangar", "Control+F|Open FPS Monitor", "Alt+N|Open Ship Hangar", "Alt+J|Opportunities",
+            "Alt+T|Personal Assets", "Alt+P|Probe Scanner", "Alt+Y|Redeem Items", "Alt+R|Regional Market", "Space|Set Channel Focus",
+            "Alt+Space|Set Overview Focus", "Alt+X|Skills", "F9|Solar System Map", "Alt+M|The Agency", "Alt+W|Wallet", "L|Locations",
+            "Control+W|Close Active Window", "Control+Alt+W|Close All Windows", "Oem5|Neocom Menu", "Shift+Back|Force fade from black",
+            // combat
+            "Shift+1|Activate Defense Mode", "Shift+2|Activate Sharpshooter Mode", "Shift+3|Activate Propulsion Mode", "A|Align to",
+            "Q|Approach", "V|Directional Scan", "D|Dock / Jump / Activate gate", "E|Keep at Range", "W|Orbit", "B|Refresh Scan Probe",
+            "T|Show info", "1|Tag item as: 1", "2|Tag item as: 2", "3|Tag item as: 3", "4|Tag item as: A", "5|Tag item as: B",
+            "6|Tag item as: C", "7|Tag item from sequence: 1, 2 or 3", "8|Tag item from sequence: A, B or C",
+            "9|Tag item from sequence: X, Y or Z", "Shift+C|Toggle Auto Tracking", "C|Track", "S|Warp to",
+            // general
+            "Control+Shift+Tab|Browse Window Menu Upwards", "Control+Tab|Browse Window Menu", "Escape|Close modal windows / config menu",
+            "Enter|Confirm", "Control+C|Copy", "Control+X|Cut", "Control+V|Paste", "Control+A|Select All", "Alt+F9|Hide Mouse Cursor",
+            "Control+Shift+PageDown|Next stacked window", "Control+Shift+PageUp|Previous stacked window", "Control+PageDown|Next Tab",
+            "Control+PageUp|Previous Tab", "Control+Alt+Shift+M|Open Monitor", "Alt+Shift+Q|Quit Game", "Control+Alt+Enter|Reset Monitor",
+            "Shift+S|Set Search Bar Focus", "Tab|Tab to next edit field", "Shift+Tab|Tab to previous edit field",
+            "Control+Shift+F9|Toggle 3D view", "Control+Alt+Shift+F12|Toggle Audio", "Control+Alt+Shift+E|Toggle effects",
+            "Control+Alt+Shift+T|Toggle turret effects", "Control+F9|Toggle User Interface Visibility", "Alt+Enter|Toggle Windowed",
+            "Control+Shift+A|Zoom In", "Control+Shift+Z|Zoom Out",
+            // navigation
+            "Add|Accelerate", "Subtract|Decelerate", "Control+S|Autopilot", "Control+Space|Stop Ship", "Control+Alt+Space|Set Full Speed",
+            "Left|Turn Left", "Right|Turn Right", "Up|Pitch Up", "Down|Pitch Down", "Alt+Left|Select previous target",
+            "Alt+Right|Select next target", "Control+B|Save Location", "Control+O|Sensor Overlay", "Control+D|Tactical Overlay",
+            "Alt+1|Tactical Camera", "Alt+2|Orbit Camera", "Alt+3|First Person Camera", "Alt+Z|Toggle show all brackets",
+            "Alt+Shift+Z|Toggle show no brackets", "Alt+Shift+X|Toggle Special Bracket Display", "Z|Broadcast: Spotted the Enemy",
+            "X|Broadcast: Target (Selected)",
+            // modules
+            "Control+R|Reload Ammo", "Control+3|Toggle Overload on High Power Rack", "Control+1|Toggle Overload on Low Power Rack",
+            "Control+2|Toggle Overload on Medium Power Rack",
+            // drones
+            "F|All Drones: Engage", "Alt+Shift+R|All Drones: Return and Orbit", "Shift+R|All Drones: Return to Drone Bay", "Shift+F|Launch Drones",
+        };
+
+        static Dictionary<uint, string> byKey;
+
+        static uint Code(uint mods, uint vk) { return mods << 16 | vk; }
+
+        // the client's action on that key, or null
+        public static string Action(string key)
+        {
+            if (byKey == null)
+            {
+                byKey = new Dictionary<uint, string>();
+                Action<string, string> add = (k, a) => { uint m, v; if (Hotkeys.Parse(k, out m, out v) && !byKey.ContainsKey(Code(m, v))) byKey[Code(m, v)] = a; };
+                foreach (var d in Defaults) { var p = d.Split('|'); add(p[0], p[1]); }
+                // the module slots: F1-F8 high, Alt mid, Ctrl low; with Shift they overload
+                for (int i = 1; i <= 8; i++)
+                {
+                    add("F" + i, "Activate High Power Slot " + i); add("Alt+F" + i, "Activate Medium Power Slot " + i); add("Control+F" + i, "Activate Low Power Slot " + i);
+                    add("Shift+F" + i, "Toggle Overload on High Power Slot " + i); add("Alt+Shift+F" + i, "Toggle Overload on Medium Power Slot " + i);
+                    add("Control+Shift+F" + i, "Toggle Overload on Low Power Slot " + i);
+                }
+            }
+            uint mods, vk; string action;
+            return Hotkeys.Parse(key, out mods, out vk) && byKey.TryGetValue(Code(mods, vk), out action) ? action : null;
+        }
+    }
+
     partial class DpsForm
     {
         public static bool FleetOn = Fleet.Enabled;
@@ -119,7 +187,10 @@ namespace TheNorns
             foreach (var row in new[] { new[] { "fleet_next", "Next client" }, new[] { "fleet_prev", "Previous client" } })
             {
                 RowLabel(g, L.T(row[1]), c.Left, y, fh);
-                KeyField(g, RectangleF.FromLTRB(c.Left + labelW, y, c.Right, y + fh), row[0]);
+                KeyField(g, RectangleF.FromLTRB(c.Left + labelW, y, c.Right - fh - U(4), y + fh), row[0]);
+                // a key the EVE client has by default: the band's warning triangle in a yellow square key, its action as a tip
+                if (keyCapture != row[0] && KeysOf(row[0]).Any(k => EveKeys.Action(k) != null))
+                    WarnBadge(g, new RectangleF(c.Right - fh, y, fh, fh), "eveo:warn:" + row[0]);
                 y += fh + U(6);
             }
             y += U(3);
@@ -127,6 +198,26 @@ namespace TheNorns
             var hf = TextFont(hint, U(6.6f));
             var hh = g.MeasureString(hint, hf, (int)c.Width).Height;
             using (var b = new SolidBrush(Color.FromArgb(150, BodyTheme.Ink))) g.DrawString(hint, hf, b, new RectangleF(c.Left, y, c.Width, hh + U(2)));
+        }
+
+        void WarnBadge(Graphics g, RectangleF r, string id)
+        {
+            bool hot = hotSpot == id;
+            using (var p = Round(r, 5))
+            {
+                using (var b = new SolidBrush(Color.FromArgb(hot ? 60 : 34, BodyTheme.Accent))) g.FillPath(b, p);
+                using (var pen = new Pen(BodyTheme.Accent, 1f)) g.DrawPath(pen, p);
+            }
+            WarnTriangle(g, r.Left + r.Width / 2, r.Top + r.Height / 2 + U(0.3f), U(1.45f), BodyTheme.Accent);
+            spots.Add(Tuple.Create(id, r));
+        }
+
+        // the tip over the warning: what the EVE client does on those keys
+        string WarnTip(string spot)
+        {
+            if (spot == null || !spot.StartsWith("eveo:warn:")) return null;
+            var lines = KeysOf(spot.Substring(10)).Select(k => new { k, a = EveKeys.Action(k) }).Where(x => x.a != null).Select(x => KeyLabel(x.k) + " — " + x.a);
+            return L.T("The EVE client uses this key by default:") + "\n" + string.Join("\n", lines);
         }
 
         // a hotkey field like the number fields: the keys, "Press keys…" while being set, red when another program holds them

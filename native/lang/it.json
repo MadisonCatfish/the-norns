@@ -153,5 +153,6 @@
   "Press keys…": "Premi i tasti…",
   "none": "nessuno",
   "taken": "occupato",
-  "Click a field and press the keys. Backspace clears it, Esc leaves it as it was. A key another program already holds can't be used.": "Fai clic su un campo e premi i tasti. Backspace lo svuota, Esc lo lascia com'era. Un tasto già usato da un altro programma non si può usare."
+  "Click a field and press the keys. Backspace clears it, Esc leaves it as it was. A key another program already holds can't be used.": "Fai clic su un campo e premi i tasti. Backspace lo svuota, Esc lo lascia com'era. Un tasto già usato da un altro programma non si può usare.",
+  "The EVE client uses this key by default:": "Il client di EVE usa questo tasto per impostazione predefinita:"
 }

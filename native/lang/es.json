@@ -153,5 +153,6 @@
   "Press keys…": "Pulsa las teclas…",
   "none": "ninguna",
   "taken": "ocupada",
-  "Click a field and press the keys. Backspace clears it, Esc leaves it as it was. A key another program already holds can't be used.": "Haz clic en un campo y pulsa las teclas. Retroceso lo borra, Esc lo deja como estaba. No se puede usar una tecla que ya tiene otro programa."
+  "Click a field and press the keys. Backspace clears it, Esc leaves it as it was. A key another program already holds can't be used.": "Haz clic en un campo y pulsa las teclas. Retroceso lo borra, Esc lo deja como estaba. No se puede usar una tecla que ya tiene otro programa.",
+  "The EVE client uses this key by default:": "El cliente de EVE usa esta tecla por defecto:"
 }

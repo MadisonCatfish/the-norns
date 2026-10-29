@@ -153,5 +153,6 @@
   "Press keys…": "Натисніть клавіші…",
   "none": "немає",
   "taken": "зайнята",
-  "Click a field and press the keys. Backspace clears it, Esc leaves it as it was. A key another program already holds can't be used.": "Клацніть поле й натисніть клавіші. Backspace очищає його, Esc залишає як було. Клавішу, яку вже тримає інша програма, використати не можна."
+  "Click a field and press the keys. Backspace clears it, Esc leaves it as it was. A key another program already holds can't be used.": "Клацніть поле й натисніть клавіші. Backspace очищає його, Esc залишає як було. Клавішу, яку вже тримає інша програма, використати не можна.",
+  "The EVE client uses this key by default:": "Клієнт EVE за замовчуванням використовує цю клавішу:"
 }

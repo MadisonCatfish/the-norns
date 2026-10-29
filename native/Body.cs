@@ -395,8 +395,9 @@ namespace TheNorns
             hoverName = hn; hoverClose = hc; hoverFx = hv || hs; hotSpot = spot;
             // the tip after a short rest on the key, not at once (owner, 27.10.2026)
             tip.Hide(this);
-            tipText = hn ? L.T("Settings") : hc ? L.T("Close") : null;
-            tipAt = hn ? new Point((int)NameRect.Left, (int)(NameRect.Bottom + U(4))) : hc ? new Point((int)CloseRect.Left, (int)(CloseRect.Bottom + U(4))) : Point.Empty;
+            var warn = WarnTip(spot);   // Settings -> Eve-O: the EVE client's action on a hotkey (EveO.cs)
+            tipText = hn ? L.T("Settings") : hc ? L.T("Close") : warn;
+            tipAt = hn ? new Point((int)NameRect.Left, (int)(NameRect.Bottom + U(4))) : hc ? new Point((int)CloseRect.Left, (int)(CloseRect.Bottom + U(4))) : warn != null ? new Point(e.X - (int)U(60), e.Y + (int)U(12)) : Point.Empty;
             tipDue = clock.Elapsed.TotalSeconds + TipDelay;
             Render();
         }
@@ -714,13 +715,16 @@ namespace TheNorns
                 rx = box.Left - V(6);
                 for (int i = 2; i >= 0; i--) g.FillRectangle(silk, rx - V(0.75f) - i * V(1.75f), cy - V(2.25f), V(0.75f), V(4.5f));
                 rx -= V(5.25f) + V(6);
-                using (var pen = new Pen(BodyTheme.Accent2Light, Math.Max(1f, V(0.65f))))
-                {
-                    var tri = new[] { new PointF(rx - V(3), cy - V(2.5f)), new PointF(rx, cy + V(2)), new PointF(rx - V(6), cy + V(2)) };
-                    g.DrawPolygon(pen, tri);
-                }
-                using (var b = new SolidBrush(BodyTheme.Accent2Light)) g.FillRectangle(b, rx - V(3.35f), cy - V(1), V(0.7f), V(1.6f));
+                WarnTriangle(g, rx - V(3), cy, V(1), BodyTheme.Accent2Light);
             }
+        }
+
+        // the band's warning triangle (6 x 4.5 units of v around cx, cy, the mark inside); Settings -> Eve-O uses it too
+        internal static void WarnTriangle(Graphics g, float cx, float cy, float v, Color c)
+        {
+            using (var pen = new Pen(c, Math.Max(1f, v * 0.65f)))
+                g.DrawPolygon(pen, new[] { new PointF(cx, cy - v * 2.5f), new PointF(cx + v * 3, cy + v * 2), new PointF(cx - v * 3, cy + v * 2) });
+            using (var b = new SolidBrush(c)) g.FillRectangle(b, cx - v * 0.35f, cy - v, v * 0.7f, v * 1.6f);
         }
 
         // the LOG lamp: lit while a combat log is followed, slowly blinking while waiting for one
