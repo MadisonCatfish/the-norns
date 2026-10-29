@@ -41,7 +41,10 @@ namespace TheNorns
             {
                 // --preview-no-clients / --preview-update / --preview-rewarps / --preview-dread: to look at those states with
                 // clients open, next to a running copy
-                bool preview = Array.IndexOf(args, "--preview-no-clients") >= 0 || Array.IndexOf(args, "--preview-update") >= 0 || Array.IndexOf(args, "--preview-rewarps") >= 0 || Array.IndexOf(args, "--preview-dread") >= 0 || Array.IndexOf(args, "--preview-competition") >= 0;
+                // --fleet-trace <file>: the client module (Fleet.cs) on for this run, every change of the clients written to the file
+                int ft = Array.IndexOf(args, "--fleet-trace");
+                if (ft >= 0 && args.Length > ft + 1) Fleet.TracePath = Path.GetFullPath(args[ft + 1]);
+                bool preview = Array.IndexOf(args, "--preview-no-clients") >= 0 || Array.IndexOf(args, "--preview-update") >= 0 || Array.IndexOf(args, "--preview-rewarps") >= 0 || Array.IndexOf(args, "--preview-dread") >= 0 || Array.IndexOf(args, "--preview-competition") >= 0 || Fleet.TracePath != null;
                 if (!first && !preview) return;   // already open
                 Application.EnableVisualStyles();
                 if (preview) DpsForm.SelfTesting = true;   // the preview keeps no position and no session statistics

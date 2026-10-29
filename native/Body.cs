@@ -200,6 +200,7 @@ namespace TheNorns
         static string PosFile { get { return Path.Combine(AppInfo.DataDir, "dps_pos.txt"); } }
         DateTime lastPoll = DateTime.MinValue;
         int clients = -1;              // open EVE client windows at the last poll (-1: not looked yet)
+        Fleet fleet;                   // the client preview & switching module (Fleet.cs); null while it is off
         public bool? DemoNoClients;    // selftest: the lamp's "no client" state
         Point? glare;   // the mouse over the screen glass, client px
 
@@ -286,6 +287,7 @@ namespace TheNorns
             if (standalone) Icon = AppInfo.Icon;
             Size = new Size(DesiredWidth, DesiredHeight);
             StartSessionStats();
+            if (Fleet.TracePath != null || (!SelfTesting && Fleet.Enabled)) fleet = new Fleet();
             timer.Tick += (s, e) =>
             {
                 var now = DateTime.UtcNow;
@@ -294,7 +296,12 @@ namespace TheNorns
                     lastPoll = now;
                     if (replay != null) ReplayStep(now); else stats.Add(tail.Poll(stats), now);
                     SoundSpawns(now);
-                    try { clients = Eve.FindWindows("EVE - ").Count; } catch { }
+                    try
+                    {
+                        if (fleet != null) { fleet.Poll(); clients = fleet.Clients.CharacterCount; }   // one look at the windows serves both
+                        else clients = Eve.FindWindows("EVE - ").Count;
+                    }
+                    catch { }
                     Follow();
                 }
                 // the glass light follows the mouse (polled, so it also follows while dragging)
@@ -1650,7 +1657,7 @@ namespace TheNorns
             finally { if (pf != null) pf.Dispose(); }
         }
 
-        protected override void Dispose(bool disposing) { if (disposing) { timer.Dispose(); tip.Dispose(); if (shell != null) shell.Dispose(); } base.Dispose(disposing); }
+        protected override void Dispose(bool disposing) { if (disposing) { timer.Dispose(); tip.Dispose(); if (shell != null) shell.Dispose(); if (fleet != null) fleet.Dispose(); } base.Dispose(disposing); }
 
         // ================= self-test =================
 
@@ -2015,6 +2022,7 @@ namespace TheNorns
                 sb.AppendLine("smartbombs after a cut cycle: modules " + rr.Modules);
                 if (rr.Modules != 7) throw new Exception("Expected 7 smartbombs after cut cycles, got " + rr.Modules);
             }
+            sb.Append(Fleet.SelfTest());
             File.WriteAllText(Path.Combine(dir, "selftest_dps.txt"), sb.ToString());
 
             if (FormatIsk(38300000) != "38.3 m. isk") throw new Exception("Expected '38.3 m. isk', got '" + FormatIsk(38300000) + "'");
