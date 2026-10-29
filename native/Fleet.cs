@@ -486,14 +486,15 @@ namespace TheNorns
             Clients.OnForeground(ForegroundWatch.GetForegroundWindow());
             watch = new ForegroundWatch(Clients.OnForeground);
             keys = new Hotkeys(dir => Step(dir, "key"));
-            Bind("fleet_next", 1, "1"); Bind("fleet_prev", -1, "2");
+            bool none = !Configured("fleet_next").Any() && !Configured("fleet_prev").Any();
+            Bind("fleet_next", 1, none ? "1" : null); Bind("fleet_prev", -1, none ? "2" : null);
         }
 
-        // the keys from config.json; a --fleet-trace run without them takes 1 / 2, as the owner's EVE-O has them
+        // the keys from config.json; a --fleet-trace run with neither set takes 1 / 2, as the owner's EVE-O has them
         void Bind(string setting, int dir, string testKey)
         {
             var list = Configured(setting).ToList();
-            if (list.Count == 0 && TracePath != null) list.Add(testKey);
+            if (list.Count == 0 && TracePath != null && testKey != null) list.Add(testKey);
             foreach (var k in list) Write("key " + (dir > 0 ? "next" : "previous") + " " + k + ": " + keys.Add(k, dir));
         }
 
