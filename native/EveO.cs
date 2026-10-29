@@ -226,7 +226,7 @@ namespace TheNorns
             y += U(19) - 3;
             LampRow(g, c, y, "eveo:preview", FleetPreview, L.T("Live client on the power display instead of the animation"));
             y += U(19) - 3;
-            LampRow(g, c, y, "eveo:minimize", Fleet.MinimizeOthers, L.T("Minimize the previous client on switching"));
+            LampRow(g, c, y, "eveo:minimize", Fleet.MinimizeOthers, L.T("Minimize the previous client on switching"), "(" + L.T("may be unstable") + ")");
             y += U(23);
 
             // the hotkeys: a label and a key-like field each
@@ -407,7 +407,8 @@ namespace TheNorns
             return true;
         }
 
-        void LampRow(Graphics g, RectangleF c, float y, string id, bool on, string text)
+        // note: a short remark after the text, dimmer (owner, 29.10.2026: "may be unstable" by the minimizing)
+        void LampRow(Graphics g, RectangleF c, float y, string id, bool on, string text, string note = null)
         {
             var r = new RectangleF(c.Left, y, c.Width, U(15));
             bool hot = hotSpot == id;
@@ -417,6 +418,12 @@ namespace TheNorns
             using (var b = new SolidBrush(on ? BodyTheme.Accent : Color.FromArgb(46, 48, 30))) g.FillEllipse(b, lx, ly - dd / 2, dd, dd);
             var f = TextFont(text, U(7.5f));
             using (var b = new SolidBrush(hot ? BodyTheme.Ink : Color.FromArgb(200, 203, 210))) g.DrawString(text, f, b, lx + dd + U(6), ly - f.GetHeight(g) / 2, StringFormat.GenericTypographic);
+            if (note != null)
+            {
+                float tw = g.MeasureString(text, f, 10000, StringFormat.GenericTypographic).Width;
+                var nf = TextFont(note, U(6.2f));
+                using (var b = new SolidBrush(Color.FromArgb(120, BodyTheme.Ink))) g.DrawString(note, nf, b, lx + dd + U(6) + tw + U(4), ly - nf.GetHeight(g) / 2 + U(0.5f), StringFormat.GenericTypographic);
+            }
             spots.Add(Tuple.Create(id, r));
         }
 

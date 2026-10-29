@@ -160,5 +160,6 @@
   "No EVE clients found": "Nessun client di EVE trovato",
   "offline": "offline",
   "Minimize the previous client on switching": "Riduci a icona il client precedente al cambio",
-  "Drag a row to change the switching order. The pin keeps a client open when the others are minimized.": "Trascina una riga per cambiare l'ordine di cambio. La puntina tiene un client aperto quando gli altri vengono ridotti a icona."
+  "Drag a row to change the switching order. The pin keeps a client open when the others are minimized.": "Trascina una riga per cambiare l'ordine di cambio. La puntina tiene un client aperto quando gli altri vengono ridotti a icona.",
+  "may be unstable": "instabile"
 }

@@ -160,5 +160,6 @@
   "No EVE clients found": "No se encontraron clientes de EVE",
   "offline": "sin conexión",
   "Minimize the previous client on switching": "Minimizar el cliente anterior al cambiar",
-  "Drag a row to change the switching order. The pin keeps a client open when the others are minimized.": "Arrastra una fila para cambiar el orden de cambio. La chincheta mantiene un cliente abierto cuando los demás se minimizan."
+  "Drag a row to change the switching order. The pin keeps a client open when the others are minimized.": "Arrastra una fila para cambiar el orden de cambio. La chincheta mantiene un cliente abierto cuando los demás se minimizan.",
+  "may be unstable": "inestable"
 }

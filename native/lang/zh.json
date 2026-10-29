@@ -160,5 +160,6 @@
   "No EVE clients found": "未找到 EVE 客户端",
   "offline": "离线",
   "Minimize the previous client on switching": "切换时最小化上一个客户端",
-  "Drag a row to change the switching order. The pin keeps a client open when the others are minimized.": "拖动一行以更改切换顺序。图钉可让客户端在其他客户端最小化时保持打开。"
+  "Drag a row to change the switching order. The pin keeps a client open when the others are minimized.": "拖动一行以更改切换顺序。图钉可让客户端在其他客户端最小化时保持打开。",
+  "may be unstable": "不稳定"
 }
