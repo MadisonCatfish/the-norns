@@ -399,6 +399,73 @@ namespace TheNorns
         }
     }
 
+    // Step 5: hotkeys as EVE-O has them - RegisterHotKey for "next" and "previous" (config.json "app": { "fleet_next":
+    // "1", "fleet_prev": "2" }, a key or a list of keys, with Control+ / Shift+ / Alt+ / Win+). Windows counts a hotkey
+    // as the app's own input, so the client comes forward at once; held down, the key repeats and the clients flip by.
+    // Only one program can hold a key: while EVE-O holds the same one, it can't be had here (the trace says so).
+    sealed class Hotkeys : NativeWindow, IDisposable
+    {
+        [DllImport("user32.dll")] static extern bool RegisterHotKey(IntPtr h, int id, uint mods, uint vk);
+        [DllImport("user32.dll")] static extern bool UnregisterHotKey(IntPtr h, int id);
+        const int WmHotkey = 0x312;
+        readonly Dictionary<int, int> dirOf = new Dictionary<int, int>();   // hotkey id -> +1 next, -1 previous
+        readonly Action<int> step;
+
+        public Hotkeys(Action<int> step)
+        {
+            this.step = step;
+            CreateHandle(new CreateParams { Parent = (IntPtr)(-3) /* HWND_MESSAGE: a window only for messages */ });
+        }
+
+        // "ok", "not a key" or "taken" (another program holds it)
+        public string Add(string key, int dir)
+        {
+            uint mods, vk;
+            if (!Parse(key, out mods, out vk)) return "not a key";
+            int id = dirOf.Count + 1;
+            if (!RegisterHotKey(Handle, id, mods, vk)) return "taken";
+            dirOf[id] = dir;
+            return "ok";
+        }
+
+        protected override void WndProc(ref Message m)
+        {
+            int dir;
+            if (m.Msg == WmHotkey && dirOf.TryGetValue(m.WParam.ToInt32(), out dir)) { step(dir); return; }
+            base.WndProc(ref m);
+        }
+
+        // "1", "F16", "Control+F16", "Shift+Alt+X": modifiers, then the key (a digit alone is its key)
+        public static bool Parse(string s, out uint mods, out uint vk)
+        {
+            mods = vk = 0;
+            if (string.IsNullOrWhiteSpace(s)) return false;
+            var parts = s.Split('+').Select(p => p.Trim()).ToArray();
+            for (int i = 0; i < parts.Length - 1; i++)
+                switch (parts[i].ToLowerInvariant())
+                {
+                    case "alt": mods |= 1; break;
+                    case "control": case "ctrl": mods |= 2; break;
+                    case "shift": mods |= 4; break;
+                    case "win": mods |= 8; break;
+                    default: return false;
+                }
+            var k = parts[parts.Length - 1];
+            if (k.Length == 1 && char.IsDigit(k[0])) k = "D" + k;
+            Keys key;
+            if (!Enum.TryParse(k, true, out key) || (key & Keys.KeyCode) == Keys.None || (key & Keys.Modifiers) != 0) return false;
+            vk = (uint)(key & Keys.KeyCode);
+            return true;
+        }
+
+        public void Dispose()
+        {
+            foreach (var id in dirOf.Keys) UnregisterHotKey(Handle, id);
+            dirOf.Clear();
+            if (Handle != IntPtr.Zero) DestroyHandle();
+        }
+    }
+
     // the module as the body holds it: made only when it is switched on (or for --fleet-trace)
     sealed class Fleet : IDisposable
     {
@@ -408,23 +475,36 @@ namespace TheNorns
         public readonly ClientTracker Clients;
         public readonly LivePreview Preview = new LivePreview();
         readonly ForegroundWatch watch;
+        readonly Hotkeys keys;
 
         public Fleet()
         {
-            Clients = new ClientTracker(ConfiguredOrder());
+            Clients = new ClientTracker(Configured("fleet_order"));
             if (TracePath != null) { Clients.Changed += Trace; Preview.Log = Write; }
             Preview.Wheel = Wheel;
             Poll();
             Clients.OnForeground(ForegroundWatch.GetForegroundWindow());
             watch = new ForegroundWatch(Clients.OnForeground);
+            keys = new Hotkeys(dir => Step(dir, "key"));
+            Bind("fleet_next", 1, "1"); Bind("fleet_prev", -1, "2");
         }
 
-        // config.json "app": { "fleet_order": [ "Pilot-1", "Pilot-2" ] }
-        static IEnumerable<string> ConfiguredOrder()
+        // the keys from config.json; a --fleet-trace run without them takes 1 / 2, as the owner's EVE-O has them
+        void Bind(string setting, int dir, string testKey)
         {
-            var v = DpsForm.AppSetting("fleet_order") as IEnumerable;
-            if (v == null || v is string) return Enumerable.Empty<string>();
-            return v.Cast<object>().Where(x => x != null).Select(x => x.ToString()).ToList();
+            var list = Configured(setting).ToList();
+            if (list.Count == 0 && TracePath != null) list.Add(testKey);
+            foreach (var k in list) Write("key " + (dir > 0 ? "next" : "previous") + " " + k + ": " + keys.Add(k, dir));
+        }
+
+        // config.json "app": a string or a list of strings ("fleet_order": [ "Pilot-1", "Pilot-2" ], "fleet_next": "1")
+        static IEnumerable<string> Configured(string setting)
+        {
+            var v = DpsForm.AppSetting(setting);
+            if (v is string) return new[] { (string)v };
+            var list = v as IEnumerable;
+            if (list == null) return Enumerable.Empty<string>();
+            return list.Cast<object>().Where(x => x != null).Select(x => x.ToString()).ToList();
         }
 
         public void Poll() { Clients.Update(ClientWindows.Find()); }
@@ -432,16 +512,17 @@ namespace TheNorns
         // the wheel over the power display: a client per notch, in the cycle's order. The tracker takes a client that came
         // to the front at once (Windows' foreground event confirms it a moment later), so quick notches walk on
         int wheel;
-        public void Wheel(int delta)
+        public void Wheel(int delta) { foreach (var dir in ClientSwitch.Wheel(ref wheel, delta)) Step(dir, "wheel"); }
+
+        // one client on (+1) or back (-1), from a hotkey or the wheel
+        void Step(int dir, string from)
         {
-            foreach (var dir in ClientSwitch.Wheel(ref wheel, delta))
-            {
-                var w = Clients.Next(dir);
-                if (w == null) { Write("switch " + (dir > 0 ? "next" : "previous") + ": no client"); continue; }
-                string how;
-                if (ClientSwitch.Activate(w.Hwnd, out how)) Clients.OnForeground(w.Hwnd);   // a refused one would only mislead the next notch
-                Write("switch " + (dir > 0 ? "next" : "previous") + " -> " + w + ": " + how);
-            }
+            var w = Clients.Next(dir);
+            string what = from + " " + (dir > 0 ? "next" : "previous");
+            if (w == null) { Write(what + ": no client"); return; }
+            string how;
+            if (ClientSwitch.Activate(w.Hwnd, out how)) Clients.OnForeground(w.Hwnd);   // a refused one would only mislead the next step
+            Write(what + " -> " + w + ": " + how);
         }
 
         void Trace()
@@ -461,7 +542,7 @@ namespace TheNorns
             catch { }
         }
 
-        public void Dispose() { watch.Dispose(); Preview.Dispose(); }
+        public void Dispose() { watch.Dispose(); keys.Dispose(); Preview.Dispose(); }
 
         // selftest: the tracker on made-up windows
         public static string SelfTest()
@@ -520,6 +601,13 @@ namespace TheNorns
             check(string.Join(",", ClientSwitch.Wheel(ref sum, 120)) == "-1", "a notch up: the previous client");
             check(string.Join(",", ClientSwitch.Wheel(ref sum, -240)) == "1,1", "two notches down: two clients on");
             check(ClientSwitch.Wheel(ref sum, 60).Count == 0 && string.Join(",", ClientSwitch.Wheel(ref sum, 60)) == "-1" && sum == 0, "two half notches make one");
+
+            // hotkeys as EVE-O writes them
+            uint mods, vk;
+            check(Hotkeys.Parse("1", out mods, out vk) && mods == 0 && vk == (uint)Keys.D1, "key \"1\" is the digit 1");
+            check(Hotkeys.Parse("Control+F16", out mods, out vk) && mods == 2 && vk == (uint)Keys.F16, "Control+F16");
+            check(Hotkeys.Parse("Shift+Alt+x", out mods, out vk) && mods == 5 && vk == (uint)Keys.X, "Shift+Alt+x");
+            check(!Hotkeys.Parse("Hyper+F1", out mods, out vk) && !Hotkeys.Parse("Foo", out mods, out vk) && !Hotkeys.Parse("", out mods, out vk), "not keys: refused");
             return sb.ToString();
         }
     }
