@@ -63,7 +63,12 @@ Whether you are just training skills for your Skybreakers / Stormbringers or fin
 - **Potato mode:** 5 fps, no glow or shimmer, a plain hull: about 3.5 % of one CPU core instead of about 30 %.
 - Click the **ノルン** badge to open in-place settings: UI scaling (100% / 125% / 150%), log directory detection, session history, and update checks.
 
-### 7. Multi-Language Support
+### 7. Competition Mode
+- For several fleet packs in one system: the anchor is a fast frigate runner instead of a smartbombing battleship. The Thunderchilds' Vorton projectors hit the runner and the lightning arcs on to the NPCs.
+- The Smartbombs module becomes **Lightning rod**: the damage the group puts through the runner, the runner's intake against its repair, and a live ECG of every hit on it.
+- The runner's resists, repair and the Vorton shot's damage are entered in Settings → Modes.
+
+### 8. Multi-Language Support
 Available in 6 languages, auto-detected or selectable:
 - English
 - Ukrainian (Українська)
@@ -76,7 +81,6 @@ Available in 6 languages, auto-detected or selectable:
 
 ## Planned Features (Roadmap)
 
-- **Competition Mode:** For multiple fleet packs operating in the same system, replacing the smartbombing battleship with a fast and agile frigate anchor.
 - **Classic Mode:** For players dedicated to 2010-era pure smartbombing battleship fleets (Machariel, Praxis, Rokh without EDENCOM).
 - **Chinese (中文) Localization.**
 - **Customizable UI Themes:** Player-selectable colorways and skins.

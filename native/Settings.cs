@@ -17,7 +17,7 @@ namespace TheNorns
         bool settingsOpen;
         string hotSpot, downSpot;   // "page:<name>", "lang:<code>", "logs", "reset", "back"
         string page = "general";    // general, logs, stats, about (the RIFT-like plan, step 1)
-        static readonly string[][] Pages = { new[] { "general", "General" }, new[] { "logs", "Game logs" }, new[] { "storage", "Storage" }, new[] { "stats", "Statistics" }, new[] { "about", "About" } };
+        static readonly string[][] Pages = { new[] { "general", "General" }, new[] { "modes", "Modes" }, new[] { "logs", "Game logs" }, new[] { "storage", "Storage" }, new[] { "stats", "Statistics" }, new[] { "about", "About" } };
         readonly List<Tuple<string, RectangleF>> spots = new List<Tuple<string, RectangleF>>();
         double resetShownUntil = -1;
         bool demoResetShown;
@@ -36,6 +36,7 @@ namespace TheNorns
 
         void ToggleSettings()
         {
+            if (settingsOpen) CommitField();
             settingsOpen = !settingsOpen;
             hotSpot = downSpot = null; spots.Clear();
             if (settingsOpen) { ShowTab(page); tabShift = tabFirst; }   // the open page's tab in view
@@ -51,6 +52,7 @@ namespace TheNorns
 
         void Activate(string id)
         {
+            if (ActivateMode(id)) return;
             if (id == "back") { ToggleSettings(); return; }
             if (id == "logs") { OpenGameLogs(); return; }
             if (id == "dir:select")
@@ -548,6 +550,7 @@ namespace TheNorns
                 using (var b = new SolidBrush(BodyTheme.Ink)) MaterialIcon.Draw(g, MaterialIcon.Play, new RectangleF(pk.Left + (pk.Width - ic2) / 2, pk.Top + (pk.Height - ic2) / 2, ic2, ic2), b);
                 spots.Add(Tuple.Create("playalert", pk));
             }
+            else if (page == "modes") PaintModes(g, c, y);
             else if (page == "logs")
             {
                 // the keys that were on the strip, and where the combat logs are read from

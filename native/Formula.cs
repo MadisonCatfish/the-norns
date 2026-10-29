@@ -4,6 +4,7 @@
 // and the graph are computed. Its Close key is the body's; Esc closes it too (owner, 27.10.2026).
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Diagnostics;
 using System.Drawing;
 using System.Drawing.Drawing2D;
@@ -16,6 +17,9 @@ namespace TheNorns
     class FormulaText
     {
         public string Title, Body;   // Body: English, paragraphs split by "\n" (translated through L.T)
+        public float Height = 0.85f;   // the card's height against the main window's
+        // a long text scrolls with the wheel at full size instead of shrinking to fit; "# " starts a section heading
+        public bool Scroll;
     }
 
     class FormulaWindow : Form
@@ -51,8 +55,8 @@ namespace TheNorns
         // ---- geometry: the card is 85 % of the main window and floats out past its bottom right corner ----
         static float U(float v) { return v * Theme.K * DpsForm.UiScale; }
         static float Margin { get { return U(26); } }   // room for the shadow and the perspective
-        static SizeF CardSize(Size main) { return new SizeF(main.Width * 0.85f, main.Height * 0.85f); }
-        static PointF CardOffset(Size main) { var c = CardSize(main); return new PointF(main.Width - c.Width + U(12), main.Height - c.Height + U(12)); }
+        static SizeF CardSize(Size main, FormulaText t) { return new SizeF(main.Width * 0.85f, main.Height * t.Height); }
+        static PointF CardOffset(Size main, FormulaText t) { var c = CardSize(main, t); return new PointF(main.Width - c.Width + U(12), main.Height - c.Height + U(12)); }
         static RectangleF CloseIn(SizeF card) { return new RectangleF(card.Width - U(3.5f) - U(9) - U(14.2f), U(3.5f) + U(9), U(14.2f), U(28)); }
 
         readonly FormulaText text;
@@ -61,14 +65,15 @@ namespace TheNorns
         readonly Timer timer = new Timer { Interval = 15 };
         Bitmap card;
         bool hoverClose, downClose, closing = true;   // closing: a Close() call runs the closing animation first
+        float scroll, maxScroll;   // a scrolling text: how far down it is, and how far it can go
         double closeStart = -1;
         const double OpenSecs = 0.42, CloseSecs = 0.22;
 
         FormulaWindow(Form main, FormulaText text)
         {
             this.text = text;
-            var cs = CardSize(main.Size); cardPx = new Size((int)cs.Width, (int)cs.Height);
-            var off = CardOffset(main.Size);
+            var cs = CardSize(main.Size, text); cardPx = new Size((int)cs.Width, (int)cs.Height);
+            var off = CardOffset(main.Size, text);
             FormBorderStyle = FormBorderStyle.None; ShowInTaskbar = false; StartPosition = FormStartPosition.Manual; TopMost = true;
             AutoScaleMode = AutoScaleMode.None; KeyPreview = true; Text = L.T(text.Title);
             Size = new Size(cardPx.Width + 2 * (int)Margin, cardPx.Height + 2 * (int)Margin);
@@ -121,6 +126,13 @@ namespace TheNorns
             if (was && e.Button == MouseButtons.Left && CloseRect.Contains(e.Location)) Close();
         }
         void Redraw() { if (card != null) { card.Dispose(); card = null; } Render(); }
+        protected override void OnMouseWheel(MouseEventArgs e)
+        {
+            base.OnMouseWheel(e);
+            if (!text.Scroll) return;
+            float s = Math.Max(0, Math.Min(maxScroll, scroll - Math.Sign(e.Delta) * U(24)));
+            if (s != scroll) { scroll = s; Redraw(); }
+        }
 
         void Render()
         {
@@ -136,7 +148,7 @@ namespace TheNorns
                 p = Math.Min(1, t / OpenSecs);
                 if (p >= 1) timer.Stop();
             }
-            if (card == null) card = DrawCard(cardPx, text, hoverClose, downClose);
+            if (card == null) card = DrawCard(cardPx, text, hoverClose, downClose, scroll, out maxScroll);
             using (var bmp = Frame(card, Size, Ease(p))) AppChrome.PresentLayered(this, bmp);
         }
 
@@ -181,8 +193,9 @@ namespace TheNorns
 
         // the card: a thin rim of the hull around a black OLED glass; the title in Orbitron caps, the text in Space Grotesk
         // (Segoe UI in Ukrainian - the embedded fonts have no Cyrillic), made smaller until it fits
-        static Bitmap DrawCard(Size size, FormulaText text, bool hoverClose, bool downClose)
+        static Bitmap DrawCard(Size size, FormulaText text, bool hoverClose, bool downClose, float scroll, out float maxScroll)
         {
+            maxScroll = 0;
             var bmp = new Bitmap(size.Width, size.Height, PixelFormat.Format32bppArgb);
             using (var g = Graphics.FromImage(bmp))
             {
@@ -222,10 +235,13 @@ namespace TheNorns
                 float lineY = close.Bottom + U(8);
                 using (var pen = new Pen(Color.FromArgb(34, BodyTheme.Ink), 1f)) g.DrawLine(pen, x, lineY, glass.Right - pad, lineY);
 
-                // the text: the first paragraph brighter and larger (what it is), the rest as plain paragraphs
-                var paras = L.T(text.Body).Split('\n');
+                // the text: the first paragraph brighter and larger (what it is), the rest as plain paragraphs. Translated as
+                // a whole, or paragraph by paragraph when only those are in the language file
+                var whole = L.T(text.Body);
+                var paras = whole != text.Body || L.Code == "en" ? whole.Split('\n') : text.Body.Split('\n').Select(p => p.StartsWith("# ") ? "# " + L.T(p.Substring(2)) : L.T(p)).ToArray();
                 var area = RectangleF.FromLTRB(x, lineY + U(9), glass.Right - pad, glass.Bottom - pad);
                 bool latin = L.Code != "uk";
+                if (text.Scroll) { maxScroll = DrawScrolling(g, paras, area, latin, scroll); return bmp; }
                 for (float scale = 1f; scale > 0.6f; scale -= 0.04f)
                 {
                     Font lead = latin ? NornsFonts.Body(U(8.6f) * scale) : new Font("Segoe UI", U(8.2f) * scale, GraphicsUnit.Pixel);
@@ -251,17 +267,64 @@ namespace TheNorns
             return bmp;
         }
 
-        // selftest: the main window's image with the formula window over it at animation state p, on a dark backdrop
-        public static void SaveDemo(Bitmap main, FormulaText text, double p, string path)
+        // a scrolling text at full size: section headings ("# ") in Orbitron caps, a thin bar on the right shows where it is;
+        // returns how far it can scroll
+        static float DrawScrolling(Graphics g, string[] paras, RectangleF area, bool latin, float scroll)
         {
-            var cs = CardSize(main.Size); var size = new Size((int)cs.Width, (int)cs.Height);
-            var off = CardOffset(main.Size);
+            Font lead = latin ? NornsFonts.Body(U(8.6f)) : new Font("Segoe UI", U(8.2f), GraphicsUnit.Pixel);
+            Font body = latin ? NornsFonts.Body(U(7.6f)) : new Font("Segoe UI", U(7.3f), GraphicsUnit.Pixel);
+            Font head = NornsFonts.Screen(U(7));
+            float gap = U(5.5f), textW = area.Width - U(8);
+            var heights = new float[paras.Length]; float total = 0;
+            for (int i = 0; i < paras.Length; i++)
+            {
+                bool h = paras[i].StartsWith("# ");
+                heights[i] = h ? head.GetHeight(g) + U(6) : g.MeasureString(paras[i], i == 0 ? lead : body, (int)textW).Height;
+                total += heights[i] + gap + (h && i > 0 ? U(6) : 0);
+            }
+            float max = Math.Max(0, total - gap - area.Height);
+            scroll = Math.Min(scroll, max);
+            var st = g.Save();
+            g.SetClip(area);
+            float y = area.Top - scroll;
+            using (var lb = new SolidBrush(BodyTheme.Ink)) using (var bb = new SolidBrush(Color.FromArgb(186, 189, 196))) using (var hb = new SolidBrush(BodyTheme.Accent))
+            using (var lp = new Pen(Color.FromArgb(34, BodyTheme.Ink), 1f))
+                for (int i = 0; i < paras.Length; i++)
+                {
+                    if (paras[i].StartsWith("# "))
+                    {
+                        if (i > 0) y += U(6);
+                        g.DrawString(paras[i].Substring(2).ToUpperInvariant(), head, hb, area.Left, y, StringFormat.GenericTypographic);
+                        g.DrawLine(lp, area.Left, y + head.GetHeight(g) + U(3), area.Left + textW, y + head.GetHeight(g) + U(3));
+                    }
+                    else g.DrawString(paras[i], i == 0 ? lead : body, i == 0 ? lb : bb, new RectangleF(area.Left, y, textW, heights[i] + U(2)));
+                    y += heights[i] + gap;
+                }
+            g.Restore(st);
+            if (max > 0)
+            {
+                // the bar: its length is the part shown, its place where that part is
+                float trackH = area.Height, barH = Math.Max(U(12), trackH * area.Height / (area.Height + max)), barY = area.Top + (trackH - barH) * scroll / max;
+                using (var b = new SolidBrush(Color.FromArgb(22, BodyTheme.Ink))) g.FillRectangle(b, area.Right - U(2), area.Top, U(1.5f), trackH);
+                using (var p = Theme.Round(new RectangleF(area.Right - U(2.5f), barY, U(2.5f), barH), U(1.25f), 1f))
+                using (var b = new SolidBrush(Color.FromArgb(150, BodyTheme.Ink))) g.FillPath(b, p);
+            }
+            if (!latin) { lead.Dispose(); body.Dispose(); }
+            return max;
+        }
+
+        // selftest: the main window's image with the formula window over it at animation state p, on a dark backdrop
+        public static void SaveDemo(Bitmap main, FormulaText text, double p, string path, float scroll = 0)
+        {
+            float maxScroll;
+            var cs = CardSize(main.Size, text); var size = new Size((int)cs.Width, (int)cs.Height);
+            var off = CardOffset(main.Size, text);
             float m = Margin, o = U(30);
             var win = new Size(size.Width + 2 * (int)m, size.Height + 2 * (int)m);
             int W = (int)(o + Math.Max(main.Width, off.X - m + win.Width) + o / 2), H = (int)(o + Math.Max(main.Height, off.Y - m + win.Height) + o / 2);
             using (var bmp = new Bitmap(W, H, PixelFormat.Format32bppArgb))
             using (var g = Graphics.FromImage(bmp))
-            using (var card = DrawCard(size, text, false, false))
+            using (var card = DrawCard(size, text, false, false, scroll, out maxScroll))
             using (var frame = Frame(card, win, Ease(p)))
             {
                 g.Clear(Color.FromArgb(38, 40, 46));

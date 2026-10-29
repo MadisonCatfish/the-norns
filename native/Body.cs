@@ -413,7 +413,11 @@ namespace TheNorns
             if (updateMark.Contains(e.Location)) downUpdate = true;
             else if (NameRect.Contains(e.Location)) downName = true;
             else if (Standalone && CloseRect.Contains(e.Location)) downClose = true;
-            else if (settingsOpen) downSpot = SpotAt(e.Location);
+            else if (settingsOpen)
+            {
+                downSpot = SpotAt(e.Location);
+                if (focusField != null && downSpot != "field:" + focusField) CommitField();   // a click elsewhere keeps the number
+            }
             else if (vortonFx.Contains(e.Location)) downFx = 1;
             else if (sbFx.Contains(e.Location)) downFx = 2;
             else if (spawnChip.Contains(e.Location)) downSpawns = true;
@@ -436,7 +440,7 @@ namespace TheNorns
             if (downFx != 0)
             {
                 int which = downFx; downFx = 0;
-                if (left && (which == 1 ? vortonFx : sbFx).Contains(e.Location)) FormulaWindow.Open(this, which == 1 ? FormulaWindow.Vorton : FormulaWindow.Smartbombs);
+                if (left && (which == 1 ? vortonFx : sbFx).Contains(e.Location)) FormulaWindow.Open(this, which == 1 ? FormulaWindow.Vorton : Competition ? RodFormula : FormulaWindow.Smartbombs);
             }
             if (downClose) { downClose = false; Render(); if (left && Standalone && CloseRect.Contains(e.Location)) { SavePos(); Close(); } }
         }
@@ -1170,7 +1174,9 @@ namespace TheNorns
                 {
                     PaintDpsOut(g, new RectangleF(c.Left, y, c.Width, h1), now); y += h1 + gap;
                     using (var b = new SolidBrush(Color.FromArgb(26, BodyTheme.Ink))) g.FillRectangle(b, c.Left, y, c.Width, line); y += line + gap;
-                    PaintSmartbombs(g, new RectangleF(c.Left, y, c.Width, h2), now); y += h2 + gap;
+                    if (Competition) PaintLightningRod(g, new RectangleF(c.Left, y, c.Width, h2), now);   // Competition: the runner
+                    else PaintSmartbombs(g, new RectangleF(c.Left, y, c.Width, h2), now);
+                    y += h2 + gap;
                     using (var b = new SolidBrush(Color.FromArgb(26, BodyTheme.Ink))) g.FillRectangle(b, c.Left, y, c.Width, line); y += line + gap;
                     PaintIsk(g, new RectangleF(c.Left, y, c.Width, c.Bottom - y));
                 }
@@ -1794,6 +1800,22 @@ namespace TheNorns
                 }
                 // the settings in place of the meter: as opened, a language row under the mouse, after a reset
                 f.DemoSettings(true, null, false); save(f, "dps_settings.png");
+                // Settings -> Modes: standard, then competition with the owner's runner (29.10.2026)
+                {
+                    bool keepC = Competition; var keepR = RunnerResists; double keepRep = RunnerRepair; var keepS = VortonShot;
+                    Competition = false; f.DemoSettings(true, null, false, "modes"); save(f, "dps_settings_modes_standard.png");
+                    Competition = true; RunnerResists = new double[] { 87, 60, 87, 50 }; RunnerRepair = 74.7; VortonShot = new double[] { 1801, 1789 };
+                    f.DemoSettings(true, null, false, "modes"); save(f, "dps_settings_modes_competition.png");
+                    f.focusField = "repair"; save(f, "dps_settings_modes_typing.png");
+                    f.focusField = "res1"; f.editText = "60"; f.DemoFieldError("res1"); save(f, "dps_settings_modes_error.png"); f.errField = null; f.focusField = null; f.editText = null;
+                    f.hotSpot = "help:runner"; save(f, "dps_settings_modes_help_hover.png"); f.hotSpot = null;
+                    using (var mb = f.Draw())
+                    {
+                        FormulaWindow.SaveDemo(mb, HelpRunner, 1, Path.Combine(dir, "dps_settings_modes_help_runner.png"));
+                        FormulaWindow.SaveDemo(mb, HelpRunner, 1, Path.Combine(dir, "dps_settings_modes_help_scrolled.png"), 150 * Theme.K * UiScale);
+                    }
+                    Competition = keepC; RunnerResists = keepR; RunnerRepair = keepRep; VortonShot = keepS;
+                }
                 f.DemoSettings(true, "lang:de", false); save(f, "dps_settings_hover.png");
                 // the body at 100 % and 150 %
                 foreach (var sc in new[] { 1f, 1.5f })
@@ -1884,6 +1906,31 @@ namespace TheNorns
                 f.DemoTimerA = 0; f.DemoQuiet = 0.5f; save(f, "dps_timer_5_back.png");
                 f.DemoQuiet = null; f.DemoTimerA = null; f.DemoCount = null;
                 f.Stats.Tracker.LastWarpTime = DateTime.MinValue; f.DemoQuiet = 0; f.DemoTimerA = 0; save(f, "dps_sb_line.png");
+            }
+            // Competition: 4 Thunderchilds shoot the runner (Pilot-5, a Jaguar) about every 8 s each, as in the owner's test of
+            // 28.10.2026 (65 a hit, sometimes 61), and the NPCs hit it a little; the Lightning rod module in place of Smartbombs
+            using (var f = new DpsForm(pilots5, () => null, true) { DemoNow = now, DemoSeconds = 1.3, DemoFollowing = true })
+            {
+                var tc = new[] { "Pilot-1", "Pilot-2", "Pilot-3", "Pilot-4" };
+                f.AddDemo(makeDemo(tc));
+                var rnd = new Random(11); var rod = new List<DmgEvent>();
+                for (int i = 0; i < tc.Length; i++)
+                    for (double t = 60 - i * 2.1; t >= 0; t -= 7.6 + rnd.NextDouble() * 0.8)
+                        if (t > 20 || t < 12) rod.Add(new DmgEvent { T = now.AddSeconds(-t), Pilot = tc[i], Out = true, Quality = "Hits", Other = "Pilot-5[DEMO](Jaguar)", Weapon = "Large Vorton Projector II", Amount = rnd.NextDouble() < 0.75 ? 65 : 61 });
+                for (double t = 7.6; t >= 0.5; t -= 2.2 + rnd.NextDouble() * 1.5)
+                    rod.Add(new DmgEvent { T = now.AddSeconds(-t), Pilot = "Pilot-5", Out = false, Quality = "Hits", Other = "Core Grand Admiral", Amount = 20 + rnd.Next(25) });
+                f.AddDemo(rod.OrderBy(e => e.T).ToList());
+                fill(f, 60);
+                bool keepC = Competition; var keepR = RunnerResists; double keepRep = RunnerRepair; var keepS = VortonShot;
+                Competition = true; RunnerResists = new double[] { 87, 60, 87, 50 }; RunnerRepair = 74.7; VortonShot = new double[] { 1801, 1789 };
+                save(f, "dps_competition.png");
+                Potato = true; if (f.shell != null) { f.shell.Dispose(); f.shell = null; } save(f, "dps_competition_potato.png");
+                Potato = false; if (f.shell != null) { f.shell.Dispose(); f.shell = null; }
+                Compact = true; f.Size = new Size(f.DesiredWidth, f.DesiredHeight); if (f.shell != null) { f.shell.Dispose(); f.shell = null; }
+                save(f, "dps_competition_compact.png");
+                Compact = false; f.Size = new Size(f.DesiredWidth, f.DesiredHeight); if (f.shell != null) { f.shell.Dispose(); f.shell = null; }
+                using (var b = f.Draw()) FormulaWindow.SaveDemo(b, RodFormula, 1, Path.Combine(dir, "dps_formula_lightning_rod.png"));
+                Competition = keepC; RunnerResists = keepR; RunnerRepair = keepRep; VortonShot = keepS;
             }
             // 2) 3 and 8 pilots, no smartbombs, an empty grid
             using (var f = new DpsForm(pilots3, () => null, true) { DemoNow = now, DemoSeconds = 0.5, DemoFollowing = true })

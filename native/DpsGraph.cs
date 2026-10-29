@@ -421,6 +421,52 @@ namespace TheNorns
         // the titans and dreadnoughts spawned (they sound the alert), and when the last one came
         public int LoudSpawns; public DateTime LastLoudSpawn = DateTime.MinValue;
         public readonly AnomalyTracker Tracker = new AnomalyTracker();
+
+        // ---- Competition mode: the Lightning rod (owner, 29.10.2026) ----
+        // The runner is a frigate the Thunderchilds shoot on purpose: each Vorton shot on it arcs on to the NPCs with its
+        // full damage. Its own log has no line for those shots, but every Thunderchild's log has "<n> to <runner>[...](ship)
+        // - ... Vorton ..." - one line per shot, the damage the runner took after its resists and small signature.
+        public readonly List<DmgEvent> RodHits = new List<DmgEvent>();
+        readonly List<DmgEvent> taken = new List<DmgEvent>();   // NPC damage taken by every client (the runner's is used)
+        public string Runner;   // the character name of the fleet member the Vortons hit last
+        readonly HashSet<string> vortonShooters = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        static bool IsVorton(DmgEvent e) { return e.Weapon != null && e.Weapon.IndexOf("Vorton", StringComparison.OrdinalIgnoreCase) >= 0; }
+        // "Name[TICKER](Ship)" -> "Name"
+        public static string CharacterOf(string target)
+        {
+            int i = target.IndexOfAny(new[] { '[', '(' });
+            return (i > 0 ? target.Substring(0, i) : target).Trim();
+        }
+        bool OnRunner(DmgEvent e) { return Runner != null && e.Pilot != null && e.Pilot.Equals(Runner, StringComparison.OrdinalIgnoreCase); }
+
+        // damage through the rod per second: the shots on the runner in the last `window` s x one shot's full damage
+        public double RodDps(DateTime now, double shot, double window = 10)
+        {
+            return RodHits.Count(h => h.T <= now && (now - h.T).TotalSeconds < window) * shot / window;
+        }
+        // what the runner takes per second: the Vorton shots after its resists and signature (as logged), and the NPCs
+        public double RunnerVortonTaken(DateTime now, double window = 10) { return RodHits.Where(h => h.T <= now && (now - h.T).TotalSeconds < window).Sum(h => h.Amount) / window; }
+        public double RunnerNpcTaken(DateTime now, double window = 10) { return taken.Where(h => OnRunner(h) && h.T <= now && (now - h.T).TotalSeconds < window).Sum(h => h.Amount) / window; }
+        // per second over the last `seconds` (oldest first): the rod's damage (shots x shot) and the NPCs' on the runner
+        public double[] RodSeries(DateTime now, double shot, int seconds = Seconds)
+        {
+            var r = new double[seconds];
+            foreach (var h in RodHits) { int i = seconds - 1 - (int)(now - h.T).TotalSeconds; if (i >= 0 && i < seconds) r[i] += shot; }
+            return r;
+        }
+        public double[] RunnerVortonSeries(DateTime now, int seconds = Seconds)
+        {
+            var r = new double[seconds];
+            foreach (var h in RodHits) { int i = seconds - 1 - (int)(now - h.T).TotalSeconds; if (i >= 0 && i < seconds) r[i] += h.Amount; }
+            return r;
+        }
+        public IEnumerable<DmgEvent> RunnerNpcHits { get { return taken.Where(OnRunner); } }
+        public double[] RunnerNpcSeries(DateTime now, int seconds = Seconds)
+        {
+            var r = new double[seconds];
+            foreach (var h in taken) if (OnRunner(h)) { int i = seconds - 1 - (int)(now - h.T).TotalSeconds; if (i >= 0 && i < seconds) r[i] += h.Amount; }
+            return r;
+        }
         // outgoing DPS counts only this weapon (the Norns body shows "EFF. DPS · VORTON PROJECTOR"); null = every weapon
         public string OutWeapon = "Vorton";
         public DpsStats(IEnumerable<string> pilots) { Pilots = (pilots ?? Enumerable.Empty<string>()).ToList(); }
@@ -591,6 +637,12 @@ namespace TheNorns
             foreach (var e in es)
             {
                 events.Add(e);
+                // Competition: a Vorton hit on a fleet member is a hit on the runner (the lightning rod); the NPCs' damage
+                // taken by any client is kept too, the runner's own log gives its share
+                if (e.Out && IsVorton(e) && e.Pilot != null) vortonShooters.Add(e.Pilot);
+                // the arcs also jump between the Thunderchilds themselves: a hit on one that shoots Vortons is not the rod
+                if (e.Amount > 0 && e.Out && IsVorton(e) && IsPlayerOrFriendly(e.Other, Pilots) && !vortonShooters.Contains(CharacterOf(e.Other))) { RodHits.Add(e); Runner = CharacterOf(e.Other); }
+                if (e.Amount > 0 && !e.Out && !IsPlayerOrFriendly(e.Other, Pilots)) taken.Add(e);
                 if (!IsPlayerOrFriendly(e.Other, Pilots))
                 {
                     int sk = SpecialKind(e.Other);
@@ -612,6 +664,7 @@ namespace TheNorns
             }
             var cut = now.AddSeconds(-Seconds - 10);
             events.RemoveAll(e => e.T < cut);
+            RodHits.RemoveAll(e => e.T < cut); taken.RemoveAll(e => e.T < cut);
             special.RemoveAll(x => x.Item1 < now.AddMinutes(-40));
             version++;
         }
@@ -811,6 +864,7 @@ namespace TheNorns
         public const string Search = "M15.5 14h-.79l-.28-.27C15.41 12.59 16 11.11 16 9.5 16 5.91 13.09 3 9.5 3S3 5.91 3 9.5 5.91 16 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z";
         public const string Download = "M5 20h14v-2H5v2zM19 9h-4V3H9v6H5l7 7 7-7z";
         public const string Play = "M8 5v14l11-7z";
+        public const string QuestionMark = "M11.07 12.85c.77-1.39 2.25-2.21 3.11-3.44.91-1.29.4-3.7-2.18-3.7-1.69 0-2.52 1.28-2.87 2.34L6.54 6.96C7.25 4.83 9.18 3 11.99 3c2.35 0 3.96 1.07 4.78 2.41.7 1.15 1.11 3.3.03 4.9-1.2 1.77-2.35 2.31-2.97 3.45-.25.46-.35.76-.35 1.7h-2.89c-.01-.5-.09-1.3.31-2.01zM14 20c0 1.1-.9 2-2 2s-2-.9-2-2 .9-2 2-2 2 .9 2 2z";
         public const string ArrowLeft = "M14 7l-5 5 5 5V7z", ArrowRight = "M10 17l5-5-5-5v10z";
         public const string Star = "M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z";
         public const string Close = "M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z";
