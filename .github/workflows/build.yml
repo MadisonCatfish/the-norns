@@ -1,0 +1,47 @@
+# Builds The Norns the way a release is built (native\build.ps1 -Setup): the app, the installer and the portable zip,
+# then runs the installer's self-test and keeps the three files as the run's artifact. On every pushed v* tag and by
+# hand (Actions -> build -> Run workflow). SignPath signs only files that come from this workflow (README: Code signing
+# policy); the signing step joins it once the SignPath Foundation application is approved.
+name: build
+
+on:
+  push:
+    tags: ["v*"]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: windows-2022
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Build the app, the installer and the portable zip
+        shell: pwsh
+        run: powershell -ExecutionPolicy Bypass -File native\build.ps1 -Out out -Setup
+
+      - name: Installer self-test
+        shell: pwsh
+        run: |
+          $setup = Get-ChildItem out -Filter "TheNorns-Setup-*.exe" | Select-Object -First 1
+          $dir = Join-Path $PWD "out\selftest"
+          Start-Process -FilePath $setup.FullName -ArgumentList "--selftest", "`"$dir`"" -Wait
+          $log = Get-Content (Join-Path $dir "setup_selftest.txt")
+          $log
+          # a real install + uninstall into the folder (Setup.cs SelfTest): any FAILED / MISSING / LEFT line fails the run
+          if ($log | Select-String "FAILED|MISSING|LEFT") { throw "installer self-test failed" }
+
+      - name: SHA-256
+        shell: pwsh
+        run: Get-FileHash out\TheNorns.exe, out\TheNorns-Setup-*.exe, out\TheNorns-*-portable.zip -Algorithm SHA256 | Format-Table Hash, Path -AutoSize
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: the-norns-${{ github.ref_name }}
+          path: |
+            out/TheNorns.exe
+            out/TheNorns-Setup-*.exe
+            out/TheNorns-*-portable.zip
+          if-no-files-found: error

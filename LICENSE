@@ -19,11 +19,3 @@ AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
 LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
-
----
-
-The Norns is a free, independent, fan-made tool. It is not affiliated with,
-endorsed or sponsored by CCP hf. EVE, EVE Online and CCP are trademarks or
-registered trademarks of CCP hf. The Norns only reads the combat log files the
-EVE client writes on your PC; it does not interact with the game client or its
-servers. Use of third-party tools is at your own risk.
