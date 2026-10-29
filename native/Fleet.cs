@@ -372,7 +372,9 @@ namespace TheNorns
             if (!IsWindow(h)) return false;
             bool restored = IsIconic(h) && ShowWindowAsync(h, SwRestore);
             string path = "foreground";
-            bool front = SetForegroundWindow(h) && ForegroundWatch.GetForegroundWindow() == h;
+            // only a refusal goes on: the switch itself completes a moment later in the client's own queue, so right after
+            // the call nothing may be in front yet (test build fl7: every switch went the long way for that, 28 ms on average)
+            bool front = SetForegroundWindow(h);
             if (!front)
             {
                 IntPtr fg = ForegroundWatch.GetForegroundWindow();
