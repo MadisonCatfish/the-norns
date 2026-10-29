@@ -358,7 +358,11 @@ namespace TheNorns
         readonly KeyButton back = new KeyButton(L.T("Back")), next = new KeyButton(L.T("Next")) { Primary = true }, cancel = new KeyButton(L.T("Cancel")),
                            close = new KeyButton("") { CloseKey = true };
         readonly LampSwitch accept = new LampSwitch(L.T("I accept the license")), desktop = new LampSwitch(L.T("Desktop shortcut")) { Checked = true },
-                            start = new LampSwitch(L.T("Start menu shortcut")) { Checked = true }, launch = new LampSwitch(L.F("Launch {0}", AppInfo.Name)) { Checked = true },
+                            start = new LampSwitch(L.T("Start menu shortcut")) { Checked = true },
+                            // the update check at start (Settings -> General in the app): set here too, with the privacy
+                            // note beside it (SignPath's rule for software that sends anything: shown during installation,
+                            // with a way to turn it off); an update keeps the choice made before
+                            updates = new LampSwitch(L.T("Check for updates at start")) { Checked = UpdateCheckBefore() }, launch = new LampSwitch(L.F("Launch {0}", AppInfo.Name)) { Checked = true },
                             wipe = new LampSwitch(L.T("Also delete my settings"));
         readonly DarkField folder = new DarkField();
         int step; volatile bool busy; float progress; string status = ""; bool done, failed;
@@ -455,7 +459,7 @@ namespace TheNorns
         void Go(int s)
         {
             step = Math.Max(0, s);
-            foreach (var c in page.Controls.Cast<Control>().ToList()) { page.Controls.Remove(c); if (c != folder && c != accept && c != desktop && c != start && c != wipe && c != launch) c.Dispose(); }
+            foreach (var c in page.Controls.Cast<Control>().ToList()) { page.Controls.Remove(c); if (c != folder && c != accept && c != desktop && c != start && c != wipe && c != launch && c != updates) c.Dispose(); }
             Frame();
             if (uninstall) { if (step == 0) BuildUninstall(); else BuildProgress(); }
             else if (step == 0) BuildWelcome(); else if (step == 1) BuildLicense(); else if (step == 2) BuildFolder(); else BuildProgress();
@@ -555,7 +559,32 @@ namespace TheNorns
             desktop.SetBounds(0, P(84), desktop.PreferredWidth(), P(30));
             start.SetBounds(desktop.Right + P(24), P(84), start.PreferredWidth(), P(30));
             page.Controls.AddRange(new Control[] { folder, browse, desktop, start });
-            page.Controls.Add(Text_(L.T("Space needed: about 1 MB.  Uninstall later from Windows Settings → Apps."), Color.FromArgb(118, 121, 128), 0, P(134), page.Width, P(24), SmallFont));
+            page.Controls.Add(Text_(L.T("Space needed: about 1 MB.  Uninstall later from Windows Settings → Apps."), Color.FromArgb(118, 121, 128), 0, P(124), page.Width, P(24), SmallFont));
+            Section(L.T("Privacy"), P(156));
+            page.Controls.Add(Text_(L.T("No account, no telemetry. The only network request is the update check (the GitHub Releases API); it sends nothing about you or your game."),
+                Color.FromArgb(214, 216, 221), 0, P(182), page.Width, P(42)));
+            updates.SetBounds(0, P(226), updates.PreferredWidth(), P(30));
+            page.Controls.Add(updates);
+        }
+
+        // config.json "app": { "update_check" } as the app keeps it (Settings.cs); on unless it was turned off
+        static bool UpdateCheckBefore()
+        {
+            try { var v = ConfigStore.Load(AppInfo.ConfigPath); object a; if (v.TryGetValue("app", out a) && a is Dictionary<string, object> && ((Dictionary<string, object>)a).ContainsKey("update_check")) return !(((Dictionary<string, object>)a)["update_check"] is bool) || (bool)((Dictionary<string, object>)a)["update_check"]; }
+            catch { }
+            return true;
+        }
+
+        static void SaveUpdateCheck(bool on)
+        {
+            try
+            {
+                Directory.CreateDirectory(AppInfo.DataDir);
+                var root = File.Exists(AppInfo.ConfigPath) ? ConfigStore.Load(AppInfo.ConfigPath) : new Dictionary<string, object>();
+                ConfigStore.Obj(root, "app")["update_check"] = on;
+                ConfigStore.Save(AppInfo.ConfigPath, root);
+            }
+            catch { }
         }
 
         void BuildUninstall()
@@ -661,6 +690,7 @@ namespace TheNorns
             var exe = Path.Combine(dir, SetupProgram.Exe);
             if (desktop.Checked) SetupProgram.Shortcut(SetupProgram.DesktopLnk, exe);
             if (start.Checked) SetupProgram.Shortcut(SetupProgram.StartLnk, exe);
+            if (!selfTesting) SaveUpdateCheck(updates.Checked);
             status = L.T("Windows Settings → Apps…");
             long kb = list.Select(f => Path.Combine(dir, f)).Where(File.Exists).Sum(f => new FileInfo(f).Length) / 1024;
             using (var k = Registry.CurrentUser.CreateSubKey(SetupProgram.UninstallKey))
@@ -802,10 +832,11 @@ namespace TheNorns
             return bmp;
         }
 
+        bool selfTesting;
         public void SelfTest(string outDir)
         {
             Directory.CreateDirectory(outDir);
-            SetupProgram.UninstallKey += "-selftest";
+            SetupProgram.UninstallKey += "-selftest"; selfTesting = true;   // the user's config.json left as it is
             Opacity = 0; ShowInTaskbar = false; Show();
             Action<string> shot = name => { Application.DoEvents(); using (var b = new Bitmap(ClientSize.Width, ClientSize.Height)) { DrawToBitmap(b, new Rectangle(Point.Empty, ClientSize)); b.Save(Path.Combine(outDir, name)); } };
             shot("setup_1_welcome.png");
