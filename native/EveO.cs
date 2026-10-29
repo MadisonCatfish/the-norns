@@ -1,4 +1,4 @@
-// The Norns - Settings -> Eve-O (owner, 29.10.2026): the client preview & switching module (Fleet.cs), off by default.
+// The Norns - Settings -> Carousel (owner, 29.10.2026): the client preview & switching module (Fleet.cs), off by default.
 // A lamp switches it on; its hotkeys are set here: a click on a field, then the keys (Backspace clears it, Esc leaves it
 // as it was). The keys are kept in config.json "app": { "fleet": true, "fleet_next": "Control+2", "fleet_prev": ... }.
 using System;

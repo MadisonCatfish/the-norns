@@ -17,7 +17,7 @@ namespace TheNorns
         bool settingsOpen;
         string hotSpot, downSpot;   // "page:<name>", "lang:<code>", "logs", "reset", "back"
         string page = "general";    // general, logs, stats, about (the RIFT-like plan, step 1)
-        static readonly string[][] Pages = { new[] { "general", "General" }, new[] { "modes", "Modes" }, new[] { "eveo", "Eve-O" }, new[] { "logs", "Game logs" }, new[] { "storage", "Storage" }, new[] { "stats", "Statistics" }, new[] { "about", "About" } };
+        static readonly string[][] Pages = { new[] { "general", "General" }, new[] { "modes", "Modes" }, new[] { "eveo", "Carousel" }, new[] { "logs", "Game logs" }, new[] { "storage", "Storage" }, new[] { "stats", "Statistics" }, new[] { "about", "About" } };
         readonly List<Tuple<string, RectangleF>> spots = new List<Tuple<string, RectangleF>>();
         double resetShownUntil = -1;
         bool demoResetShown;
@@ -248,7 +248,7 @@ namespace TheNorns
         {
             base.OnMouseWheel(e);
             if (fleet != null && !Compact && PowerRect.Contains(e.Location)) { fleet.Wheel(e.Delta); return; }   // the client module: the wheel flips clients
-            if (ScrollEveO(e.Location, e.Delta)) { Render(); return; }   // Settings -> Eve-O scrolls (EveO.cs)
+            if (ScrollEveO(e.Location, e.Delta)) { Render(); return; }   // Settings -> Carousel scrolls (EveO.cs)
             if (settingsOpen && tabRow.Contains(e.Location)) { ScrollTabs(-Math.Sign(e.Delta)); Render(); return; }   // the wheel over the tabs scrolls them
             if (!settingsOpen || page != "about" || aboutView != "news") return;
             newsScroll = Math.Max(0, Math.Min(Math.Max(0, newsHeight - newsBox), newsScroll - Math.Sign(e.Delta) * U(24)));

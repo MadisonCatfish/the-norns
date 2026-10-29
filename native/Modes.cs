@@ -106,7 +106,7 @@ namespace TheNorns
         // (Shift+Tab back); Escape = leave it as it was
         protected override bool ProcessCmdKey(ref Message msg, Keys keyData)
         {
-            if (settingsOpen && keyCapture != null) return CaptureKey(keyData);   // Settings -> Eve-O: a hotkey being set (EveO.cs)
+            if (settingsOpen && keyCapture != null) return CaptureKey(keyData);   // Settings -> Carousel: a hotkey being set (EveO.cs)
             if (settingsOpen && focusField != null)
             {
                 var key = keyData & Keys.KeyCode;

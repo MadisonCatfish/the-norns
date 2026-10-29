@@ -417,7 +417,7 @@ namespace TheNorns
             hoverName = hn; hoverClose = hc; hoverFx = hv || hs; hotSpot = spot;
             // the tip after a short rest on the key, not at once (owner, 27.10.2026)
             tip.Hide(this);
-            var warn = WarnTip(spot);   // Settings -> Eve-O: the EVE client's action on a hotkey (EveO.cs)
+            var warn = WarnTip(spot);   // Settings -> Carousel: the EVE client's action on a hotkey (EveO.cs)
             tipText = hn ? L.T("Settings") : hc ? L.T("Close") : warn;
             tipAt = hn ? new Point((int)NameRect.Left, (int)(NameRect.Bottom + U(4))) : hc ? new Point((int)CloseRect.Left, (int)(CloseRect.Bottom + U(4))) : warn != null ? new Point(e.X - (int)U(60), e.Y + (int)U(12)) : Point.Empty;
             tipDue = clock.Elapsed.TotalSeconds + TipDelay;
@@ -447,7 +447,7 @@ namespace TheNorns
             {
                 downSpot = SpotAt(e.Location);
                 if (focusField != null && downSpot != "field:" + focusField) CommitField();   // a click elsewhere keeps the number
-                if (BeginRowDrag(downSpot, e.Y)) downSpot = null;   // Settings -> Eve-O: a client's row is dragged (EveO.cs)
+                if (BeginRowDrag(downSpot, e.Y)) downSpot = null;   // Settings -> Carousel: a client's row is dragged (EveO.cs)
             }
             else if (vortonFx.Contains(e.Location)) downFx = 1;
             else if (sbFx.Contains(e.Location)) downFx = 2;
@@ -744,7 +744,7 @@ namespace TheNorns
             }
         }
 
-        // the band's warning triangle (6 x 4.5 units of v around cx, cy, the mark inside); Settings -> Eve-O uses it too
+        // the band's warning triangle (6 x 4.5 units of v around cx, cy, the mark inside); Settings -> Carousel uses it too
         internal static void WarnTriangle(Graphics g, float cx, float cy, float v, Color c)
         {
             using (var pen = new Pen(c, Math.Max(1f, v * 0.65f)))
@@ -1949,7 +1949,7 @@ namespace TheNorns
                     }
                     Competition = keepC; RunnerResists = keepR; RunnerRepair = keepRep; VortonShot = keepS;
                 }
-                // Settings -> Eve-O (EveO.cs): off; on with Ctrl+2 forward; setting the previous key; a key another program holds
+                // Settings -> Carousel (EveO.cs): off; on with Ctrl+2 forward; setting the previous key; a key another program holds
                 {
                     bool keepF = FleetOn, keepP = FleetPreview; FleetPreview = true;
                     f.DemoClients = Enumerable.Range(1, 7).Select(i => "Pilot-" + i).ToList();

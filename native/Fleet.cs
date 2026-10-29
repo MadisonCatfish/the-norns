@@ -168,7 +168,7 @@ namespace TheNorns
             return null;
         }
 
-        // a new cycle order (Settings -> Eve-O's table); characters seen but left out keep their place at the end
+        // a new cycle order (Settings -> Carousel's table); characters seen but left out keep their place at the end
         public void SetOrder(IEnumerable<string> order)
         {
             var keep = Order.ToList();
@@ -536,7 +536,7 @@ namespace TheNorns
             ReloadKeys();
         }
 
-        // the hotkeys from config.json, again (Settings -> Eve-O changed them); a --fleet-trace run with neither set takes
+        // the hotkeys from config.json, again (Settings -> Carousel changed them); a --fleet-trace run with neither set takes
         // 1 / 2, as the owner's EVE-O has them
         public void ReloadKeys()
         {
@@ -594,7 +594,7 @@ namespace TheNorns
             string how;
             bool front = ClientSwitch.Activate(w.Hwnd, out how);
             if (front) Clients.OnForeground(w.Hwnd);   // a refused one would only mislead the next step
-            // Settings -> Eve-O: the client left behind is minimized, unless it is pinned open
+            // Settings -> Carousel: the client left behind is minimized, unless it is pinned open
             if (front && MinimizeOthers && prev != null && prev.Hwnd != w.Hwnd && !(prev.Character != null && KeepOpen.Contains(prev.Character)))
                 how += ClientSwitch.Minimize(prev.Hwnd) ? ", " + prev + " minimized" : "";
             Write(what + " -> " + w + ": " + how);
@@ -688,7 +688,7 @@ namespace TheNorns
             check(Hotkeys.Parse("Shift+Alt+x", out mods, out vk) && mods == 5 && vk == (uint)Keys.X, "Shift+Alt+x");
             check(!Hotkeys.Parse("Hyper+F1", out mods, out vk) && !Hotkeys.Parse("Foo", out mods, out vk) && !Hotkeys.Parse("", out mods, out vk), "not keys: refused");
 
-            // the EVE client's own keys: a hotkey on one of them gets a warning in Settings -> Eve-O
+            // the EVE client's own keys: a hotkey on one of them gets a warning in Settings -> Carousel
             check(EveKeys.Action("Control+2") == "Toggle Overload on Medium Power Rack", "Ctrl+2 is the client's overload of the medium rack");
             check(EveKeys.Action("2") == "Tag item as: 2" && EveKeys.Action("Shift+F") == "Launch Drones" && EveKeys.Action("Alt+F3") == "Activate Medium Power Slot 3", "2, Shift+F, Alt+F3 are the client's");
             check(EveKeys.Action("Control+F16") == null && EveKeys.Action("Control+Alt+2") == null, "Ctrl+F16 and Ctrl+Alt+2 are free");
