@@ -94,6 +94,27 @@ namespace TheNorns
         // Init first: the family is read after the fonts are loaded (the very first size asked for used to get Segoe UI)
         public static Font Screen(float px, FontStyle style = FontStyle.Regular) { Init(); return Get(orbitron, "Segoe UI", px, style); }
         public static Font Body(float px, FontStyle style = FontStyle.Regular) { Init(); return Get(grotesk, "Segoe UI", px, style); }
+
+        // a Windows font in place of these (Ukrainian, Chinese: they have no Cyrillic or CJK) is sized by this factor, so
+        // its capitals stand as tall as Orbitron's (title) or Space Grotesk's (text): the size does not change with the
+        // language (owner, 29.10.2026)
+        static readonly Dictionary<string, float> match = new Dictionary<string, float>();
+        public static float Match(string family, FontStyle style, bool title)
+        {
+            Init();
+            var key = family + "|" + style + "|" + title; float r;
+            if (match.TryGetValue(key, out r)) return r;
+            var ours = title ? orbitron : grotesk;
+            r = 1;
+            try { if (ours != null) using (var sys = new FontFamily(family)) r = CapHeight(ours, FontStyle.Regular) / CapHeight(sys, sys.IsStyleAvailable(style) ? style : FontStyle.Regular); }
+            catch { r = 1; }
+            if (float.IsNaN(r) || r < 0.5f || r > 2f) r = 1;
+            return match[key] = r;
+        }
+        static float CapHeight(FontFamily family, FontStyle style)
+        {
+            using (var p = new GraphicsPath()) { p.AddString("H", family, (int)style, 100, PointF.Empty, StringFormat.GenericTypographic); return p.GetBounds().Height; }
+        }
     }
 
     // loadersz "working" (MIT, (c) 2026 lumberjacque, npm loadersz 0.8.0, src/core/modes/foundational.ts) redrawn in GDI:

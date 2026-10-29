@@ -301,8 +301,9 @@ namespace TheNorns
                 if (text.Scroll) { maxScroll = DrawScrolling(g, paras, area, latin, scroll); return bmp; }
                 for (float scale = 1f; scale > 0.6f; scale -= 0.04f)
                 {
-                    Font lead = latin ? NornsFonts.Body(U(8.6f) * scale) : new Font(L.SysFamily, U(8.2f) * scale, GraphicsUnit.Pixel);
-                    Font body = latin ? NornsFonts.Body(U(7.6f) * scale) : new Font(L.SysFamily, U(7.3f) * scale, GraphicsUnit.Pixel);
+                    float m = latin ? 1 : NornsFonts.Match(L.SysFamily, FontStyle.Regular, false);   // the same size in every language
+                    Font lead = latin ? NornsFonts.Body(U(8.6f) * scale) : new Font(L.SysFamily, U(8.6f) * scale * m, GraphicsUnit.Pixel);
+                    Font body = latin ? NornsFonts.Body(U(7.6f) * scale) : new Font(L.SysFamily, U(7.6f) * scale * m, GraphicsUnit.Pixel);
                     float y = area.Top, gap = U(5.5f) * scale;
                     var heights = new List<float>();
                     for (int i = 0; i < paras.Length; i++) { float hh = g.MeasureString(paras[i], i == 0 ? lead : body, (int)area.Width).Height; heights.Add(hh); y += hh + gap; }
@@ -328,9 +329,10 @@ namespace TheNorns
         // returns how far it can scroll
         static float DrawScrolling(Graphics g, string[] paras, RectangleF area, bool latin, float scroll)
         {
-            Font lead = latin ? NornsFonts.Body(U(8.6f)) : new Font(L.SysFamily, U(8.2f), GraphicsUnit.Pixel);
-            Font body = latin ? NornsFonts.Body(U(7.6f)) : new Font(L.SysFamily, U(7.3f), GraphicsUnit.Pixel);
-            Font head = latin ? NornsFonts.Screen(U(7)) : new Font(L.SysFamily, U(7), FontStyle.Bold, GraphicsUnit.Pixel);
+            float m = latin ? 1 : NornsFonts.Match(L.SysFamily, FontStyle.Regular, false), mh = latin ? 1 : NornsFonts.Match(L.SysFamily, FontStyle.Bold, true);
+            Font lead = latin ? NornsFonts.Body(U(8.6f)) : new Font(L.SysFamily, U(8.6f) * m, GraphicsUnit.Pixel);
+            Font body = latin ? NornsFonts.Body(U(7.6f)) : new Font(L.SysFamily, U(7.6f) * m, GraphicsUnit.Pixel);
+            Font head = latin ? NornsFonts.Screen(U(7)) : new Font(L.SysFamily, U(7) * mh, FontStyle.Bold, GraphicsUnit.Pixel);
             float gap = U(5.5f), textW = area.Width - U(8);
             var heights = new float[paras.Length]; float total = 0;
             for (int i = 0; i < paras.Length; i++)

@@ -373,11 +373,13 @@ namespace TheNorns
         }
         Font TitleFont(string text, float px)
         {
-            return L.Cjk(text) ? Sys("Microsoft YaHei UI", px * 0.95f, FontStyle.Bold) : L.Cyrillic(text) ? Sys("Segoe UI Semibold", px * 0.95f) : NornsFonts.Screen(px);
+            return L.Cjk(text) ? Sys("Microsoft YaHei UI", px * NornsFonts.Match("Microsoft YaHei UI", FontStyle.Bold, true), FontStyle.Bold)
+                : L.Cyrillic(text) ? Sys("Segoe UI Semibold", px * NornsFonts.Match("Segoe UI Semibold", FontStyle.Regular, true)) : NornsFonts.Screen(px);
         }
         Font TextFont(string text, float px)
         {
-            return L.Cjk(text) ? Sys("Microsoft YaHei UI", px * 0.95f) : L.Cyrillic(text) ? Sys("Segoe UI", px * 0.95f) : NornsFonts.Body(px);
+            return L.Cjk(text) ? Sys("Microsoft YaHei UI", px * NornsFonts.Match("Microsoft YaHei UI", FontStyle.Regular, false))
+                : L.Cyrillic(text) ? Sys("Segoe UI", px * NornsFonts.Match("Segoe UI", FontStyle.Regular, false)) : NornsFonts.Body(px);
         }
 
         void PaintSettings(Graphics g, RectangleF c)
