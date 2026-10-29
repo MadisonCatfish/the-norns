@@ -346,30 +346,47 @@ namespace TheNorns
     }
 
     // Step 4: a client to the front, as EVE-O does it: restored when minimized (asynchronously - a busy client can't hold
-    // the app up), then SetForegroundWindow and SetFocus; SwitchToThisWindow when Windows refuses the foreground. Only on
-    // the user's own input (the wheel over the power display; later the owner's squares on the hull): Windows lets the
-    // process that got the last input bring a window forward.
+    // the app up), then SetForegroundWindow and SetFocus; SwitchToThisWindow as the last resort. Windows lets only the
+    // process that got the last input bring a window forward, and the wheel over an inactive window does not count (test
+    // build fl4: every switch refused, the taskbar buttons flashed) - so when it refuses, the app's input queue is joined
+    // to the foreground window's for that one call (AttachThreadInput) and parted again at once. No input is sent.
     static class ClientSwitch
     {
         [DllImport("user32.dll")] static extern bool IsWindow(IntPtr h);
         [DllImport("user32.dll")] static extern bool IsIconic(IntPtr h);
         [DllImport("user32.dll")] static extern bool ShowWindowAsync(IntPtr h, int cmd);
         [DllImport("user32.dll")] static extern bool SetForegroundWindow(IntPtr h);
+        [DllImport("user32.dll")] static extern bool BringWindowToTop(IntPtr h);
         [DllImport("user32.dll")] static extern IntPtr SetFocus(IntPtr h);
         [DllImport("user32.dll")] static extern void SwitchToThisWindow(IntPtr h, bool altTab);
+        [DllImport("user32.dll")] static extern uint GetWindowThreadProcessId(IntPtr h, IntPtr pid);
+        [DllImport("user32.dll")] static extern bool AttachThreadInput(uint thread, uint to, bool attach);
+        [DllImport("kernel32.dll")] static extern uint GetCurrentThreadId();
         const int SwRestore = 9;
 
-        // what happened, for the trace
-        public static string Activate(IntPtr h)
+        // true when h is in front; how: what happened, for the trace
+        public static bool Activate(IntPtr h, out string how)
         {
             var sw = System.Diagnostics.Stopwatch.StartNew();
-            if (!IsWindow(h)) return "gone";
+            how = "gone";
+            if (!IsWindow(h)) return false;
             bool restored = IsIconic(h) && ShowWindowAsync(h, SwRestore);
-            bool front = SetForegroundWindow(h);
+            string path = "foreground";
+            bool front = SetForegroundWindow(h) && ForegroundWatch.GetForegroundWindow() == h;
+            if (!front)
+            {
+                IntPtr fg = ForegroundWatch.GetForegroundWindow();
+                uint me = GetCurrentThreadId(), them = fg == IntPtr.Zero ? 0 : GetWindowThreadProcessId(fg, IntPtr.Zero);
+                bool joined = them != 0 && them != me && AttachThreadInput(me, them, true);
+                try { BringWindowToTop(h); front = SetForegroundWindow(h); }
+                finally { if (joined) AttachThreadInput(me, them, false); }
+                path = joined ? "joined input" : "refused";
+            }
             SetFocus(h);
-            if (!front) SwitchToThisWindow(h, false);
+            if (!front) { SwitchToThisWindow(h, false); path += ", SwitchToThisWindow"; }
             bool inFront = ForegroundWatch.GetForegroundWindow() == h;
-            return (restored ? "restored, " : "") + (front ? "foreground" : "refused, SwitchToThisWindow") + (inFront ? ", in front" : ", not in front yet") + ", " + sw.Elapsed.TotalMilliseconds.ToString("0.0") + " ms";
+            how = (restored ? "restored, " : "") + path + (inFront ? ", in front" : ", not in front") + ", " + sw.Elapsed.TotalMilliseconds.ToString("0.0") + " ms";
+            return inFront || front;
         }
 
         // the wheel's notches (120 a notch; a touchpad sends parts): up = the previous client (-1), down = the next (+1)
@@ -412,8 +429,8 @@ namespace TheNorns
 
         public void Poll() { Clients.Update(ClientWindows.Find()); }
 
-        // the wheel over the power display: a client per notch, in the cycle's order. The tracker takes the new client at
-        // once (Windows' foreground event confirms it a moment later), so quick notches walk on instead of repeating
+        // the wheel over the power display: a client per notch, in the cycle's order. The tracker takes a client that came
+        // to the front at once (Windows' foreground event confirms it a moment later), so quick notches walk on
         int wheel;
         public void Wheel(int delta)
         {
@@ -421,8 +438,8 @@ namespace TheNorns
             {
                 var w = Clients.Next(dir);
                 if (w == null) { Write("switch " + (dir > 0 ? "next" : "previous") + ": no client"); continue; }
-                var how = ClientSwitch.Activate(w.Hwnd);
-                Clients.OnForeground(w.Hwnd);
+                string how;
+                if (ClientSwitch.Activate(w.Hwnd, out how)) Clients.OnForeground(w.Hwnd);   // a refused one would only mislead the next notch
                 Write("switch " + (dir > 0 ? "next" : "previous") + " -> " + w + ": " + how);
             }
         }
