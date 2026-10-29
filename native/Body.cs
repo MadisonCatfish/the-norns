@@ -532,7 +532,8 @@ namespace TheNorns
                 if (fleet != null)
                 {
                     var area = PreviewArea;
-                    fleet.Preview.Sync(this, area, Compact || !FleetPreview ? IntPtr.Zero : fleet.Clients.Active, () => PowerLid(bmp, area));
+                    var active = fleet.Clients.ActiveClient;
+                    fleet.Preview.Sync(this, area, Compact || !FleetPreview ? IntPtr.Zero : fleet.Clients.Active, () => PowerLid(bmp, area, active == null ? null : active.Character));
                 }
             }
         }
@@ -938,6 +939,7 @@ namespace TheNorns
                     var area = Rectangle.Round(face);
                     g.InterpolationMode = InterpolationMode.HighQualityBicubic;
                     g.DrawImage(DemoPreview, area, LivePreview.Crop(DemoPreview.Size, area.Size), GraphicsUnit.Pixel);
+                    PaintPreviewName(g, face, DemoPreviewName, secs);
                 }
                 else if (fleet == null || !fleet.Preview.Shown)   // under the live picture nothing needs drawing
                 {
@@ -960,6 +962,38 @@ namespace TheNorns
         // tilted back: the face is a touch narrower than the display
         RectangleF PowerFace { get { var r = PowerRect; return new RectangleF(r.X + U(0.6f), r.Y, r.Width - U(1.2f), r.Height); } }
         public Bitmap DemoPreview;   // selftest: a client picture on the power display
+        public string DemoPreviewName;   // selftest: its character
+
+        // the active client's character over its live picture (owner, 29.10.2026): at the glass's foot in the module
+        // titles' Orbitron caps, on a dark fade; a name too long for the glass runs by quickly (Potato: cut with "…")
+        void PaintPreviewName(Graphics g, RectangleF face, string name, double secs)
+        {
+            if (string.IsNullOrEmpty(name)) return;
+            var text = name.ToUpperInvariant();
+            var f = NornsFonts.Screen(U(5.6f));
+            float th = f.GetHeight(g), bandH = th + U(5.5f);
+            var band = RectangleF.FromLTRB(face.Left, face.Bottom - bandH, face.Right, face.Bottom);
+            using (var lg = new LinearGradientBrush(RectangleF.Inflate(band, 0, 1), Color.FromArgb(0, 0, 0, 0), Color.FromArgb(200, 0, 0, 0), 90f)) g.FillRectangle(lg, band);
+            float pad = U(5), avail = face.Width - 2 * pad, ty = face.Bottom - U(2.5f) - th;
+            float tw = g.MeasureString(text, f, 10000, StringFormat.GenericTypographic).Width;
+            var st = g.Save();
+            g.IntersectClip(RectangleF.FromLTRB(face.Left + U(2), band.Top, face.Right - U(2), face.Bottom));
+            using (var b = new SolidBrush(BodyTheme.Ink))
+            {
+                if (tw <= avail) g.DrawString(text, f, b, face.Left + (face.Width - tw) / 2, ty, StringFormat.GenericTypographic);
+                else if (Potato)
+                    g.DrawString(text, f, b, new RectangleF(face.Left + pad, ty, avail, th + U(1)), new StringFormat(StringFormat.GenericTypographic) { Trimming = StringTrimming.EllipsisCharacter, FormatFlags = StringFormatFlags.NoWrap });
+                else
+                {
+                    // the running line: from the left edge on, then again after a gap, about a glass's width a second
+                    float gap = U(18), loop = tw + gap;
+                    float x = face.Left + pad - (float)(secs * U(46) % loop);
+                    g.DrawString(text, f, b, x, ty, StringFormat.GenericTypographic);
+                    g.DrawString(text, f, b, x + loop, ty, StringFormat.GenericTypographic);
+                }
+            }
+            g.Restore(st);
+        }
 
         // over the glass's content: the texture's light marks and the rim
         void PaintPowerGlass(Graphics g, RectangleF face, GraphicsPath fp)
@@ -990,7 +1024,7 @@ namespace TheNorns
         // the client module's live picture (Fleet.cs) lies over the face; its lid carries what the body has there: the
         // body's own pixels around the rounded glass (cut from this frame, so a heated hull shows too), the light marks, the rim
         Rectangle PreviewArea { get { var f = PowerFace; return Rectangle.FromLTRB((int)Math.Floor(f.Left), (int)Math.Floor(f.Top), (int)Math.Ceiling(f.Right), (int)Math.Ceiling(f.Bottom)); } }
-        Bitmap PowerLid(Bitmap frame, Rectangle area)
+        Bitmap PowerLid(Bitmap frame, Rectangle area, string name)
         {
             var bmp = new Bitmap(area.Width, area.Height, PixelFormat.Format32bppArgb);
             using (var g = Graphics.FromImage(bmp))
@@ -998,6 +1032,7 @@ namespace TheNorns
             using (var tb = new TextureBrush(cut))
             {
                 g.SmoothingMode = SmoothingMode.AntiAlias; g.PixelOffsetMode = PixelOffsetMode.HighQuality;
+                g.TextRenderingHint = TextRenderingHint.AntiAlias;   // on a transparent lid the default hint breaks the letters
                 g.TranslateTransform(-area.X, -area.Y);
                 tb.TranslateTransform(area.X, area.Y);
                 var face = PowerFace;
@@ -1006,6 +1041,10 @@ namespace TheNorns
                 {
                     corners.AddRectangle(area); corners.AddPath(fp, false);
                     g.FillPath(tb, corners);
+                    var st = g.Save();
+                    g.SetClip(fp);
+                    PaintPreviewName(g, face, name, DemoSeconds ?? clock.Elapsed.TotalSeconds);
+                    g.Restore(st);
                     PaintPowerGlass(g, face, fp);
                 }
             }
@@ -2102,15 +2141,31 @@ namespace TheNorns
                 using (var f = new DpsForm(new string[0], () => null, true) { DemoNow = now, DemoSeconds = 0, DemoFollowing = true })
                 {
                     var pr = Rectangle.Round(RectangleF.Inflate(f.PowerRect, f.U(6), f.U(6)));
-                    f.DemoPreview = pic;
+                    f.DemoPreview = pic; f.DemoPreviewName = "Pilot-3";
                     save(f, "dps_fleet_preview.png");
                     using (var fr = f.Draw()) zoom(fr, pr, "dps_fleet_preview_zoom.png");
+                    // a name longer than the glass runs by: 6 frames 0.15 s apart, one under another, 4x
+                    f.DemoPreviewName = "Pilot-8 With A Long Name";
+                    using (var strip = new Bitmap(pr.Width * 4, pr.Height * 4 * 6))
+                    {
+                        using (var sg = Graphics.FromImage(strip))
+                        {
+                            sg.InterpolationMode = InterpolationMode.NearestNeighbor; sg.PixelOffsetMode = PixelOffsetMode.Half;
+                            for (int i = 0; i < 6; i++)
+                            {
+                                f.DemoSeconds = i * 0.15;
+                                using (var fr = f.Draw()) sg.DrawImage(fr, new Rectangle(0, i * pr.Height * 4, pr.Width * 4, pr.Height * 4), pr, GraphicsUnit.Pixel);
+                            }
+                        }
+                        strip.Save(Path.Combine(dir, "dps_fleet_name_running.png"), ImageFormat.Png);
+                    }
+                    f.DemoSeconds = 0; f.DemoPreviewName = null;
                     // the live path: the frame without the picture, the picture where the DWM window lies, the lid over both
                     f.DemoPreview = null;
                     using (var fr = f.Draw())
                     {
                         var area = f.PreviewArea;
-                        using (var lid = f.PowerLid(fr, area))
+                        using (var lid = f.PowerLid(fr, area, "Pilot-3"))
                         using (var g = Graphics.FromImage(fr))
                         {
                             g.InterpolationMode = InterpolationMode.HighQualityBicubic;
