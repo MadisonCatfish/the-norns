@@ -1,4 +1,6 @@
 {
+  "Privacy": "Конфіденційність",
+  "No account, no telemetry. The only network request is the update check (the GitHub Releases API); it sends nothing about you or your game.": "Без акаунта й телеметрії. Єдиний мережевий запит — перевірка оновлень (GitHub Releases API); вона не надсилає нічого про вас чи вашу гру.",
   "_language": "uk",
   "Back": "Назад",
   "Next": "Далі",

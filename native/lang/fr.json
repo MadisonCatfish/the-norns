@@ -1,4 +1,6 @@
 {
+  "Privacy": "Confidentialité",
+  "No account, no telemetry. The only network request is the update check (the GitHub Releases API); it sends nothing about you or your game.": "Pas de compte, pas de télémétrie. La seule requête réseau est la vérification des mises à jour (l'API GitHub Releases) ; elle n'envoie rien sur vous ni sur votre jeu.",
   "_language": "fr",
   "Back": "Retour",
   "Next": "Suivant",
