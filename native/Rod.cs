@@ -120,7 +120,7 @@ namespace TheNorns
             // what the runner takes against its repair, small under the number
             double takes = stats.RunnerVortonTaken(now) + stats.RunnerNpcTaken(now);
             var tl = Num(takes) + " / " + RunnerRepair.ToString("0.#", CultureInfo.InvariantCulture) + " HP/S";
-            var tf = NornsFonts.Screen(U(5));
+            var tf = NornsFonts.Screen(U(5.9f));   // 18 % larger (owner, 29.10.2026)
             float tw = g.MeasureString(tl, tf, 1000, StringFormat.GenericTypographic).Width;
             bool losing = RunnerRepair > 0 && takes > RunnerRepair;
             using (var b = new SolidBrush(losing ? RodRed : Color.FromArgb(140, BodyTheme.Ink))) g.DrawString(tl, tf, b, r.Right - tw, r.Top + big.GetHeight(g) + U(1), StringFormat.GenericTypographic);
