@@ -1761,7 +1761,7 @@ namespace TheNorns
                 save(f, "dps_compact.png");
                 f.DemoSettings(true, null, false, "general"); save(f, "dps_compact_general.png"); f.DemoSettings(false, null, false);
                 Compact = false; f.Size = new Size(f.DesiredWidth, f.DesiredHeight); if (f.shell != null) { f.shell.Dispose(); f.shell = null; }
-                f.DemoUpdate("1.3.0");
+                f.DemoUpdate("1.4.0");
                 var keepSecs = f.DemoSeconds;
                 f.DemoSeconds = 0; save(f, "dps_version_plate_new_bright.png");
                 f.DemoSeconds = 1.2; save(f, "dps_version_plate_new_dim.png");

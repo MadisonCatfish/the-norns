@@ -6,6 +6,7 @@
 - Lightning rod module in place of Smartbombs in Competition mode: the damage the group puts through the runner per second (its Vorton hits in 10 s × one shot), what the runner takes against its repair, and an ECG of the runner — a bright blood-red line kicked by every hit on a damped spring, the NPCs' hits as a thin white line.
 - Formula cards can scroll with the mouse wheel.
 - ★ spawns count only commanders and faction NPCs: titans and dreadnoughts are no longer in the count (they still sound the alert and heat the hull).
+- Installer: a Privacy section on the folder page (no account, no telemetry; the update check is the only network request) with the switch for the update check at start, the same as in Settings → General.
 
 ## 1.3.0 — 2026-10-28
 
