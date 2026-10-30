@@ -360,7 +360,7 @@ namespace TheNorns
         readonly LampSwitch accept = new LampSwitch(L.T("I accept the license")), desktop = new LampSwitch(L.T("Desktop shortcut")) { Checked = true },
                             start = new LampSwitch(L.T("Start menu shortcut")) { Checked = true },
                             // the update check at start (Settings -> General in the app): set here too, with the privacy
-                            // note beside it (SignPath's rule for software that sends anything: shown during installation,
+                            // note beside it (anything the app sends is shown during installation,
                             // with a way to turn it off); an update keeps the choice made before
                             updates = new LampSwitch(L.T("Check for updates at start")) { Checked = UpdateCheckBefore() }, launch = new LampSwitch(L.F("Launch {0}", AppInfo.Name)) { Checked = true },
                             wipe = new LampSwitch(L.T("Also delete my settings"));

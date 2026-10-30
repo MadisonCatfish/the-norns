@@ -122,17 +122,13 @@ The only network request is the update check: an HTTPS request to the GitHub Rel
 
 Settings and session statistics stay on your PC, in `%LOCALAPPDATA%\The Norns`.
 
-## Code signing policy
+## Code signing
 
-Free code signing provided by [SignPath.io](https://about.signpath.io/), certificate by [SignPath Foundation](https://signpath.org/).
+The release files are not code-signed yet. Until they have built up a reputation with Microsoft, Windows SmartScreen may warn about the installer ("Windows protected your PC" → More info → Run anyway).
 
-The application was submitted on 29.10.2026; releases are signed once it is approved. Signed files are built from this repository by GitHub Actions (`.github/workflows/build.yml`), and every release is approved by hand before it is signed.
+To check a download, compare its SHA-256 with the one in the release notes: `Get-FileHash <file>` in PowerShell. The release files are built from this repository by GitHub Actions (`.github/workflows/build.yml`), which prints the same hashes.
 
-Team roles:
-- Committers and reviewers: [MadisonCatfish](https://github.com/MadisonCatfish)
-- Approvers: [MadisonCatfish](https://github.com/MadisonCatfish)
-
-Privacy policy: see [Privacy](#privacy) above.
+Free code signing through the [SignPath Foundation](https://signpath.org/) is planned once the project is more widely used.
 
 ## Legal
 

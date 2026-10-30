@@ -1,7 +1,7 @@
 # Builds The Norns the way a release is built (native\build.ps1 -Setup): the app, the installer and the portable zip,
 # then runs the installer's self-test and keeps the three files as the run's artifact. On every pushed v* tag and by
-# hand (Actions -> build -> Run workflow). SignPath signs only files that come from this workflow (README: Code signing
-# policy); the signing step joins it once the SignPath Foundation application is approved.
+# hand (Actions -> build -> Run workflow). The files are not code-signed yet; the release notes carry the SHA-256
+# printed here (README: Code signing).
 name: build
 
 on:
