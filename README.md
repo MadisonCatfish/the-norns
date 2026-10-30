@@ -68,6 +68,10 @@ Whether you are just training skills for your Skybreakers / Stormbringers or fin
 - The Smartbombs module becomes **Lightning rod**: the damage the group puts through the runner, the runner's intake against its repair, and a live ECG of every hit on it.
 - The runner's resists, repair and the Vorton shot's damage are entered in Settings → Modes.
 
+<p align="center">
+  <img src="https://github.com/user-attachments/assets/856bd071-d10b-4311-bebe-8cb03a0e5fcc" width="640" alt="The Norns — Competition mode in a site: Vorton lightning through the runner and the Lightning rod ECG" />
+</p>
+
 ### 8. Multi-Language Support
 Available in 6 languages, auto-detected or selectable:
 - English
