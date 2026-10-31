@@ -1638,6 +1638,7 @@ namespace TheNorns
             var raw = new double[count];
             var sorted = ticks.Skip(first).OrderBy(v => v).ToList(); long median = sorted.Count > 0 ? sorted[sorted.Count / 2] : 0;
             for (int i = 0; i < count; i++) raw[i] = Math.Max(0, Math.Min(1, (Math.Log(Math.Max(1, ticks[first + i])) - Math.Log(3000)) / (Math.Log(270000) - Math.Log(3000))));
+            var spawnDots = new List<Tuple<RectangleF, int, bool>>();   // drawn last: on top of the grid
             for (int i = 0; i < Rows * Cols; i++)
             {
                 int col = i / Rows, row = i % Rows;
@@ -1664,21 +1665,30 @@ namespace TheNorns
                 }
                 // every cell fades towards its target at its own pace: new ticks appear and a reset clears the grid
                 // unevenly, not all at once (snapped in self-tests)
-                if (DemoNow != null || Potato) { cellHeat[i] = (float)target; cellLit[i] = (float)presence; }
+                // a spawn's own tick (at least 4x the site's median: its bounty, not the small ships dying with it) is not
+                // faded in: it is there at once, in its colour, over the grid (owner, 31.10.2026)
+                int kind = i < count && first + i < tr.BountyTimes.Count && ticks[first + i] >= 4 * median ? stats.KindNear(tr.BountyTimes[first + i]) : 0;
+                if (DemoNow != null || Potato || kind != 0) { cellHeat[i] = (float)target; cellLit[i] = (float)presence; }
                 else { cellHeat[i] += (float)((target - cellHeat[i]) * cellPace[i]); cellLit[i] += (float)((presence - cellLit[i]) * cellPace[i]); }
                 double t = cellHeat[i], lit = cellLit[i];
+                if (kind != 0) { spawnDots.Add(Tuple.Create(cell, kind, i == count - 1)); continue; }
                 if (lit < 0.999) using (var b = new SolidBrush(Color.FromArgb((int)(89 * (1 - lit)), 30, 32, 20))) g.FillEllipse(b, cell);
                 if (lit < 0.01) continue;
-                // a commander's tick in the second accent, a titan's in the alarm red; the rest on the acid-yellow scale
-                // only a tick at least 4x the site's median: the spawn's own bounty, not the small ships dying with it
-                int kind = i < count && first + i < tr.BountyTimes.Count && ticks[first + i] >= 4 * median ? stats.KindNear(tr.BountyTimes[first + i]) : 0;
-                var c = kind == 2 ? Mix(Color.FromArgb(120, 10, 6), AlarmRed, 0.4 + 0.6 * t) : kind == 1 ? Mix(Color.FromArgb(30, 20, 120), BodyTheme.Accent2Light, t) : HeatColor(t);
-                if (kind != 0) t = Math.Max(t, 0.75);
+                var c = HeatColor(t);
                 SoftGlow(g, new PointF(cx, cy), d / 2 + U(3 + (float)t * 7), c, (int)(t * t * 255 * lit * 0.3));
                 using (var b = new SolidBrush(Color.FromArgb((int)((0.6 + t * 0.4) * 255 * lit), c))) g.FillEllipse(b, cell);
                 if (!Potato) using (var lg = new LinearGradientBrush(cell, Color.FromArgb((int)(56 * lit), 255, 255, 255), Color.FromArgb((int)(71 * lit), 0, 0, 0), 90f)) g.FillEllipse(lg, cell);
                 if (i == count - 1) using (var pen = new Pen(BodyTheme.Ink, Math.Max(1f, U(0.5f)))) g.DrawEllipse(pen, cell);
             }
+            // the spawns on grid without their bounty yet: in the cells after the last tick (the last cells when it is full)
+            var pending = PendingSpawns();
+            for (int j = 0; j < pending.Count; j++)
+            {
+                int i = Math.Min(Rows * Cols - pending.Count + j, count + j), col = i / Rows, row = i % Rows;
+                float cx = grid.Left + col * (cw + gap) + cw / 2, cy = grid.Top + row * (ch + gap) + ch / 2;
+                spawnDots.Add(Tuple.Create(new RectangleF(cx - d / 2, cy - d / 2, d, d), pending[j], false));
+            }
+            foreach (var sd in spawnDots) PaintSpawnDot(g, sd.Item1, sd.Item2, sd.Item3, secs);
         }
 
         // compact: the grid folded into one row - each dot is one column of the full grid (10 ticks), at their average
@@ -1691,7 +1701,7 @@ namespace TheNorns
             float gap = U(1.5f), cw = (r.Width - gap * (Cols - 1)) / Cols, d = Math.Min(cw, r.Height);
             int first = Math.Max(0, ticks.Count - Rows * Cols), count = ticks.Count - first;
             var sorted = ticks.Skip(first).OrderBy(v => v).ToList(); long median = sorted.Count > 0 ? sorted[sorted.Count / 2] : 0;
-            var marked = new List<Tuple<RectangleF, Color, bool>>();   // drawn last: on top
+            var marked = new List<Tuple<RectangleF, int, bool>>();   // drawn last: on top
             for (int col = 0; col < Cols; col++)
             {
                 float cx = r.Left + col * (cw + gap) + cw / 2, cy = r.Top + r.Height / 2;
@@ -1702,28 +1712,65 @@ namespace TheNorns
                 for (int i = a; i < b; i++)
                 {
                     avg += ticks[first + i];
-                    if (first + i < tr.BountyTimes.Count && ticks[first + i] >= 4 * median) kind = Math.Max(kind, stats.KindNear(tr.BountyTimes[first + i]));
+                    if (first + i < tr.BountyTimes.Count && ticks[first + i] >= 4 * median) { int k = stats.KindNear(tr.BountyTimes[first + i]); if (DpsStats.Rank(k) > DpsStats.Rank(kind)) kind = k; }
                 }
                 avg /= b - a;
                 double t = Math.Max(0, Math.Min(1, (Math.Log(Math.Max(1, avg)) - Math.Log(3000)) / (Math.Log(270000) - Math.Log(3000))));
-                if (kind != 0) { marked.Add(Tuple.Create(RectangleF.Inflate(cell, d * 0.15f, d * 0.15f), kind == 2 ? AlarmRed : BodyTheme.Accent2Light, b == count)); continue; }
+                if (kind != 0) { marked.Add(Tuple.Create(cell, kind, b == count)); continue; }
                 var c = HeatColor(t);
                 SoftGlow(g, new PointF(cx, cy), d / 2 + U(3 + (float)t * 7), c, (int)(t * t * 255 * 0.3));
                 using (var br = new SolidBrush(Color.FromArgb((int)((0.6 + t * 0.4) * 255), c))) g.FillEllipse(br, cell);
                 if (!Potato) using (var lg = new LinearGradientBrush(cell, Color.FromArgb(56, 255, 255, 255), Color.FromArgb(71, 0, 0, 0), 90f)) g.FillEllipse(lg, cell);
                 if (b == count) using (var pen = new Pen(BodyTheme.Ink, Math.Max(1f, U(0.5f)))) g.DrawEllipse(pen, cell);
             }
-            foreach (var m in marked)
+            var pending = PendingSpawns();
+            int next = (count + Rows - 1) / Rows;   // the first column without a tick
+            for (int j = 0; j < pending.Count; j++)
             {
-                var mc = m.Item1;
-                SoftGlow(g, new PointF(mc.X + mc.Width / 2, mc.Y + mc.Height / 2), mc.Width / 2 + U(9), m.Item2, 110);
-                using (var br = new SolidBrush(m.Item2)) g.FillEllipse(br, mc);
-                if (!Potato) using (var lg = new LinearGradientBrush(mc, Color.FromArgb(56, 255, 255, 255), Color.FromArgb(71, 0, 0, 0), 90f)) g.FillEllipse(lg, mc);
-                if (m.Item3) using (var pen = new Pen(BodyTheme.Ink, Math.Max(1f, U(0.5f)))) g.DrawEllipse(pen, mc);
+                int col = Math.Min(Cols - pending.Count + j, next + j);
+                float cx = r.Left + col * (cw + gap) + cw / 2, cy = r.Top + r.Height / 2;
+                marked.Add(Tuple.Create(new RectangleF(cx - d / 2, cy - d / 2, d, d), pending[j], false));
             }
+            double secs = DemoSeconds ?? clock.Elapsed.TotalSeconds;
+            foreach (var m in marked) PaintSpawnDot(g, m.Item1, m.Item2, m.Item3, secs);
         }
 
         // the accent as a scale: almost black -> saturated acid yellow
+        // a rare spawn's colour on the grid: a faction NPC or commander in the second accent, a titan in the alarm red,
+        // a pirate dreadnought in orange (the hull's yellow would sink into the grid's yellow)
+        static Color SpawnColor(int kind) { return kind == 2 ? AlarmRed : kind == 3 ? DreadOrange : BodyTheme.Accent2Light; }
+        static readonly Color DreadOrange = Color.FromArgb(255, 146, 24);   // apart from the grid's acid yellow
+
+        // the spawns on grid now that have no bounty tick yet (owner, 31.10.2026: shown as soon as they are seen, on top
+        // of everything): hit in the last 90 s, no tick of their kind since they came; at most 3, the highest kind first
+        List<int> PendingSpawns()
+        {
+            var now = DemoNow ?? DateTime.UtcNow;
+            var tr = stats.Tracker;
+            var list = new List<DpsStats.Sighting>();
+            foreach (var sg in stats.Sightings)
+            {
+                if ((now - sg.Last).TotalSeconds > 90) continue;
+                bool paid = false;
+                for (int k = tr.BountyTimes.Count - 1; k >= 0 && tr.BountyTimes[k] >= sg.First.AddSeconds(-4); k--)
+                    if (stats.KindNear(tr.BountyTimes[k]) == sg.Kind) { paid = true; break; }
+                if (!paid) list.Add(sg);
+            }
+            return list.OrderByDescending(x => DpsStats.Rank(x.Kind)).ThenBy(x => x.First).Take(3).Select(x => x.Kind).ToList();
+        }
+
+        // one spawn's dot, drawn over the grid: full colour, a little larger, a strong glow that breathes (still in Potato)
+        void PaintSpawnDot(Graphics g, RectangleF cell, int kind, bool ring, double secs)
+        {
+            var c = SpawnColor(kind);
+            var mc = RectangleF.Inflate(cell, cell.Width * 0.15f, cell.Height * 0.15f);
+            double beat = Potato ? 1 : 0.75 + 0.25 * Math.Sin(secs * 5.0);
+            SoftGlow(g, new PointF(mc.X + mc.Width / 2, mc.Y + mc.Height / 2), mc.Width / 2 + U(9), c, (int)(130 * beat));
+            using (var br = new SolidBrush(c)) g.FillEllipse(br, mc);
+            if (!Potato) using (var lg = new LinearGradientBrush(mc, Color.FromArgb(56, 255, 255, 255), Color.FromArgb(71, 0, 0, 0), 90f)) g.FillEllipse(lg, mc);
+            if (ring) using (var pen = new Pen(BodyTheme.Ink, Math.Max(1f, U(0.5f)))) g.DrawEllipse(pen, mc);
+        }
+
         static Color HeatColor(double t)
         {
             var stops = new[] { Color.FromArgb(14, 15, 8), Color.FromArgb(52, 56, 10), Color.FromArgb(128, 134, 14), Color.FromArgb(200, 208, 18), Color.FromArgb(247, 255, 20) };
@@ -2006,6 +2053,17 @@ namespace TheNorns
                     var bt = f.Stats.Tracker.BountyTimes;
                     for (int qi = 0; qi < bt.Count; qi++) if (qi % 23 == 5) { f.Stats.DemoSpecial(bt[qi], 1); f.Stats.Tracker.Bounties[qi] = 1875000; } else if (qi % 37 == 11) { f.Stats.DemoSpecial(bt[qi], 2); f.Stats.Tracker.Bounties[qi] = 9000000; }
                     save(f, "dps_commander_titan_ticks.png");
+                    // three spawns seen in the last seconds, no bounty from them yet: on the grid at once, after the last tick
+                    // (owner, 31.10.2026): a titan, a dreadnought, a faction commander
+                    var dn = f.DemoNow.Value;
+                    f.Stats.Sightings.Add(new DpsStats.Sighting { Name = "Shadow Serpentis Rear Admiral", Kind = 1, First = dn.AddSeconds(-30), Last = dn.AddSeconds(-2) });
+                    f.Stats.Sightings.Add(new DpsStats.Sighting { Name = "Serpentis Dreadnought", Kind = 3, First = dn.AddSeconds(-12), Last = dn.AddSeconds(-1) });
+                    f.Stats.Sightings.Add(new DpsStats.Sighting { Name = "Dark Blood Titan", Kind = 2, First = dn.AddSeconds(-5), Last = dn });
+                    save(f, "dps_spawns_pending.png");
+                    Compact = true; f.Size = new Size(f.DesiredWidth, f.DesiredHeight); if (f.shell != null) { f.shell.Dispose(); f.shell = null; }
+                    save(f, "dps_compact_spawns_pending.png");
+                    Compact = false; f.Size = new Size(f.DesiredWidth, f.DesiredHeight); if (f.shell != null) { f.shell.Dispose(); f.shell = null; }
+                    f.Stats.Sightings.Clear();
                     f.DemoHeat = 0.45; save(f, "dps_titan_heating.png");
                     f.DemoHeat = 1; save(f, "dps_titan_hot.png");
                     f.DemoHeat = null;

@@ -407,12 +407,18 @@ namespace TheNorns
             return CommanderName.IsMatch(npc) ? 1 : 0;
         }
         // a bounty tick at t is the commander's / titan's when one was being hit in the 4 s before it (titan wins)
+        // kinds: 1 a commander or a faction NPC, 2 a titan, 3 a pirate dreadnought; a titan wins, then a dreadnought
+        public static int Rank(int kind) { return kind == 2 ? 3 : kind == 3 ? 2 : kind; }
         public int KindNear(DateTime t)
         {
             int k = 0;
-            foreach (var x in special) if (x.Item1 <= t.AddSeconds(1) && x.Item1 >= t.AddSeconds(-4)) k = Math.Max(k, x.Item2);
+            foreach (var x in special) if (x.Item1 <= t.AddSeconds(1) && x.Item1 >= t.AddSeconds(-4) && Rank(x.Item2) > Rank(k)) k = x.Item2;
             return k;
         }
+        // every rare spawn as it is first hit (owner, 31.10.2026: on the ISK grid at once, before its bounty comes): its
+        // name, kind, the first and the last hit to or from it
+        public sealed class Sighting { public string Name; public int Kind; public DateTime First, Last; }
+        public readonly List<Sighting> Sightings = new List<Sighting>();
         // the last hit to or from a titan
         public DateTime LastTitan { get { var t = DateTime.MinValue; foreach (var x in special) if (x.Item2 == 2 && x.Item1 > t) t = x.Item1; return t; } }
         public void DemoSpecial(DateTime t, int kind) { special.Add(Tuple.Create(t, kind)); }
@@ -648,13 +654,20 @@ namespace TheNorns
                     int sk = SpecialKind(e.Other);
                     if (sk != 0)
                     {
+                        if (IsDread(e.Other)) sk = 3;
                         special.Add(Tuple.Create(e.T, sk));
                         if (IsDread(e.Other) && e.T > LastDread) LastDread = e.T;
                         DateTime seen;
                         if (!spawnSeen.TryGetValue(e.Other, out seen) || (e.T - seen).TotalMinutes > 10)
                         {
-                            if (sk == 2 || IsDread(e.Other)) { LoudSpawns++; LastLoudSpawn = e.T; }   // the alert, not a ★
+                            if (sk != 1) { LoudSpawns++; LastLoudSpawn = e.T; }   // the alert, not a ★
                             else Spawns.Add(Tuple.Create(e.T, e.Other));
+                            Sightings.Add(new Sighting { Name = e.Other, Kind = sk, First = e.T, Last = e.T });
+                        }
+                        else
+                        {
+                            var sg = Sightings.LastOrDefault(x => string.Equals(x.Name, e.Other, StringComparison.OrdinalIgnoreCase));
+                            if (sg != null && e.T > sg.Last) sg.Last = e.T;
                         }
                         if (!spawnSeen.ContainsKey(e.Other) || e.T > spawnSeen[e.Other]) spawnSeen[e.Other] = e.T;
                     }
