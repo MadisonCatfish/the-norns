@@ -224,7 +224,7 @@ namespace TheNorns
             }
             float ic = U(7.5f);
             using (var b = new SolidBrush(hover ? BodyTheme.Ink : Muted)) MaterialIcon.Draw(g, MaterialIcon.QuestionMark, new RectangleF(r.Left + (r.Width - ic) / 2, r.Top + (r.Height - ic) / 2, ic, ic), b);
-            spots.Add(Tuple.Create(id, RectangleF.Inflate(r, U(2), U(2))));
+            AddKey(id, RectangleF.Inflate(r, U(2), U(2)));
         }
 
         // a number field like the size keys: icon (the damage type's, in its colour), the number, its unit; the one being
@@ -260,7 +260,7 @@ namespace TheNorns
                 using (var b = new SolidBrush(BodyTheme.Accent)) g.FillRectangle(b, x + tw + U(1), r.Top + U(3.5f), Math.Max(1f, U(0.7f)), r.Height - U(7));
             }
             using (var b = new SolidBrush(Color.FromArgb(120, BodyTheme.Ink))) g.DrawString(unit, uf, b, r.Right - U(4) - uw, r.Top + (r.Height - uf.GetHeight(g)) / 2 + U(0.5f), StringFormat.GenericTypographic);
-            spots.Add(Tuple.Create("field:" + id, r));
+            AddKey("field:" + id, r);
         }
     }
 }

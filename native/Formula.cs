@@ -29,6 +29,7 @@ namespace TheNorns
     interface ICardContent
     {
         void Paint(Graphics g, RectangleF area, PointF? hover);
+        IEnumerable<RectangleF> Keys { get; }   // its keys, card px: the glass dirt stays off them
         bool Click(PointF p);
     }
 
@@ -132,6 +133,7 @@ namespace TheNorns
         protected override void OnMouseMove(MouseEventArgs e)
         {
             base.OnMouseMove(e);
+            if (grip != null) { PullBar(e.Y - Margin); return; }
             var p = new PointF(e.X - Margin, e.Y - Margin);
             lightAt = !DpsForm.Potato && GlassIn(cardPx).Contains(p) ? (PointF?)p : null;
             bool h = CloseRect.Contains(e.Location);
@@ -139,10 +141,37 @@ namespace TheNorns
             else if (h != hoverClose) { hoverClose = h; Redraw(); } else Render();
         }
         protected override void OnMouseLeave(EventArgs e) { base.OnMouseLeave(e); lightAt = null; hoverAt = null; if (hoverClose || downClose || text.Content != null) { hoverClose = downClose = false; Redraw(); } else Render(); }
-        protected override void OnMouseDown(MouseEventArgs e) { base.OnMouseDown(e); if (e.Button == MouseButtons.Left && CloseRect.Contains(e.Location)) { downClose = true; Redraw(); } }
+        // a scrolling card's bar: where the text is (card px), the bar's length, and the mouse's hold on it
+        static RectangleF TextArea(Size card)
+        {
+            var glass = GlassIn(card); float pad = U(12);
+            return RectangleF.FromLTRB(glass.Left + pad, CloseIn(card).Bottom + U(8) + U(9), glass.Right - pad, glass.Bottom - pad);
+        }
+        float BarH { get { var a = TextArea(cardPx); return Math.Max(U(12), a.Height * a.Height / (a.Height + maxScroll)); } }
+        float? grip;
+        protected override void OnMouseDown(MouseEventArgs e)
+        {
+            base.OnMouseDown(e);
+            if (e.Button != MouseButtons.Left) return;
+            if (CloseRect.Contains(e.Location)) { downClose = true; Redraw(); return; }
+            var a = TextArea(cardPx); float px = e.X - Margin, py = e.Y - Margin;
+            if (text.Scroll && maxScroll > 0 && px >= a.Right - U(8) && px <= a.Right + U(4) && py >= a.Top && py <= a.Bottom)
+            {
+                float barY = a.Top + (a.Height - BarH) * scroll / maxScroll;
+                grip = py >= barY && py <= barY + BarH ? py - barY : BarH / 2;
+                PullBar(py);
+            }
+        }
+        void PullBar(float py)
+        {
+            var a = TextArea(cardPx);
+            float s = Math.Max(0, Math.Min(maxScroll, (py - grip.Value - a.Top) / Math.Max(1, a.Height - BarH) * maxScroll));
+            if (s != scroll) { scroll = s; Redraw(); }
+        }
         protected override void OnMouseUp(MouseEventArgs e)
         {
             base.OnMouseUp(e);
+            if (grip != null) { grip = null; return; }
             bool was = downClose; downClose = false;
             if (!was && e.Button == MouseButtons.Left && text.Content != null) text.Content.Click(new PointF(e.X - Margin, e.Y - Margin));
             Redraw();
@@ -172,7 +201,7 @@ namespace TheNorns
                 if (p >= 1) timer.Stop();
             }
             if (card == null) card = DrawCard(cardPx, text, hoverClose, downClose, scroll, out maxScroll, hoverAt);
-            using (var lit = Lit(card, lightAt))
+            using (var lit = Lit(card, lightAt, text))
             using (var bmp = Frame(lit ?? card, Size, Ease(p))) AppChrome.PresentLayered(this, bmp);
         }
 
@@ -180,7 +209,7 @@ namespace TheNorns
         static RectangleF GlassIn(Size card) { return RectangleF.Inflate(new RectangleF(0, 0, card.Width, card.Height), -U(3.5f), -U(3.5f)); }
 
         // a copy of the card with the cursor's light on the dirt of its glass; null when there is no light
-        static Bitmap Lit(Bitmap card, PointF? light)
+        static Bitmap Lit(Bitmap card, PointF? light, FormulaText text)
         {
             if (light == null) return null;
             var lit = new Bitmap(card);
@@ -188,6 +217,9 @@ namespace TheNorns
             {
                 var glass = GlassIn(card.Size);
                 using (var gp = Theme.Round(glass, U(17 * 0.6f), 0.6f)) g.SetClip(gp);
+                // the keys stay clear (owner, 31.10.2026): the close key, and a content's own keys
+                g.SetClip(RectangleF.Inflate(CloseIn(card.Size), U(2), U(2)), CombineMode.Exclude);
+                if (text.Content != null) foreach (var k in text.Content.Keys) g.SetClip(k, CombineMode.Exclude);
                 GlassDirt.Paint(g, glass, light.Value, U(1));
             }
             return lit;
@@ -426,7 +458,7 @@ namespace TheNorns
             using (var bmp = new Bitmap(W, H, PixelFormat.Format32bppArgb))
             using (var g = Graphics.FromImage(bmp))
             using (var card = DrawCard(size, text, false, false, scroll, out maxScroll))
-            using (var lit = Lit(card, light == null ? (PointF?)null : new PointF(size.Width * light.Value.X, size.Height * light.Value.Y)))
+            using (var lit = Lit(card, light == null ? (PointF?)null : new PointF(size.Width * light.Value.X, size.Height * light.Value.Y), text))
             using (var frame = Frame(lit ?? card, win, Ease(p)))
             {
                 g.Clear(Color.FromArgb(38, 40, 46));

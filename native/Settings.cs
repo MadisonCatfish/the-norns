@@ -66,6 +66,41 @@ namespace TheNorns
             tip.Hide(this);
         }
 
+        // a key on the screen: clickable, and the glass dirt the cursor lights stays off it (owner, 31.10.2026). keyFaces
+        // also holds keys that cannot be clicked now (a dim arrow); a key spot clipped away by a scrolled page goes with it
+        readonly HashSet<string> keyIds = new HashSet<string>();
+        readonly List<RectangleF> keyFaces = new List<RectangleF>();
+        void AddKey(string id, RectangleF r) { spots.Add(Tuple.Create(id, r)); keyIds.Add(id); }
+        IEnumerable<RectangleF> KeyRects() { return spots.Where(s => keyIds.Contains(s.Item1)).Select(s => s.Item2).Concat(keyFaces); }
+
+        // a page's scroll bar as drawn in the last frame, so the mouse can take it and pull it (owner, 31.10.2026); a press
+        // on the track beside the bar moves the bar's middle there
+        sealed class ScrollBar { public RectangleF Track; public float BarH, Max; public Func<float> Get; public Action<float> Set; }
+        readonly List<ScrollBar> bars = new List<ScrollBar>();
+        ScrollBar dragBar; float dragGrip;
+        void AddBar(RectangleF view, float right, float barH, float max, Func<float> get, Action<float> set)
+        {
+            bars.Add(new ScrollBar { Track = RectangleF.FromLTRB(right - U(7), view.Top, right + U(2), view.Bottom), BarH = barH, Max = max, Get = get, Set = set });
+        }
+        bool BeginBarDrag(Point p)
+        {
+            dragBar = bars.LastOrDefault(b => b.Track.Contains(p));
+            if (dragBar == null) return false;
+            float barY = dragBar.Track.Top + (dragBar.Track.Height - dragBar.BarH) * dragBar.Get() / dragBar.Max;
+            dragGrip = p.Y >= barY && p.Y <= barY + dragBar.BarH ? p.Y - barY : dragBar.BarH / 2;
+            MoveBarDrag(p.Y);
+            return true;
+        }
+        bool MoveBarDrag(int y)
+        {
+            if (dragBar == null) return false;
+            float room = Math.Max(1, dragBar.Track.Height - dragBar.BarH);
+            dragBar.Set(Math.Max(0, Math.Min(dragBar.Max, (y - dragGrip - dragBar.Track.Top) / room * dragBar.Max)));
+            Render();
+            return true;
+        }
+        bool EndBarDrag() { if (dragBar == null) return false; dragBar = null; return true; }
+
         string SpotAt(Point p)
         {
             foreach (var s in spots) if (s.Item2.Contains(p)) return s.Item1;
@@ -310,7 +345,7 @@ namespace TheNorns
             using (var b = new SolidBrush(on ? BodyTheme.Accent : BodyTheme.Ink))
                 g.DrawString(label, f, b, new RectangleF(r.Left + Math.Max(U(3), (r.Width - sz.Width) / 2), r.Top + (r.Height - sz.Height) / 2, r.Width - U(6), sz.Height + U(1)),
                     new StringFormat(StringFormat.GenericTypographic) { Trimming = StringTrimming.EllipsisCharacter, FormatFlags = StringFormatFlags.NoWrap });
-            spots.Add(Tuple.Create(id, r));
+            AddKey(id, r);
         }
 
         // ---- Storage ----
@@ -408,7 +443,7 @@ namespace TheNorns
 
         void PaintSettings(Graphics g, RectangleF c)
         {
-            spots.Clear();
+            spots.Clear(); keyIds.Clear(); keyFaces.Clear(); bars.Clear();
             var line = new Action<float>(ly => { using (var b = new SolidBrush(Color.FromArgb(26, BodyTheme.Ink))) g.FillRectangle(b, c.Left, ly, c.Width, Math.Max(1f, U(0.5f))); });
 
             // header: the settings symbol, the title, the back key
@@ -420,7 +455,7 @@ namespace TheNorns
             Glow(g, title, tf, BodyTheme.Ink, ir.Right + U(5), c.Top);
             var back = new RectangleF(c.Right - U(11), c.Top - U(2), U(11), U(15));
             CloseKey(g, back, hotSpot == "back", downSpot == "back", U(1) * 0.8f);
-            spots.Add(Tuple.Create("back", RectangleF.Inflate(back, U(2), U(2))));
+            AddKey("back", RectangleF.Inflate(back, U(2), U(2)));
             // Statistics and About: square keys left of the close key, lit while their page is open (Material bar_chart, info)
             for (int hk = 0; hk < 2; hk++)
             {
@@ -467,7 +502,7 @@ namespace TheNorns
                 float ic = U(10);
                 using (var b = new SolidBrush(can ? BodyTheme.Ink : Color.FromArgb(60, BodyTheme.Ink)))
                     MaterialIcon.Draw(g, a == 0 ? MaterialIcon.ArrowLeft : MaterialIcon.ArrowRight, new RectangleF(kr.Left + (kr.Width - ic) / 2, kr.Top + (kr.Height - ic) / 2, ic, ic), b);
-                if (can) spots.Add(Tuple.Create(id, kr));
+                if (can) AddKey(id, kr); else keyFaces.Add(kr);
             }
             tabShift = Potato || SelfTesting ? tabFirst : tabShift + (tabFirst - tabShift) * 0.35f;
             if (Math.Abs(tabFirst - tabShift) < 0.01f) tabShift = tabFirst; else Invalidate();
@@ -553,7 +588,7 @@ namespace TheNorns
                 }
                 float ic2 = U(9);
                 using (var b = new SolidBrush(BodyTheme.Ink)) MaterialIcon.Draw(g, MaterialIcon.Play, new RectangleF(pk.Left + (pk.Width - ic2) / 2, pk.Top + (pk.Height - ic2) / 2, ic2, ic2), b);
-                spots.Add(Tuple.Create("playalert", pk));
+                AddKey("playalert", pk);
             }
             else if (page == "display")
             {
@@ -579,7 +614,7 @@ namespace TheNorns
                     var lf = NornsFonts.Screen(U(6.5f));
                     var ls = g.MeasureString(lab, lf, 1000, StringFormat.GenericTypographic);
                     using (var b = new SolidBrush(cur ? BodyTheme.Accent : BodyTheme.Ink)) g.DrawString(lab, lf, b, br.Left + (br.Width - ls.Width) / 2, br.Top + (br.Height - ls.Height) / 2, StringFormat.GenericTypographic);
-                    spots.Add(Tuple.Create(id, br));
+                    AddKey(id, br);
                 }
                 y += U(20);
                 LampRow(g, c, y, "remember", RememberPos, L.T("Remember window position"));
@@ -679,7 +714,7 @@ namespace TheNorns
         void PaintWideKey(Graphics g, RectangleF r, string icon, string label, string id, bool lit)
         {
             WideKey(g, r, icon, label, lit, hotSpot == id, downSpot == id);
-            spots.Add(Tuple.Create(id, r));
+            AddKey(id, r);
         }
         // the same key drawn anywhere (the calendar card)
         internal static void WideKey(Graphics g, RectangleF r, string icon, string label, bool lit, bool hot, bool down)
@@ -700,11 +735,12 @@ namespace TheNorns
             float ic = U(10);
             var ir = new RectangleF(face.Left + U(6), face.Top + (face.Height - ic) / 2, ic, ic);
             var col = lit ? BodyTheme.Accent : hot ? BodyTheme.IconHover : BodyTheme.Icon;
-            using (var ib = new SolidBrush(col)) MaterialIcon.Draw(g, icon, ir, ib);
+            if (icon != null) using (var ib = new SolidBrush(col)) MaterialIcon.Draw(g, icon, ir, ib);
             var f = TextFont(label, U(7.5f));
+            float tl = icon != null ? ir.Right + U(6) : face.Left + U(4), tw = icon != null ? face.Right - ir.Right - U(12) : face.Width - U(8);
             using (var tb = new SolidBrush(lit ? BodyTheme.Accent : hot ? BodyTheme.Ink : Color.FromArgb(200, 203, 210)))
-                g.DrawString(label, f, tb, new RectangleF(ir.Right + U(6), face.Top + (face.Height - f.GetHeight(g)) / 2, face.Right - ir.Right - U(12), f.GetHeight(g) + U(1)),
-                    new StringFormat(StringFormat.GenericTypographic) { Trimming = StringTrimming.EllipsisCharacter, FormatFlags = StringFormatFlags.NoWrap });
+                g.DrawString(label, f, tb, new RectangleF(tl, face.Top + (face.Height - f.GetHeight(g)) / 2, tw, f.GetHeight(g) + U(1)),
+                    new StringFormat(StringFormat.GenericTypographic) { Trimming = StringTrimming.EllipsisCharacter, FormatFlags = StringFormatFlags.NoWrap, Alignment = icon != null ? StringAlignment.Near : StringAlignment.Center });
         }
 
         // a square key with an icon (the settings' header, the calendar on Statistics); on: lit in the accent
@@ -719,7 +755,7 @@ namespace TheNorns
             float hic = U(9);
             var ir = new RectangleF(kr.Left + (kr.Width - hic) / 2, kr.Top + (kr.Height - hic) / 2, hic, hic);
             using (var b = new SolidBrush(on ? BodyTheme.Accent : BodyTheme.Ink)) { if (symbol) MaterialIcon.DrawSymbol(g, icon, ir, b); else MaterialIcon.Draw(g, icon, ir, b); }
-            spots.Add(Tuple.Create(id, kr));
+            AddKey(id, kr);
         }
     }
 }

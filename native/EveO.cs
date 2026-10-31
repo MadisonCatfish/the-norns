@@ -206,6 +206,7 @@ namespace TheNorns
             {
                 // the bar: its length is the part shown, its place where that part is (as on the scrolling formula cards)
                 float trackH = eveoView.Height, barH = Math.Max(U(12), trackH * trackH / (trackH + max)), barY = eveoView.Top + (trackH - barH) * eveoScroll / max;
+                AddBar(eveoView, c.Right, barH, max, () => eveoScroll, v => eveoScroll = v);
                 using (var b = new SolidBrush(Color.FromArgb(22, BodyTheme.Ink))) g.FillRectangle(b, c.Right - U(2), eveoView.Top, U(1.5f), trackH);
                 using (var p = Theme.Round(new RectangleF(c.Right - U(2.5f), barY, U(2.5f), barH), U(1.25f), 1f))
                 using (var b = new SolidBrush(Color.FromArgb(150, BodyTheme.Ink))) g.FillPath(b, p);
@@ -249,7 +250,7 @@ namespace TheNorns
                 var lf = TextFont(lab, U(7.2f));
                 var ls = g.MeasureString(lab, lf, 1000, StringFormat.GenericTypographic);
                 using (var b = new SolidBrush(cur ? BodyTheme.Accent : BodyTheme.Ink)) g.DrawString(lab, lf, b, br.Left + (br.Width - ls.Width) / 2, br.Top + (br.Height - ls.Height) / 2, StringFormat.GenericTypographic);
-                spots.Add(Tuple.Create(id, br));
+                AddKey(id, br);
             }
             y += U(15) + U(12);
 
@@ -516,7 +517,7 @@ namespace TheNorns
                 float tw = g.MeasureString(t, f, 1000, StringFormat.GenericTypographic).Width;
                 using (var b = new SolidBrush(AlarmRed)) g.DrawString(t, f, b, r.Right - U(5) - tw, r.Top + (r.Height - f.GetHeight(g)) / 2, StringFormat.GenericTypographic);
             }
-            spots.Add(Tuple.Create(id, r));
+            AddKey(id, r);
         }
     }
 }

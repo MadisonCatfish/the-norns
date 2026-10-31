@@ -891,8 +891,9 @@ namespace TheNorns
         static readonly Regex TokenRegex = new Regex(@"([a-zA-Z]|[-+]?(?:\d*\.\d+|\d+)(?:[eE][-+]?\d+)?)", RegexOptions.Compiled);
 
         // Material Symbols (fonts.google.com/icons) use a 960 viewBox from y -960: CreatePath(svg, target, -960, 960)
-        // titans and pirate dreadnoughts on Statistics (Material Symbols skull, filled)
+        // titans (skull) and pirate dreadnoughts (swords) on Statistics (Material Symbols, filled)
         public const string Skull = "M420-330h120l-60-120-60 120Zm-80-110q33 0 56.5-23.5T420-520q0-33-23.5-56.5T340-600q-33 0-56.5 23.5T260-520q0 33 23.5 56.5T340-440Zm280 0q33 0 56.5-23.5T700-520q0-33-23.5-56.5T620-600q-33 0-56.5 23.5T540-520q0 33 23.5 56.5T620-440ZM240-80v-170q-39-17-68.5-45.5t-50-64.5q-20.5-36-31-77T80-520q0-158 112-259t288-101q176 0 288 101t112 259q0 42-10.5 83t-31 77q-20.5 36-50 64.5T720-250v170H600v-80h-80v80h-80v-80h-80v80H240Z";
+        public const string Swords = "M762-96 645-212l-60 60q-11 11-28 11t-28-11q-23-23-23-57t23-57l169-169q23-23 57-23t57 23q11 11 11 28t-11 28l-60 60 116 117q12 12 12 28t-12 28l-50 50q-12 12-28 12t-28-12Zm106-616L426-270l5 4q23 23 23 57t-23 57q-11 11-28 11t-28-11l-60-60L198-96q-12 12-28 12t-28-12l-50-50q-12-12-12-28t12-28l116-117-60-60q-11-11-11-28t11-28q23-23 57-23t57 23l4 5 431-431q11-11 25.5-17t30.5-6h87q17 0 28.5 11.5T880-844v103q0 8-3 15.5t-9 13.5ZM249-555 103-701q-11-11-17-25.5T80-757v-87q0-17 11.5-28.5T120-884h87q16 0 30.5 6t25.5 17l146 146q12 12 12 28.5T409-658L306-555q-12 12-28.5 12T249-555Z";
         public const string Function = "M400-240v-80h62l105-120-105-120h-66l-64 344q-8 45-37 70.5T221-120q-45 0-73-24t-28-64q0-32 17-51.5t43-19.5q25 0 42.5 17t17.5 41q0 5-.5 9t-1.5 9q5-1 8.5-5.5T252-221l62-339H200v-80h129l21-114q7-38 37.5-62t72.5-24q44 0 72 26t28 65q0 30-17 49.5T500-680q-25 0-42.5-17T440-739q0-5 .5-9t1.5-9q-6 2-9 6t-5 12l-17 99h189v80h-32l52 59 52-59h-32v-80h200v80h-62L673-440l105 120h62v80H640v-80h32l-52-60-52 60h32v80H400Z";
 
         public static GraphicsPath CreatePath(string svg, RectangleF target) { return CreatePath(svg, target, 0, 24); }

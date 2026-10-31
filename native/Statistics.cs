@@ -112,7 +112,7 @@ namespace TheNorns
 
         // ---- the Statistics page (owner, 31.10.2026): the sessions in a period picked on the calendar card, or all of them;
         // the list scrolls with the wheel; the rare spawns per session: ★ faction NPCs and commanders, then titans and pirate
-        // dreadnoughts, each with the red skull (Material Symbols skull) ----
+        // dreadnoughts in red (Material Symbols skull, swords), each with its name as a tip ----
         DateTime? statFrom, statTo;   // the period, whole days; null: all sessions
         float statsScroll;
         RectangleF statsView;
@@ -123,6 +123,9 @@ namespace TheNorns
         string PeriodText()
         {
             if (statFrom == null) return L.T("All sessions");
+            var f0 = statFrom.Value; var t0 = statTo.Value;
+            if (f0.Day == 1 && f0.Month == 1 && t0 == f0.AddYears(1).AddDays(-1)) return f0.Year.ToString(CultureInfo.InvariantCulture);
+            if (f0.Day == 1 && (f0.Month - 1) % 3 == 0 && t0 == f0.AddMonths(3).AddDays(-1)) return "Q" + ((f0.Month - 1) / 3 + 1) + " " + f0.Year;
             // short, to leave the totals room: the year only when it is not this one
             Func<DateTime, string> d = x => x.ToString(x.Year == DateTime.Today.Year ? "dd.MM" : "dd.MM.yy", CultureInfo.InvariantCulture);
             string a = d(statFrom.Value), b = d(statTo.Value);
@@ -154,11 +157,9 @@ namespace TheNorns
             float tvx = c.Right - g.MeasureString(tv.ToUpperInvariant(), vf, 1000, StringFormat.GenericTypographic).Width;
             using (var b = new SolidBrush(BodyTheme.Accent)) g.DrawString(tv.ToUpperInvariant(), vf, b, tvx, fy, StringFormat.GenericTypographic);
             int titans = all.Sum(x => x.Titans), dreads = all.Sum(x => x.Dreads);
-            float dx = IconCount(g, dreads, MaterialIcon.Skull, true, vf, dreads > 0 ? AlarmRed : Color.FromArgb(90, AlarmRed), tvx - U(8), fy);
-            spots.Add(Tuple.Create("stats:dreads", new RectangleF(dx, fy - U(2), tvx - U(8) - dx, U(11))));
-            float tx = IconCount(g, titans, MaterialIcon.Skull, true, vf, titans > 0 ? AlarmRed : Color.FromArgb(90, AlarmRed), dx - U(6), fy);
-            spots.Add(Tuple.Create("stats:titans", new RectangleF(tx, fy - U(2), dx - U(6) - tx, U(11))));
-            IconCount(g, all.Sum(x => x.Spawns), MaterialIcon.Star, false, vf, BodyTheme.Accent, tx - U(6), fy);
+            float dx = IconCount(g, dreads, MaterialIcon.Swords, true, vf, dreads > 0 ? AlarmRed : Color.FromArgb(90, AlarmRed), tvx - U(8), fy, 0, "stats:dreads");
+            float tx = IconCount(g, titans, MaterialIcon.Skull, true, vf, titans > 0 ? AlarmRed : Color.FromArgb(90, AlarmRed), dx - U(6), fy, 0, "stats:titans");
+            IconCount(g, all.Sum(x => x.Spawns), MaterialIcon.Star, false, vf, BodyTheme.Accent, tx - U(6), fy, 0, "stats:stars");
 
             // the rows between, clipped to the view and scrolled; a thin bar on the right when they do not fit
             statsView = RectangleF.FromLTRB(c.Left, y, c.Right, fy - U(9));
@@ -184,15 +185,16 @@ namespace TheNorns
                 float ivx = right - g.MeasureString(iv, vf, 1000, StringFormat.GenericTypographic).Width;
                 using (var b = new SolidBrush(now ? BodyTheme.Accent : BodyTheme.Ink)) g.DrawString(iv, vf, b, ivx, ry + U(0.5f), StringFormat.GenericTypographic);
                 var dim = Color.FromArgb(90, BodyTheme.Ink);
-                IconCount(g, x.Dreads, MaterialIcon.Skull, true, vf, x.Dreads > 0 ? AlarmRed : dim, right - U(58), ry + U(0.5f), 2);
-                IconCount(g, x.Titans, MaterialIcon.Skull, true, vf, x.Titans > 0 ? AlarmRed : dim, right - U(76), ry + U(0.5f), 2);
-                IconCount(g, x.Spawns, MaterialIcon.Star, false, vf, x.Spawns > 0 ? BodyTheme.Ink : dim, right - U(94), ry + U(0.5f), 2);
+                IconCount(g, x.Dreads, MaterialIcon.Swords, true, vf, x.Dreads > 0 ? AlarmRed : dim, right - U(58), ry + U(0.5f), 2, "stats:dreads");
+                IconCount(g, x.Titans, MaterialIcon.Skull, true, vf, x.Titans > 0 ? AlarmRed : dim, right - U(76), ry + U(0.5f), 2, "stats:titans");
+                IconCount(g, x.Spawns, MaterialIcon.Star, false, vf, x.Spawns > 0 ? BodyTheme.Ink : dim, right - U(94), ry + U(0.5f), 2, "stats:stars");
                 ry += rowH;
             }
             g.Restore(st);
             if (max > 0)
             {
                 float trackH = statsView.Height, barH = Math.Max(U(12), trackH * trackH / (trackH + max)), barY = statsView.Top + (trackH - barH) * statsScroll / max;
+                AddBar(statsView, c.Right, barH, max, () => statsScroll, v => statsScroll = v);
                 using (var b = new SolidBrush(Color.FromArgb(22, BodyTheme.Ink))) g.FillRectangle(b, c.Right - U(2), statsView.Top, U(1.5f), trackH);
                 using (var p = Theme.Round(new RectangleF(c.Right - U(2.5f), barY, U(2.5f), barH), U(1.25f), 1f))
                 using (var b = new SolidBrush(Color.FromArgb(150, BodyTheme.Ink))) g.FillPath(b, p);
@@ -213,7 +215,8 @@ namespace TheNorns
 
         // an icon and a count after it, ending at `right`; returns where it starts. digits > 0: the icon stays where that many
         // digits put it, the count left-aligned after it, so a column's icons line up whatever the count (owner, 31.10.2026)
-        float IconCount(Graphics g, int n, string icon, bool symbol, Font f, Color c, float right, float y, int digits = 0)
+        // tip: the spot that shows what the icon counts (Body.cs OnMouseMove); in the list only where the row shows
+        float IconCount(Graphics g, int n, string icon, bool symbol, Font f, Color c, float right, float y, int digits = 0, string tip = null)
         {
             float h = f.GetHeight(g), ic = U(7.5f);
             var t = n.ToString(CultureInfo.InvariantCulture);
@@ -223,6 +226,12 @@ namespace TheNorns
                 var ir = new RectangleF(x, y + (h - ic) / 2 - U(0.5f), ic, ic);
                 if (symbol) MaterialIcon.DrawSymbol(g, icon, ir, b); else MaterialIcon.Draw(g, icon, ir, b);
                 g.DrawString(t, f, b, x + ic + U(2), y, StringFormat.GenericTypographic);
+            }
+            if (tip != null)
+            {
+                var r = new RectangleF(x - U(1), y - U(2), right - x + U(2), U(11));
+                if (digits > 0) r = RectangleF.Intersect(r, statsView);
+                if (r.Width > 0 && r.Height > 0) spots.Add(Tuple.Create(tip, r));
             }
             return x;
         }
@@ -234,9 +243,15 @@ namespace TheNorns
             var cur = CurrentSession();
             var days = new HashSet<DateTime>(sessions.Select(x => x.Start.Date));
             if (cur.Sites > 0) days.Add(cur.Start.Date);
-            var cal = new SessionCalendar { Days = days, From = statFrom, To = statTo, Month = new DateTime((statTo ?? DateTime.Today).Year, (statTo ?? DateTime.Today).Month, 1) };
+            var cal = new SessionCalendar { Days = days, From = statFrom, To = statTo, Month = MonthToShow() };
             cal.Changed = () => { statFrom = cal.From; statTo = cal.To; statsScroll = 0; Render(); };
             return new FormulaText { Title = "Calendar", Icon = MaterialIcon.Calendar, Content = cal };
+        }
+        // the month the calendar opens on: today's when the period holds today (or there is none), else the period's last
+        DateTime MonthToShow()
+        {
+            var d = statTo == null || DateTime.Today >= statFrom.Value && DateTime.Today <= statTo.Value ? DateTime.Today : statTo.Value;
+            return new DateTime(d.Year, d.Month, 1);
         }
         void OpenCalendar() { FormulaWindow.Open(this, CalendarCard()); }
     }
@@ -244,9 +259,11 @@ namespace TheNorns
 
     // the month on the calendar card (Formula.cs draws the card): the month's name between two arrow keys, the weekdays from
     // Monday, six weeks of days; a dot in the accent under a day with a session; the period as an accent band, its ends lit.
-    // The first click picks a day, the second the other end of the period; "All sessions" clears it
+    // The first click picks a day, the second the other end of the period; Today, Quarter and Year pick in one click (the
+    // quarter and the year of the month shown; owner, 31.10.2026); "All sessions" clears it
     class SessionCalendar : ICardContent
     {
+        public IEnumerable<RectangleF> Keys { get { return spots.Where(x => !x.Item1.StartsWith("day:")).Select(x => x.Item2); } }
         public DateTime Month;
         public DateTime? From, To;
         public HashSet<DateTime> Days = new HashSet<DateTime>();
@@ -300,8 +317,8 @@ namespace TheNorns
             y += U(12);
 
             // six weeks of days
-            float keyH = U(19), noteH = U(14);
-            float ch = Math.Min(U(26), (a.Bottom - keyH - noteH - U(8) - y) / 6);
+            float keyH = U(19), noteH = U(14), keysH = 2 * keyH + U(5);
+            float ch = Math.Min(U(26), (a.Bottom - keysH - noteH - U(8) - y) / 6);
             var first = Month.AddDays(-(((int)Month.DayOfWeek + 6) % 7));
             DateTime? lo = From, hi = picking ? From : To;
             var nf = NornsFonts.Screen(U(7));
@@ -337,10 +354,26 @@ namespace TheNorns
             // what is shown, and the All sessions key
             var note = picking ? L.T("Now the other end of the period.") : L.T("Click a day, or two days for a period.");
             using (var b = new SolidBrush(Color.FromArgb(130, BodyTheme.Ink))) g.DrawString(note, DpsForm.TextFont(note, U(7.2f)), b, a.Left, y, StringFormat.GenericTypographic);
+            // Today, Quarter, Year in a row, lit while they are what is picked; All sessions under them
+            DateTime q0 = QuarterOf(Month), y0 = new DateTime(Month.Year, 1, 1);
+            var picks = new[]
+            {
+                Tuple.Create("today", L.T("Today"), From == DateTime.Today && To == DateTime.Today),
+                Tuple.Create("quarter", L.T("Quarter"), From == q0 && To == q0.AddMonths(3).AddDays(-1)),
+                Tuple.Create("year", L.T("Year"), From == y0 && To == y0.AddYears(1).AddDays(-1)),
+            };
+            float pw = (a.Width - 2 * U(4)) / 3, py = a.Bottom - keysH;
+            for (int k = 0; k < 3; k++)
+            {
+                var pr = new RectangleF(a.Left + k * (pw + U(4)), py, pw, keyH);
+                DpsForm.WideKey(g, pr, null, picks[k].Item2, !picking && picks[k].Item3, spot(picks[k].Item1, pr), false);
+            }
             var ak = new RectangleF(a.Left, a.Bottom - keyH, a.Width, keyH);
             bool ah = spot("all", ak);
             DpsForm.WideKey(g, ak, MaterialIcon.Calendar, L.T("All sessions"), From == null, ah, false);
         }
+
+        static DateTime QuarterOf(DateTime m) { return new DateTime(m.Year, (m.Month - 1) / 3 * 3 + 1, 1); }
 
         public bool Click(PointF p)
         {
@@ -350,6 +383,14 @@ namespace TheNorns
             if (id == "prev") Month = Month.AddMonths(-1);
             else if (id == "next") Month = Month.AddMonths(1);
             else if (id == "all") { From = To = null; picking = false; if (Changed != null) Changed(); }
+            else if (id == "today" || id == "quarter" || id == "year")
+            {
+                if (id == "today") { Month = new DateTime(DateTime.Today.Year, DateTime.Today.Month, 1); From = To = DateTime.Today; }
+                else if (id == "quarter") { From = QuarterOf(Month); To = From.Value.AddMonths(3).AddDays(-1); }
+                else { From = new DateTime(Month.Year, 1, 1); To = From.Value.AddYears(1).AddDays(-1); }
+                picking = false;
+                if (Changed != null) Changed();
+            }
             else if (id.StartsWith("day:"))
             {
                 var day = DateTime.ParseExact(id.Substring(4), "yyyyMMdd", CultureInfo.InvariantCulture);

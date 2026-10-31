@@ -487,7 +487,7 @@ namespace TheNorns
         protected override void OnMouseMove(MouseEventArgs e)
         {
             base.OnMouseMove(e);
-            if (MoveRowDrag(e.Y)) return;
+            if (MoveRowDrag(e.Y) || MoveBarDrag(e.Y)) return;
             bool hn = NameRect.Contains(e.Location), hc = Standalone && CloseRect.Contains(e.Location);
             bool hv = !settingsOpen && vortonFx.Contains(e.Location), hs = !settingsOpen && sbFx.Contains(e.Location);
             bool hsp = !settingsOpen && spawnChip.Contains(e.Location);
@@ -503,7 +503,7 @@ namespace TheNorns
             var warn = WarnTip(spot);   // Settings -> Carousel: the EVE client's action on a hotkey (EveO.cs)
             // the settings' header keys: their page's name under the key (owner, 31.10.2026)
             string head = spot == "page:stats" ? L.T("Statistics") : spot == "page:about" ? L.T("About") : spot == "stats:calendar" ? L.T("Calendar")
-                : spot == "stats:titans" ? L.T("Titans") : spot == "stats:dreads" ? L.T("Pirate dreadnoughts") : null;
+                : spot == "stats:titans" ? L.T("Titans") : spot == "stats:dreads" ? L.T("Pirate dreadnoughts") : spot == "stats:stars" ? L.T("Faction NPCs and commanders") : null;
             var headKey = head != null ? spots.First(s => s.Item1 == spot).Item2 : RectangleF.Empty;
             tipText = hn ? L.T("Settings") : hc ? L.T("Close") : head ?? warn;
             tipAt = hn ? new Point((int)NameRect.Left, (int)(NameRect.Bottom + U(4))) : hc ? new Point((int)CloseRect.Left, (int)(CloseRect.Bottom + U(4)))
@@ -531,6 +531,7 @@ namespace TheNorns
             if (updateMark.Contains(e.Location)) downUpdate = true;
             else if (NameRect.Contains(e.Location)) downName = true;
             else if (Standalone && CloseRect.Contains(e.Location)) downClose = true;
+            else if (settingsOpen && BeginBarDrag(e.Location)) { }   // a page's scroll bar is pulled (Settings.cs)
             else if (settingsOpen)
             {
                 downSpot = SpotAt(e.Location);
@@ -546,7 +547,7 @@ namespace TheNorns
         protected override void OnMouseUp(MouseEventArgs e)
         {
             base.OnMouseUp(e);
-            if (EndRowDrag()) { Render(); return; }
+            if (EndRowDrag() | EndBarDrag()) { Render(); return; }
             bool left = e.Button == MouseButtons.Left;
             if (downName) { downName = false; if (left && NameRect.Contains(e.Location)) ToggleSettings(); Render(); }
             if (downUpdate) { downUpdate = false; if (left && updateMark.Contains(e.Location)) { if (!settingsOpen) ToggleSettings(); page = "about"; } Render(); }
@@ -1405,7 +1406,13 @@ namespace TheNorns
 
                 // where the mouse is, it lights the dirt on the glass, not the display (owner, 31.10.2026)
                 var m = Potato ? null : DemoMouse ?? glare;
-                if (m != null) GlassDirt.Paint(g, glassR, m.Value, U(1));
+                if (m != null)
+                {
+                    // the keys on the glass stay clear: the settings' keys, or the modules' fx keys
+                    var keys = settingsOpen ? KeyRects() : new[] { vortonFx, sbFx };
+                    foreach (var k in keys) if (!k.IsEmpty) g.SetClip(k, CombineMode.Exclude);
+                    GlassDirt.Paint(g, glassR, m.Value, U(1));
+                }
                 g.Restore(st);
             }
         }
@@ -2134,6 +2141,11 @@ namespace TheNorns
                 using (var b = f.Draw()) FormulaWindow.SaveDemo(b, f.CalendarCard(), 1, Path.Combine(dir, "dps_stats_calendar.png"));
                 f.DemoStatFrom = f.DemoStatTo = null; f.statFrom = f.statTo = null;
                 using (var b = f.Draw()) FormulaWindow.SaveDemo(b, f.CalendarCard(), 1, Path.Combine(dir, "dps_stats_calendar_all.png"));
+                // the quarter picked in one click: the title names it
+                var q0 = new DateTime(now.Year, (now.Month - 1) / 3 * 3 + 1, 1);
+                f.DemoStatFrom = q0; f.DemoStatTo = q0.AddMonths(3).AddDays(-1); f.DemoSettings(true, null, false, "stats"); save(f, "dps_settings_stats_quarter.png");
+                using (var b = f.Draw()) FormulaWindow.SaveDemo(b, f.CalendarCard(), 1, Path.Combine(dir, "dps_stats_calendar_quarter.png"));
+                f.DemoStatFrom = f.DemoStatTo = null; f.statFrom = f.statTo = null;
                 f.DemoSessions = null;
                 f.DemoSettings(true, "page:about", false, "display"); save(f, "dps_settings_display.png");
                 f.DemoSettings(true, "page:general", false, "about"); save(f, "dps_settings_about.png");
@@ -2188,6 +2200,9 @@ namespace TheNorns
                 f.DemoSmartbombChange(f.Stats.Smartbombs(now).Frac, 30);
                 var gr = f.GlassRect;
                 f.DemoMouse = new Point((int)(gr.Left + gr.Width * 0.35f), (int)(gr.Top + gr.Height * 0.3f)); save(f, "dps_glass_light.png"); f.DemoMouse = null;
+                // the settings: the light over the header keys and a wide key, which stay clear
+                f.DemoSettings(true, null, false, "data"); f.DemoMouse = new Point((int)(gr.Left + gr.Width * 0.75f), (int)(gr.Top + gr.Height * 0.12f)); save(f, "dps_settings_glass_light.png");
+                f.DemoMouse = new Point((int)(gr.Left + gr.Width * 0.4f), (int)(gr.Top + gr.Height * 0.62f)); save(f, "dps_settings_glass_light_keys.png"); f.DemoMouse = null; f.DemoSettings(false, null, false);
                 // half the anomaly
                 fill(f, 52); save(f, "dps_anomaly_early.png");
             }
@@ -2381,6 +2396,7 @@ namespace TheNorns
                     FormulaWindow.SaveDemo(b, FormulaWindow.Smartbombs, 1, Path.Combine(dir, "dps_formula_smartbombs.png"));
                     FormulaWindow.SaveDemo(b, FormulaWindow.Vorton, 1, Path.Combine(dir, "dps_formula_vorton.png"));
                     FormulaWindow.SaveDemo(b, FormulaWindow.Vorton, 1, Path.Combine(dir, "dps_formula_glass_light.png"), 0, new PointF(0.72f, 0.78f));
+                    FormulaWindow.SaveDemo(b, FormulaWindow.Vorton, 1, Path.Combine(dir, "dps_formula_glass_light_close.png"), 0, new PointF(0.82f, 0.12f));   // the close key stays clear
                     sb.AppendLine(FormulaWindow.Bench(b.Size, FormulaWindow.Smartbombs));
                     sb.AppendLine(FormulaWindow.Bench(b.Size, HelpRunner));
                 }
