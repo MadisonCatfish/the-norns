@@ -248,7 +248,7 @@ namespace TheNorns
             return bmp;
         }
 
-        // the card: a thin rim of the hull around a black OLED glass; the title in Orbitron caps, the text in Space Grotesk
+        // the card: a thin rim of the hull around a black OLED glass; the title in Orbitron caps, the text in Noto Sans
         // (a Windows font in Ukrainian and Chinese - the embedded fonts have no Cyrillic or CJK), made smaller until it fits
         static Bitmap DrawCard(Size size, FormulaText text, bool hoverClose, bool downClose, float scroll, out float maxScroll)
         {
@@ -302,8 +302,8 @@ namespace TheNorns
                 for (float scale = 1f; scale > 0.6f; scale -= 0.04f)
                 {
                     float m = latin ? 1 : NornsFonts.Match(L.SysFamily, FontStyle.Regular, false);   // the same size in every language
-                    Font lead = latin ? NornsFonts.Body(U(8.6f) * scale) : new Font(L.SysFamily, U(8.6f) * scale * m, GraphicsUnit.Pixel);
-                    Font body = latin ? NornsFonts.Body(U(7.6f) * scale) : new Font(L.SysFamily, U(7.6f) * scale * m, GraphicsUnit.Pixel);
+                    Font lead = L.TextCovered ? NornsFonts.Body(U(8.6f) * scale) : new Font(L.SysFamily, U(8.6f) * scale * m, GraphicsUnit.Pixel);
+                    Font body = L.TextCovered ? NornsFonts.Body(U(7.6f) * scale) : new Font(L.SysFamily, U(7.6f) * scale * m, GraphicsUnit.Pixel);
                     float y = area.Top, gap = U(5.5f) * scale;
                     var heights = new List<float>();
                     for (int i = 0; i < paras.Length; i++) { float hh = g.MeasureString(paras[i], i == 0 ? lead : body, (int)area.Width).Height; heights.Add(hh); y += hh + gap; }
@@ -316,10 +316,10 @@ namespace TheNorns
                                 g.DrawString(paras[i], i == 0 ? lead : body, i == 0 ? lb : bb, new RectangleF(area.Left, y, area.Width, heights[i] + U(2)));
                                 y += heights[i] + gap;
                             }
-                        if (!latin) { lead.Dispose(); body.Dispose(); }
+                        if (!L.TextCovered) { lead.Dispose(); body.Dispose(); }
                         break;
                     }
-                    if (!latin) { lead.Dispose(); body.Dispose(); }
+                    if (!L.TextCovered) { lead.Dispose(); body.Dispose(); }
                 }
             }
             return bmp;
@@ -330,8 +330,8 @@ namespace TheNorns
         static float DrawScrolling(Graphics g, string[] paras, RectangleF area, bool latin, float scroll)
         {
             float m = latin ? 1 : NornsFonts.Match(L.SysFamily, FontStyle.Regular, false), mh = latin ? 1 : NornsFonts.Match(L.SysFamily, FontStyle.Bold, true);
-            Font lead = latin ? NornsFonts.Body(U(8.6f)) : new Font(L.SysFamily, U(8.6f) * m, GraphicsUnit.Pixel);
-            Font body = latin ? NornsFonts.Body(U(7.6f)) : new Font(L.SysFamily, U(7.6f) * m, GraphicsUnit.Pixel);
+            Font lead = L.TextCovered ? NornsFonts.Body(U(8.6f)) : new Font(L.SysFamily, U(8.6f) * m, GraphicsUnit.Pixel);
+            Font body = L.TextCovered ? NornsFonts.Body(U(7.6f)) : new Font(L.SysFamily, U(7.6f) * m, GraphicsUnit.Pixel);
             Font head = latin ? NornsFonts.Screen(U(7)) : new Font(L.SysFamily, U(7) * mh, FontStyle.Bold, GraphicsUnit.Pixel);
             float gap = U(5.5f), textW = area.Width - U(8);
             var heights = new float[paras.Length]; float total = 0;
@@ -368,7 +368,7 @@ namespace TheNorns
                 using (var p = Theme.Round(new RectangleF(area.Right - U(2.5f), barY, U(2.5f), barH), U(1.25f), 1f))
                 using (var b = new SolidBrush(Color.FromArgb(150, BodyTheme.Ink))) g.FillPath(b, p);
             }
-            if (!latin) { lead.Dispose(); body.Dispose(); head.Dispose(); }
+            if (!L.TextCovered) { lead.Dispose(); body.Dispose(); } if (!latin) head.Dispose();   // the embedded fonts are shared
             return max;
         }
 

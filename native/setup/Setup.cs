@@ -388,9 +388,9 @@ namespace TheNorns
         // the Windows font sized to stand as tall as ours (NornsFonts.Match): the same size in every language
         static float M(string family, FontStyle style, bool title) { return NornsFonts.Match(family, style, title); }
         public static Font HeadFont(float px) { return Latin ? NornsFonts.Screen(px * K) : Zh ? Cached(L.SysFamily, px * K * M(L.SysFamily, FontStyle.Bold, true), FontStyle.Bold) : Cached("Segoe UI Semibold", px * K * M("Segoe UI Semibold", FontStyle.Regular, true)); }
-        public static Font TextFont { get { return Latin ? NornsFonts.Body(13f * K) : Cached(L.SysFamily, 13f * K * M(L.SysFamily, FontStyle.Regular, false)); } }
-        public static Font SmallFont { get { return Latin ? NornsFonts.Body(11.5f * K) : Cached(L.SysFamily, 11.5f * K * M(L.SysFamily, FontStyle.Regular, false)); } }
-        public static Font KeyFont { get { return Latin ? NornsFonts.Body(11.5f * K) : Zh ? Cached(L.SysFamily, 11.5f * K * M(L.SysFamily, FontStyle.Bold, false), FontStyle.Bold) : Cached("Segoe UI Semibold", 11.5f * K * M("Segoe UI Semibold", FontStyle.Regular, false)); } }
+        public static Font TextFont { get { return L.TextCovered ? NornsFonts.Body(13f * K) : Cached(L.SysFamily, 13f * K * M(L.SysFamily, FontStyle.Regular, false)); } }
+        public static Font SmallFont { get { return L.TextCovered ? NornsFonts.Body(11.5f * K) : Cached(L.SysFamily, 11.5f * K * M(L.SysFamily, FontStyle.Regular, false)); } }
+        public static Font KeyFont { get { return L.TextCovered ? NornsFonts.Body(11.5f * K) : Zh ? Cached(L.SysFamily, 11.5f * K * M(L.SysFamily, FontStyle.Bold, false), FontStyle.Bold) : Cached("Segoe UI Semibold", 11.5f * K * M("Segoe UI Semibold", FontStyle.Regular, false)); } }
         static readonly Dictionary<string, Font> fonts = new Dictionary<string, Font>();
         static Font Cached(string family, float px, FontStyle style = FontStyle.Regular)
         {

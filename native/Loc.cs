@@ -25,9 +25,10 @@ namespace TheNorns
             new[] { "zh", "简体中文" },
         };
 
-        // the embedded fonts (Orbitron, Space Grotesk) are Latin only: Ukrainian and Chinese are drawn in a Windows font,
-        // Segoe UI for Cyrillic, Microsoft YaHei UI for Chinese (on every Windows since Vista, nothing to embed)
+        // Orbitron (titles, numbers) is Latin only: Ukrainian titles are drawn in Segoe UI Semibold. The text face, Noto Sans
+        // (owner, 30.10.2026), has Latin and Cyrillic; Chinese is drawn in Microsoft YaHei UI (on every Windows since Vista)
         public static bool Latin { get { return Code != "uk" && Code != "zh"; } }
+        public static bool TextCovered { get { return Code != "zh"; } }
         public static string SysFamily { get { return Code == "zh" ? "Microsoft YaHei UI" : "Segoe UI"; } }
         public static bool Cyrillic(string s) { return s.Any(ch => ch >= 'Ѐ' && ch <= 'ӿ'); }
         // Chinese: the ideographs, their punctuation and full-width forms (not the kana of ノルン in the credits)

@@ -114,7 +114,7 @@ Self-tests: `TheNorns.exe --selftest-dps <folder>` and `TheNorns-Setup-1.4.0.exe
 
 ## Credits
 
-- Orbitron and Space Grotesk (SIL OFL 1.1), Zarame Gothic by _mokuzai_ (SIL OFL 1.1, outlines of ノルン embedded).
+- Orbitron and Noto Sans (SIL OFL 1.1), Zarame Gothic by _mokuzai_ (SIL OFL 1.1, outlines of ノルン embedded).
 - The power display animation after loadersz by lumberjacque (MIT).
 - License copies are in `licenses\`.
 

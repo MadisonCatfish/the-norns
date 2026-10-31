@@ -16,8 +16,10 @@ namespace TheNorns
     {
         bool settingsOpen;
         string hotSpot, downSpot;   // "page:<name>", "lang:<code>", "logs", "reset", "back"
-        string page = "general";    // general, logs, stats, about (the RIFT-like plan, step 1)
-        static readonly string[][] Pages = { new[] { "general", "General" }, new[] { "modes", "Modes" }, new[] { "eveo", "Carousel" }, new[] { "logs", "Game logs" }, new[] { "storage", "Storage" }, new[] { "stats", "Statistics" }, new[] { "about", "About" } };
+        string page = "general";    // general, display, modes, eveo, data; stats and about from the header keys
+        // five tabs (roadmap 17, 30.10.2026: General / Display / Modes / Carousel / Data); Statistics and About are keys in the
+        // header beside the close key, not settings
+        static readonly string[][] Pages = { new[] { "general", "General" }, new[] { "display", "Display" }, new[] { "modes", "Modes" }, new[] { "eveo", "Carousel" }, new[] { "data", "Data" } };
         readonly List<Tuple<string, RectangleF>> spots = new List<Tuple<string, RectangleF>>();
         double resetShownUntil = -1;
         bool demoResetShown;
@@ -26,7 +28,7 @@ namespace TheNorns
         // the first one shown, tabShift = where the row is drawn (glides to tabFirst). Each tab is as wide as its label
         // plus the gap (owner, 29.10.2026: the gap 40% less than in the four equal cells before); tabX = where each one
         // starts, from the last frame (null before it: four to a row)
-        const int TabsShown = 4;
+        const int TabsShown = 5;
         int tabFirst; float tabShift; RectangleF tabRow;
         float[] tabX; float tabGap;
         // the last first tab that still leaves no room at the right
@@ -276,7 +278,7 @@ namespace TheNorns
 
         static string CreditsText()
         {
-            return L.T("Fonts") + ": Orbitron, Space Grotesk (SIL OFL 1.1); Zarame Gothic by _mokuzai_ (SIL OFL 1.1) — ノルン.\n" +
+            return L.T("Fonts") + ": Orbitron, Noto Sans (SIL OFL 1.1); Zarame Gothic by _mokuzai_ (SIL OFL 1.1) — ノルン.\n" +
                    L.T("Animation") + ": loadersz \"working\" by lumberjacque (MIT).\n" +
                    L.T("Icons") + ": Google Material Icons / Symbols (Apache 2.0).\n" +
                    L.T("NPC damage types") + ": EVE University wiki.\n" +
@@ -398,7 +400,7 @@ namespace TheNorns
         Font TextFont(string text, float px)
         {
             return L.Cjk(text) ? Sys("Microsoft YaHei UI", px * NornsFonts.Match("Microsoft YaHei UI", FontStyle.Regular, false))
-                : L.Cyrillic(text) ? Sys("Segoe UI", px * NornsFonts.Match("Segoe UI", FontStyle.Regular, false)) : NornsFonts.Body(px);
+                : NornsFonts.Body(px);   // Noto Sans has Cyrillic
         }
 
         void PaintSettings(Graphics g, RectangleF c)
@@ -416,6 +418,21 @@ namespace TheNorns
             var back = new RectangleF(c.Right - U(11), c.Top - U(2), U(11), U(15));
             CloseKey(g, back, hotSpot == "back", downSpot == "back", U(1) * 0.8f);
             spots.Add(Tuple.Create("back", RectangleF.Inflate(back, U(2), U(2))));
+            // Statistics and About: square keys left of the close key, lit while their page is open (Material bar_chart, info)
+            for (int hk = 0; hk < 2; hk++)
+            {
+                string hp = hk == 0 ? "about" : "stats", hid = "page:" + hp;
+                var kr = new RectangleF(back.Left - U(5) - (hk + 1) * U(15) - hk * U(3), c.Top - U(2), U(15), U(15));
+                bool on = page == hp, hot = hotSpot == hid;
+                using (var p = Round(kr, 5))
+                {
+                    using (var b = new SolidBrush(on ? Color.FromArgb(40, BodyTheme.Accent) : hot ? Color.FromArgb(26, BodyTheme.Ink) : Color.FromArgb(12, BodyTheme.Ink))) g.FillPath(b, p);
+                    using (var pen = new Pen(on ? BodyTheme.Accent : Color.FromArgb(50, BodyTheme.Ink), 1f)) g.DrawPath(pen, p);
+                }
+                float hic = U(9);
+                using (var b = new SolidBrush(on ? BodyTheme.Accent : BodyTheme.Ink)) MaterialIcon.Draw(g, hk == 0 ? MaterialIcon.Info : MaterialIcon.BarChart, new RectangleF(kr.Left + (kr.Width - hic) / 2, kr.Top + (kr.Height - hic) / 2, hic, hic), b);
+                spots.Add(Tuple.Create(hid, kr));
+            }
             float y = c.Top + Math.Max(th, U(13)) + U(6);
             line(y); y += U(7);
 
@@ -423,8 +440,6 @@ namespace TheNorns
             // nothing more that way), then the tabs, the open one's label in the accent (owner, 28.10.2026); the one cut at
             // the right edge fades into the black, so more can be seen to be there (owner, 29.10.2026)
             float ak = U(14), ah = U(13), ay = y - U(1.5f);
-            float rowLeft = c.Left + 2 * ak + U(3) + U(4);
-            tabRow = RectangleF.FromLTRB(rowLeft, y - U(2), c.Right, y + U(12));
             var ups = new string[Pages.Length]; var fonts = new Font[Pages.Length]; var lw = new float[Pages.Length];
             for (int k = 0; k < Pages.Length; k++)
             {
@@ -433,13 +448,17 @@ namespace TheNorns
                 ups[k] = label.ToUpperInvariant();
                 lw[k] = g.MeasureString(ups[k], fonts[k], 1000, StringFormat.GenericTypographic).Width;
             }
+            // all the tabs fit the row: no arrow keys, the row from the left edge
+            bool arrows = lw.Sum() + (Pages.Length - 1) * U(5) > c.Width;
+            float rowLeft = arrows ? c.Left + 2 * ak + U(3) + U(4) : c.Left;
+            tabRow = RectangleF.FromLTRB(rowLeft, y - U(2), c.Right, y + U(12));
             bool firstRow = tabX == null;
             tabGap = Math.Max(U(5), 0.6f * (tabRow.Width / TabsShown - lw.Average()));
             tabX = new float[Pages.Length + 1];
             for (int k = 0; k < Pages.Length; k++) tabX[k + 1] = tabX[k] + lw[k] + tabGap;
             if (firstRow) { ShowTab(page); tabShift = tabFirst; }
             tabFirst = Math.Min(tabFirst, TabsMaxFirst());
-            for (int a = 0; a < 2; a++)
+            for (int a = 0; arrows && a < 2; a++)
             {
                 string id = a == 0 ? "tabs:prev" : "tabs:next";
                 bool can = a == 0 ? tabFirst > 0 : tabFirst < TabsMaxFirst(), hot = can && hotSpot == id;
@@ -508,6 +527,40 @@ namespace TheNorns
                 }
                 y += 2 * rowH + U(6);
 
+                var updatesT = L.T("Updates");
+                Glow(g, updatesT, TitleFont(updatesT, U(6.5f)), Muted, c.Left, y);
+                y += U(11);
+                LampRow(g, c, y, "updatestart", UpdateAtStart, L.T("Check for updates at start"));
+                y += U(19) - 3;
+                y += U(6);
+                var alertsT = L.T("Alerts");
+                Glow(g, alertsT, TitleFont(alertsT, U(6.5f)), Muted, c.Left, y);
+                y += U(11);
+                // the sound when a titan or a dreadnought spawns (off by default), and a key to hear it
+                var pk = new RectangleF(c.Right - U(29), y, U(29), U(15));
+                var sr = new RectangleF(c.Left, y, pk.Left - U(4) - c.Left, U(15));
+                bool sh = hotSpot == "spawnsound";
+                if (sh) using (var p = Round(sr, 6)) using (var b = new SolidBrush(Color.FromArgb(22, BodyTheme.Ink))) g.FillPath(b, p);
+                float sd = U(5.5f), sx = sr.Left + U(5), sy = sr.Top + sr.Height / 2;
+                if (SpawnSound) SoftGlow(g, new PointF(sx + sd / 2, sy), sd / 2 + U(4), BodyTheme.Accent, 140);
+                using (var b = new SolidBrush(SpawnSound ? BodyTheme.Accent : Color.FromArgb(46, 48, 30))) g.FillEllipse(b, sx, sy - sd / 2, sd, sd);
+                var sl2 = L.T("Sound on a titan or dreadnought");
+                var sf3 = TextFont(sl2, U(7.5f));
+                using (var b = new SolidBrush(sh ? BodyTheme.Ink : Color.FromArgb(200, 203, 210))) g.DrawString(sl2, sf3, b, sx + sd + U(6), sy - sf3.GetHeight(g) / 2, StringFormat.GenericTypographic);
+                spots.Add(Tuple.Create("spawnsound", sr));
+                // the play key, like the size keys (Material play_arrow)
+                bool ph2 = hotSpot == "playalert";
+                using (var p = Round(pk, 5))
+                {
+                    using (var b = new SolidBrush(ph2 ? Color.FromArgb(26, BodyTheme.Ink) : Color.FromArgb(12, BodyTheme.Ink))) g.FillPath(b, p);
+                    using (var pen = new Pen(Color.FromArgb(50, BodyTheme.Ink), 1f)) g.DrawPath(pen, p);
+                }
+                float ic2 = U(9);
+                using (var b = new SolidBrush(BodyTheme.Ink)) MaterialIcon.Draw(g, MaterialIcon.Play, new RectangleF(pk.Left + (pk.Width - ic2) / 2, pk.Top + (pk.Height - ic2) / 2, ic2, ic2), b);
+                spots.Add(Tuple.Create("playalert", pk));
+            }
+            else if (page == "display")
+            {
                 // window: the body's size and whether it comes back where it was
                 var wt = L.T("Window");
                 Glow(g, wt, TitleFont(wt, U(6.5f)), Muted, c.Left, y);
@@ -533,85 +586,20 @@ namespace TheNorns
                     spots.Add(Tuple.Create(id, br));
                 }
                 y += U(20);
-                var rl = L.T("Remember window position");
-                var rr = new RectangleF(c.Left, y, c.Width, U(15));
-                bool rh = hotSpot == "remember";
-                if (rh) using (var p = Round(rr, 6)) using (var b = new SolidBrush(Color.FromArgb(22, BodyTheme.Ink))) g.FillPath(b, p);
-                float dd = U(5.5f), lx2 = rr.Left + U(5), ly2 = rr.Top + rr.Height / 2;
-                if (RememberPos) SoftGlow(g, new PointF(lx2 + dd / 2, ly2), dd / 2 + U(4), BodyTheme.Accent, 140);
-                using (var b = new SolidBrush(RememberPos ? BodyTheme.Accent : Color.FromArgb(46, 48, 30))) g.FillEllipse(b, lx2, ly2 - dd / 2, dd, dd);
-                var rf = TextFont(rl, U(7.5f));
-                using (var b = new SolidBrush(rh ? BodyTheme.Ink : Color.FromArgb(200, 203, 210))) g.DrawString(rl, rf, b, lx2 + dd + U(6), ly2 - rf.GetHeight(g) / 2, StringFormat.GenericTypographic);
-                spots.Add(Tuple.Create("remember", rr));
-                y += U(19) - 3;   // 3 px tighter (owner, 28.10.2026)
-                var ul = L.T("Check for updates at start");
-                var ur = new RectangleF(c.Left, y, c.Width, U(15));
-                bool uh = hotSpot == "updatestart";
-                if (uh) using (var p = Round(ur, 6)) using (var b = new SolidBrush(Color.FromArgb(22, BodyTheme.Ink))) g.FillPath(b, p);
-                float ly3 = ur.Top + ur.Height / 2;
-                if (UpdateAtStart) SoftGlow(g, new PointF(lx2 + dd / 2, ly3), dd / 2 + U(4), BodyTheme.Accent, 140);
-                using (var b = new SolidBrush(UpdateAtStart ? BodyTheme.Accent : Color.FromArgb(46, 48, 30))) g.FillEllipse(b, lx2, ly3 - dd / 2, dd, dd);
-                var uf = TextFont(ul, U(7.5f));
-                using (var b = new SolidBrush(uh ? BodyTheme.Ink : Color.FromArgb(200, 203, 210))) g.DrawString(ul, uf, b, lx2 + dd + U(6), ly3 - uf.GetHeight(g) / 2, StringFormat.GenericTypographic);
-                spots.Add(Tuple.Create("updatestart", ur));
+                LampRow(g, c, y, "remember", RememberPos, L.T("Remember window position"));
                 y += U(19) - 3;
-                var pl = L.T("Potato mode: low CPU, no effects");
-                var prr = new RectangleF(c.Left, y, c.Width, U(15));
-                bool ph = hotSpot == "potato";
-                if (ph) using (var p = Round(prr, 6)) using (var b = new SolidBrush(Color.FromArgb(22, BodyTheme.Ink))) g.FillPath(b, p);
-                float ly4 = prr.Top + prr.Height / 2;
-                if (Potato) SoftGlow(g, new PointF(lx2 + dd / 2, ly4), dd / 2 + U(4), BodyTheme.Accent, 140);
-                using (var b = new SolidBrush(Potato ? BodyTheme.Accent : Color.FromArgb(46, 48, 30))) g.FillEllipse(b, lx2, ly4 - dd / 2, dd, dd);
-                var pf = TextFont(pl, U(7.5f));
-                using (var b = new SolidBrush(ph ? BodyTheme.Ink : Color.FromArgb(200, 203, 210))) g.DrawString(pl, pf, b, lx2 + dd + U(6), ly4 - pf.GetHeight(g) / 2, StringFormat.GenericTypographic);
-                spots.Add(Tuple.Create("potato", prr));
+                LampRow(g, c, y, "compact", Compact, L.T("Compact mode"));
                 y += U(19) - 3;
-                var cl = L.T("Compact mode");
-                var crr = new RectangleF(c.Left, y, c.Width, U(15));
-                bool ch = hotSpot == "compact";
-                if (ch) using (var p = Round(crr, 6)) using (var b = new SolidBrush(Color.FromArgb(22, BodyTheme.Ink))) g.FillPath(b, p);
-                float ly5 = crr.Top + crr.Height / 2;
-                if (Compact) SoftGlow(g, new PointF(lx2 + dd / 2, ly5), dd / 2 + U(4), BodyTheme.Accent, 140);
-                using (var b = new SolidBrush(Compact ? BodyTheme.Accent : Color.FromArgb(46, 48, 30))) g.FillEllipse(b, lx2, ly5 - dd / 2, dd, dd);
-                var cf = TextFont(cl, U(7.5f));
-                using (var b = new SolidBrush(ch ? BodyTheme.Ink : Color.FromArgb(200, 203, 210))) g.DrawString(cl, cf, b, lx2 + dd + U(6), ly5 - cf.GetHeight(g) / 2, StringFormat.GenericTypographic);
-                spots.Add(Tuple.Create("compact", crr));
+                LampRow(g, c, y, "potato", Potato, L.T("Potato mode: low CPU, no effects"));
                 y += U(19) - 3;
-                // the sound when a titan or a dreadnought spawns (off by default), and a key to hear it
-                var pk = new RectangleF(c.Right - U(29), y, U(29), U(15));
-                var sr = new RectangleF(c.Left, y, pk.Left - U(4) - c.Left, U(15));
-                bool sh = hotSpot == "spawnsound";
-                if (sh) using (var p = Round(sr, 6)) using (var b = new SolidBrush(Color.FromArgb(22, BodyTheme.Ink))) g.FillPath(b, p);
-                float sd = U(5.5f), sx = sr.Left + U(5), sy = sr.Top + sr.Height / 2;
-                if (SpawnSound) SoftGlow(g, new PointF(sx + sd / 2, sy), sd / 2 + U(4), BodyTheme.Accent, 140);
-                using (var b = new SolidBrush(SpawnSound ? BodyTheme.Accent : Color.FromArgb(46, 48, 30))) g.FillEllipse(b, sx, sy - sd / 2, sd, sd);
-                var sl2 = L.T("Sound on a titan or dreadnought");
-                var sf3 = TextFont(sl2, U(7.5f));
-                using (var b = new SolidBrush(sh ? BodyTheme.Ink : Color.FromArgb(200, 203, 210))) g.DrawString(sl2, sf3, b, sx + sd + U(6), sy - sf3.GetHeight(g) / 2, StringFormat.GenericTypographic);
-                spots.Add(Tuple.Create("spawnsound", sr));
-                // the play key, like the size keys (Material play_arrow)
-                bool ph2 = hotSpot == "playalert";
-                using (var p = Round(pk, 5))
-                {
-                    using (var b = new SolidBrush(ph2 ? Color.FromArgb(26, BodyTheme.Ink) : Color.FromArgb(12, BodyTheme.Ink))) g.FillPath(b, p);
-                    using (var pen = new Pen(Color.FromArgb(50, BodyTheme.Ink), 1f)) g.DrawPath(pen, p);
-                }
-                float ic2 = U(9);
-                using (var b = new SolidBrush(BodyTheme.Ink)) MaterialIcon.Draw(g, MaterialIcon.Play, new RectangleF(pk.Left + (pk.Width - ic2) / 2, pk.Top + (pk.Height - ic2) / 2, ic2, ic2), b);
-                spots.Add(Tuple.Create("playalert", pk));
             }
             else if (page == "modes") PaintModes(g, c, y);
             else if (page == "eveo") PaintEveO(g, c, y);
-            else if (page == "logs")
+            else if (page == "data")
             {
-                // the keys that were on the strip, and where the combat logs are read from
+                // the combat log folder: its path (from Documents on: no user name on screen), a mark whether logs are
+                // there, Select / Detect / Open; then the app's own folder with its size, Open, and the anomaly reset
                 bool resetShown = demoResetShown || clock.Elapsed.TotalSeconds < resetShownUntil;
-                PaintWideKey(g, new RectangleF(c.Left, y, c.Width, U(19)), MaterialIcon.Description, L.T("Open game logs folder"), "logs", false);
-                y += U(23);
-                PaintWideKey(g, new RectangleF(c.Left, y, c.Width, U(19)), MaterialIcon.Refresh, resetShown ? L.T("Anomaly counter reset") : L.T("Reset anomaly counter"), "reset", resetShown);
-                y += U(28);
-                // the folder: its path (from Documents on: no user name on screen), a mark whether logs are there,
-                // Select / Detect
                 var lt = L.T("Combat log folder");
                 Glow(g, lt, TitleFont(lt, U(6.5f)), Muted, c.Left, y);
                 y += U(11);
@@ -629,36 +617,32 @@ namespace TheNorns
                 var mr = new RectangleF(field.Right + U(4), field.Top + (field.Height - U(11)) / 2, U(11), U(11));
                 using (var b = new SolidBrush(ok ? BodyTheme.Accent : AlarmRed)) MaterialIcon.Draw(g, ok ? MaterialIcon.Check : MaterialIcon.Close, mr, b);
                 y += U(21);
-                float hw = (c.Width - U(4)) / 2;
-                PaintWideKey(g, new RectangleF(c.Left, y, hw, U(19)), MaterialIcon.Folder, L.T("Select"), "dir:select", false);
-                PaintWideKey(g, new RectangleF(c.Left + hw + U(4), y, hw, U(19)), MaterialIcon.Search, L.T("Detect"), "dir:detect", false);
-                y += U(24);
+                float tw3 = (c.Width - 2 * U(4)) / 3;
+                PaintWideKey(g, new RectangleF(c.Left, y, tw3, U(19)), MaterialIcon.Folder, L.T("Select"), "dir:select", false);
+                PaintWideKey(g, new RectangleF(c.Left + tw3 + U(4), y, tw3, U(19)), MaterialIcon.Search, L.T("Detect"), "dir:detect", false);
+                PaintWideKey(g, new RectangleF(c.Left + 2 * (tw3 + U(4)), y, tw3, U(19)), MaterialIcon.Description, L.T("Open"), "logs", false);
+                y += U(23);
                 var note = ok ? L.T("Combat logs found.") : L.T("No combat logs here yet. They appear once a pilot is in space; or pick the folder.");
                 using (var b = new SolidBrush(ok ? Color.FromArgb(120, BodyTheme.Ink) : Color.FromArgb(220, 255, 120, 110)))
-                    g.DrawString(note, TextFont(note, U(6.5f)), b, new RectangleF(c.Left, y, c.Width, U(30)));
-            }
-            else if (page == "storage")
-            {
-                // the app's own folder: where it is, what is in it, how much
+                    g.DrawString(note, TextFont(note, U(6.6f)), b, new RectangleF(c.Left, y, c.Width, U(20)));
+                y += U(18);
                 if (storage == null) storage = ReadStorage();
                 var dt = L.T("App data");
                 Glow(g, dt, TitleFont(dt, U(6.5f)), Muted, c.Left, y);
-                y += U(11);
-                var df = TextFont(AppInfo.DataDir, U(6.5f));
-                using (var b = new SolidBrush(Color.FromArgb(150, BodyTheme.Ink)))
-                    g.DrawString(Shown(AppInfo.DataDir), df, b, new RectangleF(c.Left, y, c.Width, df.GetHeight(g) + U(1)), new StringFormat { Trimming = StringTrimming.EllipsisPath, FormatFlags = StringFormatFlags.NoWrap });
-                y += U(13);
-                var nf2 = NornsFonts.Screen(U(6.5f));
-                foreach (var row in storage)
+                var total = storage.FirstOrDefault(r => r.Item3);
+                if (total != null)
                 {
-                    using (var b = new SolidBrush(row.Item3 ? BodyTheme.Ink : Color.FromArgb(200, 203, 210))) g.DrawString(row.Item1, TextFont(row.Item1, U(7.2f)), b, c.Left, y, StringFormat.GenericTypographic);
-                    var v = row.Item2;
-                    using (var b = new SolidBrush(row.Item3 ? BodyTheme.Accent : BodyTheme.Ink)) g.DrawString(v, nf2, b, c.Right - g.MeasureString(v, nf2, 1000, StringFormat.GenericTypographic).Width, y + U(0.5f), StringFormat.GenericTypographic);
-                    y += U(row.Item3 ? 15 : 12);
-                    if (row.Item3) line(y - U(5));
+                    var nf3 = NornsFonts.Screen(U(6.5f));
+                    using (var b = new SolidBrush(BodyTheme.Accent)) g.DrawString(total.Item2, nf3, b, c.Right - g.MeasureString(total.Item2, nf3, 1000, StringFormat.GenericTypographic).Width, y, StringFormat.GenericTypographic);
                 }
-                y += U(4);
+                y += U(11);
+                var pf2 = TextFont(AppInfo.DataDir, U(6.6f));
+                using (var b = new SolidBrush(Color.FromArgb(150, BodyTheme.Ink)))
+                    g.DrawString(Shown(AppInfo.DataDir), pf2, b, new RectangleF(c.Left, y, c.Width, pf2.GetHeight(g) + U(1)), new StringFormat { Trimming = StringTrimming.EllipsisPath, FormatFlags = StringFormatFlags.NoWrap });
+                y += U(13);
                 PaintWideKey(g, new RectangleF(c.Left, y, c.Width, U(19)), MaterialIcon.Folder, L.T("Open app data folder"), "data", false);
+                y += U(23);
+                PaintWideKey(g, new RectangleF(c.Left, y, c.Width, U(19)), MaterialIcon.Refresh, resetShown ? L.T("Anomaly counter reset") : L.T("Reset anomaly counter"), "reset", resetShown);
             }
             else if (page == "stats")
             {

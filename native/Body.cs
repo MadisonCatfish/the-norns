@@ -55,11 +55,11 @@ namespace TheNorns
         {
             if (pfc != null) return;
             pfc = new PrivateFontCollection();
-            Load("Orbitron.ttf"); Load("SpaceGrotesk.ttf");
+            Load("Orbitron.ttf"); Load("NotoSans.ttf");
             foreach (var f in pfc.Families)
             {
                 if (f.Name.IndexOf("Orbitron", StringComparison.OrdinalIgnoreCase) >= 0) orbitron = f;
-                if (f.Name.IndexOf("Grotesk", StringComparison.OrdinalIgnoreCase) >= 0) grotesk = f;
+                if (f.Name.IndexOf("Noto", StringComparison.OrdinalIgnoreCase) >= 0) grotesk = f;
             }
         }
 
@@ -2032,8 +2032,8 @@ namespace TheNorns
                         fs.DemoSettings(true, null, false); save(fs, "dps_settings_scale_" + (int)(sc * 100) + ".png");
                     }
                 UiScale = 1.25f;
-                f.DemoLogDirOk = true; f.DemoSettings(true, "reset", true, "logs"); save(f, "dps_settings_logs.png");
-                f.DemoLogDirOk = false; f.DemoSettings(true, "dir:detect", false, "logs"); save(f, "dps_settings_logs_missing.png"); f.DemoLogDirOk = null;
+                f.DemoLogDirOk = true; f.DemoSettings(true, "reset", true, "data"); save(f, "dps_settings_data.png");
+                f.DemoLogDirOk = false; f.DemoSettings(true, "dir:detect", false, "data"); save(f, "dps_settings_data_missing.png"); f.DemoLogDirOk = null;
                 f.DemoSessions = new List<SessionInfo>
                 {
                     new SessionInfo { Start = now.AddDays(-1).AddHours(-3), End = now.AddDays(-1), Sites = 14, Isk = 1840000000, Spawns = 5 },
@@ -2041,7 +2041,7 @@ namespace TheNorns
                     new SessionInfo { Start = now.AddDays(-4).AddHours(-1), End = now.AddDays(-4), Sites = 5, Isk = 610000000 },
                 };
                 f.DemoSettings(true, null, false, "stats"); save(f, "dps_settings_stats.png"); f.DemoSessions = null;
-                f.DemoSettings(true, "data", false, "storage"); save(f, "dps_settings_storage.png");
+                f.DemoSettings(true, "page:about", false, "display"); save(f, "dps_settings_display.png");
                 f.DemoSettings(true, "page:general", false, "about"); save(f, "dps_settings_about.png");
                 f.DemoAboutView = "credits"; save(f, "dps_settings_about_credits.png");
                 f.DemoAboutView = "legal"; save(f, "dps_settings_about_legal.png"); f.DemoAboutView = "news";
