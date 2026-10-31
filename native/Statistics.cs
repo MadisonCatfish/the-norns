@@ -138,26 +138,30 @@ namespace TheNorns
             all.AddRange(sessions);
             all = all.Where(InPeriod).ToList();
 
-            // the calendar key, the period, the totals on the right: ★, titans, dreadnoughts, sites and ISK
-            var ck = new RectangleF(c.Left, y - U(3.5f), U(15), U(15));
+            // the period on the left, the calendar key on the right (owner, 31.10.2026)
+            var ck = new RectangleF(c.Right - U(15), y - U(3.5f), U(15), U(15));
             SquareKey(g, ck, MaterialIcon.Calendar, false, "stats:calendar", statFrom != null);
             var tt = PeriodText();
-            Glow(g, tt, TitleFont(tt, U(7.2f)), statFrom != null ? BodyTheme.Accent : Muted, ck.Right + U(5), y);
-            var tv = all.Sum(x => x.Sites) + " " + L.T("anom") + "  ·  " + FormatIsk(all.Sum(x => x.Isk));
-            var vf = NornsFonts.Screen(U(6.5f));
-            float tvx = c.Right - g.MeasureString(tv.ToUpperInvariant(), vf, 1000, StringFormat.GenericTypographic).Width;
-            using (var b = new SolidBrush(BodyTheme.Accent)) g.DrawString(tv.ToUpperInvariant(), vf, b, tvx, y, StringFormat.GenericTypographic);
-            int titans = all.Sum(x => x.Titans), dreads = all.Sum(x => x.Dreads);
-            float dx = IconCount(g, dreads, MaterialIcon.Skull, true, vf, dreads > 0 ? AlarmRed : Color.FromArgb(90, AlarmRed), tvx - U(8), y);
-            spots.Add(Tuple.Create("stats:dreads", new RectangleF(dx, y - U(2), tvx - U(8) - dx, U(11))));
-            float tx = IconCount(g, titans, MaterialIcon.Skull, true, vf, titans > 0 ? AlarmRed : Color.FromArgb(90, AlarmRed), dx - U(6), y);
-            spots.Add(Tuple.Create("stats:titans", new RectangleF(tx, y - U(2), dx - U(6) - tx, U(11))));
-            IconCount(g, all.Sum(x => x.Spawns), MaterialIcon.Star, false, vf, BodyTheme.Accent, tx - U(6), y);
+            Glow(g, tt, TitleFont(tt, U(7.2f)), statFrom != null ? BodyTheme.Accent : Muted, c.Left, y);
             y += U(14);
             line(y); y += U(5);
 
-            // the rows, clipped to the view and scrolled; a thin bar on the right when they do not fit
-            statsView = RectangleF.FromLTRB(c.Left, y, c.Right, c.Bottom - U(6));
+            // the totals at the bottom, on the right: ★, titans, dreadnoughts, sites and ISK
+            var vf = NornsFonts.Screen(U(6.5f));
+            float fy = c.Bottom - U(9);
+            line(fy - U(5));
+            var tv = all.Sum(x => x.Sites) + " " + L.T("anom") + "  ·  " + FormatIsk(all.Sum(x => x.Isk));
+            float tvx = c.Right - g.MeasureString(tv.ToUpperInvariant(), vf, 1000, StringFormat.GenericTypographic).Width;
+            using (var b = new SolidBrush(BodyTheme.Accent)) g.DrawString(tv.ToUpperInvariant(), vf, b, tvx, fy, StringFormat.GenericTypographic);
+            int titans = all.Sum(x => x.Titans), dreads = all.Sum(x => x.Dreads);
+            float dx = IconCount(g, dreads, MaterialIcon.Skull, true, vf, dreads > 0 ? AlarmRed : Color.FromArgb(90, AlarmRed), tvx - U(8), fy);
+            spots.Add(Tuple.Create("stats:dreads", new RectangleF(dx, fy - U(2), tvx - U(8) - dx, U(11))));
+            float tx = IconCount(g, titans, MaterialIcon.Skull, true, vf, titans > 0 ? AlarmRed : Color.FromArgb(90, AlarmRed), dx - U(6), fy);
+            spots.Add(Tuple.Create("stats:titans", new RectangleF(tx, fy - U(2), dx - U(6) - tx, U(11))));
+            IconCount(g, all.Sum(x => x.Spawns), MaterialIcon.Star, false, vf, BodyTheme.Accent, tx - U(6), fy);
+
+            // the rows between, clipped to the view and scrolled; a thin bar on the right when they do not fit
+            statsView = RectangleF.FromLTRB(c.Left, y, c.Right, fy - U(9));
             float rowH = U(15), max = Math.Max(0, all.Count * rowH - statsView.Height);
             statsScroll = Math.Max(0, Math.Min(max, statsScroll));
             float right = max > 0 ? c.Right - U(8) : c.Right;
