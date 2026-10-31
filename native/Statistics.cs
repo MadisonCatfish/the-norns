@@ -184,9 +184,9 @@ namespace TheNorns
                 float ivx = right - g.MeasureString(iv, vf, 1000, StringFormat.GenericTypographic).Width;
                 using (var b = new SolidBrush(now ? BodyTheme.Accent : BodyTheme.Ink)) g.DrawString(iv, vf, b, ivx, ry + U(0.5f), StringFormat.GenericTypographic);
                 var dim = Color.FromArgb(90, BodyTheme.Ink);
-                IconCount(g, x.Dreads, MaterialIcon.Skull, true, vf, x.Dreads > 0 ? AlarmRed : dim, right - U(58), ry + U(0.5f));
-                IconCount(g, x.Titans, MaterialIcon.Skull, true, vf, x.Titans > 0 ? AlarmRed : dim, right - U(76), ry + U(0.5f));
-                IconCount(g, x.Spawns, MaterialIcon.Star, false, vf, x.Spawns > 0 ? BodyTheme.Ink : dim, right - U(94), ry + U(0.5f));
+                IconCount(g, x.Dreads, MaterialIcon.Skull, true, vf, x.Dreads > 0 ? AlarmRed : dim, right - U(58), ry + U(0.5f), 2);
+                IconCount(g, x.Titans, MaterialIcon.Skull, true, vf, x.Titans > 0 ? AlarmRed : dim, right - U(76), ry + U(0.5f), 2);
+                IconCount(g, x.Spawns, MaterialIcon.Star, false, vf, x.Spawns > 0 ? BodyTheme.Ink : dim, right - U(94), ry + U(0.5f), 2);
                 ry += rowH;
             }
             g.Restore(st);
@@ -211,12 +211,13 @@ namespace TheNorns
             return true;
         }
 
-        // an icon and a count after it, ending at `right`; returns where it starts
-        float IconCount(Graphics g, int n, string icon, bool symbol, Font f, Color c, float right, float y)
+        // an icon and a count after it, ending at `right`; returns where it starts. digits > 0: the icon stays where that many
+        // digits put it, the count left-aligned after it, so a column's icons line up whatever the count (owner, 31.10.2026)
+        float IconCount(Graphics g, int n, string icon, bool symbol, Font f, Color c, float right, float y, int digits = 0)
         {
             float h = f.GetHeight(g), ic = U(7.5f);
             var t = n.ToString(CultureInfo.InvariantCulture);
-            float x = right - ic - U(2) - g.MeasureString(t, f, 1000, StringFormat.GenericTypographic).Width;
+            float x = right - ic - U(2) - g.MeasureString(digits > 0 ? new string('0', digits) : t, f, 1000, StringFormat.GenericTypographic).Width;
             using (var b = new SolidBrush(c))
             {
                 var ir = new RectangleF(x, y + (h - ic) / 2 - U(0.5f), ic, ic);
