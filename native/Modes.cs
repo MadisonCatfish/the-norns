@@ -162,7 +162,7 @@ namespace TheNorns
                 float d = U(5.5f), lx = row.Left + U(5), ly = row.Top + row.Height / 2;
                 if (cur) SoftGlow(g, new PointF(lx + d / 2, ly), d / 2 + U(4), BodyTheme.Accent, 140);
                 using (var b = new SolidBrush(cur ? BodyTheme.Accent : Color.FromArgb(46, 48, 30))) g.FillEllipse(b, lx, ly - d / 2, d, d);
-                var nf = TextFont(name, U(8));
+                var nf = TextFont(name, U(7.5f));
                 using (var b = new SolidBrush(cur || hot ? BodyTheme.Ink : Color.FromArgb(165, 168, 176)))
                     g.DrawString(name, nf, b, lx + d + U(6), ly - nf.GetHeight(g) / 2, StringFormat.GenericTypographic);
                 spots.Add(Tuple.Create(id, row));

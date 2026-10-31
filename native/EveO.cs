@@ -246,7 +246,7 @@ namespace TheNorns
                     using (var pen = new Pen(cur ? BodyTheme.Accent : Color.FromArgb(50, BodyTheme.Ink), 1f)) g.DrawPath(pen, p);
                 }
                 var lab = L.T(side == "left" ? "Left" : side == "top" ? "Top" : "Right");
-                var lf = TextFont(lab, U(6.5f));
+                var lf = TextFont(lab, U(6.6f));
                 var ls = g.MeasureString(lab, lf, 1000, StringFormat.GenericTypographic);
                 using (var b = new SolidBrush(cur ? BodyTheme.Accent : BodyTheme.Ink)) g.DrawString(lab, lf, b, br.Left + (br.Width - ls.Width) / 2, br.Top + (br.Height - ls.Height) / 2, StringFormat.GenericTypographic);
                 spots.Add(Tuple.Create(id, br));
@@ -310,7 +310,7 @@ namespace TheNorns
             if (order.Count > 0)
             {
                 var n = order.Count.ToString();
-                var nf = NornsFonts.Screen(U(6));
+                var nf = NornsFonts.Screen(U(6.5f));
                 using (var b = new SolidBrush(BodyTheme.Accent)) g.DrawString(n, nf, b, c.Left + g.MeasureString(ct.ToUpperInvariant(), ctf, 1000, StringFormat.GenericTypographic).Width + U(5), y + U(0.5f), StringFormat.GenericTypographic);
             }
             y += U(12);
@@ -367,11 +367,11 @@ namespace TheNorns
             float x = rr.Left + U(3), cy = rr.Top + rr.Height / 2, ic = U(8);
             using (var b = new SolidBrush(Color.FromArgb(lifted || hot ? 200 : 90, BodyTheme.Ink))) MaterialIcon.Draw(g, MaterialIcon.DragIndicator, new RectangleF(x, cy - ic / 2, ic, ic), b);
             x += ic + U(4);
-            var nf = NornsFonts.Screen(U(6));
+            var nf = NornsFonts.Screen(U(6.5f));
             var num = (place + 1).ToString();
             using (var b = new SolidBrush(open ? BodyTheme.Accent : Color.FromArgb(90, BodyTheme.Ink))) g.DrawString(num, nf, b, x, cy - nf.GetHeight(g) / 2, StringFormat.GenericTypographic);
             x += U(10);
-            var f = TextFont(name, U(7.2f));
+            var f = TextFont(name, U(7.5f));
             using (var b = new SolidBrush(open ? BodyTheme.Ink : Color.FromArgb(110, BodyTheme.Ink)))
                 g.DrawString(name, f, b, new RectangleF(x, cy - f.GetHeight(g) / 2, rr.Right - x - U(48), f.GetHeight(g) + U(1)), new StringFormat(StringFormat.GenericTypographic) { Trimming = StringTrimming.EllipsisCharacter, FormatFlags = StringFormatFlags.NoWrap });
             // the pin (Material push_pin): kept open when the others are minimized; lit when pinned
@@ -445,7 +445,7 @@ namespace TheNorns
             if (note != null)
             {
                 float tw = g.MeasureString(text, f, 10000, StringFormat.GenericTypographic).Width;
-                var nf = TextFont(note, U(6.2f));
+                var nf = TextFont(note, U(6));
                 using (var b = new SolidBrush(Color.FromArgb(120, BodyTheme.Ink))) g.DrawString(note, nf, b, lx + dd + U(6) + tw + U(4), ly - nf.GetHeight(g) / 2 + U(0.5f), StringFormat.GenericTypographic);
             }
             spots.Add(Tuple.Create(id, r));

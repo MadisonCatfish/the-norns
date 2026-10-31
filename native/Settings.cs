@@ -302,7 +302,7 @@ namespace TheNorns
                 using (var b = new SolidBrush(on ? Color.FromArgb(40, BodyTheme.Accent) : hot ? Color.FromArgb(26, BodyTheme.Ink) : Color.FromArgb(12, BodyTheme.Ink))) g.FillPath(b, p);
                 using (var pen = new Pen(on ? BodyTheme.Accent : Color.FromArgb(50, BodyTheme.Ink), 1f)) g.DrawPath(pen, p);
             }
-            var f = TextFont(label, U(6.8f));
+            var f = TextFont(label, U(7));
             var sz = g.MeasureString(label, f, 1000, StringFormat.GenericTypographic);
             using (var b = new SolidBrush(on ? BodyTheme.Accent : BodyTheme.Ink))
                 g.DrawString(label, f, b, new RectangleF(r.Left + Math.Max(U(3), (r.Width - sz.Width) / 2), r.Top + (r.Height - sz.Height) / 2, r.Width - U(6), sz.Height + U(1)),
@@ -520,7 +520,7 @@ namespace TheNorns
                     float d = U(5.5f), lx = row.Left + U(5), ly = row.Top + row.Height / 2;
                     if (cur) SoftGlow(g, new PointF(lx + d / 2, ly), d / 2 + U(4), BodyTheme.Accent, 140);
                     using (var b = new SolidBrush(cur ? BodyTheme.Accent : Color.FromArgb(46, 48, 30))) g.FillEllipse(b, lx, ly - d / 2, d, d);
-                    var nf = TextFont(name, U(8));
+                    var nf = TextFont(name, U(7.5f));
                     using (var b = new SolidBrush(cur || hot ? BodyTheme.Ink : Color.FromArgb(165, 168, 176)))
                         g.DrawString(name, nf, b, lx + d + U(6), ly - nf.GetHeight(g) / 2, StringFormat.GenericTypographic);
                     spots.Add(Tuple.Create(id, row));
@@ -580,7 +580,7 @@ namespace TheNorns
                         using (var pen = new Pen(cur ? BodyTheme.Accent : Color.FromArgb(50, BodyTheme.Ink), 1f)) g.DrawPath(pen, p);
                     }
                     var lab = (int)Math.Round(sc * 100) + "%";
-                    var lf = NornsFonts.Screen(U(6));
+                    var lf = NornsFonts.Screen(U(6.5f));
                     var ls = g.MeasureString(lab, lf, 1000, StringFormat.GenericTypographic);
                     using (var b = new SolidBrush(cur ? BodyTheme.Accent : BodyTheme.Ink)) g.DrawString(lab, lf, b, br.Left + (br.Width - ls.Width) / 2, br.Top + (br.Height - ls.Height) / 2, StringFormat.GenericTypographic);
                     spots.Add(Tuple.Create(id, br));
@@ -610,7 +610,7 @@ namespace TheNorns
                 if (dir.StartsWith(docs + "\\", StringComparison.OrdinalIgnoreCase)) dir = "Documents" + dir.Substring(docs.Length);
                 var field = new RectangleF(c.Left, y, c.Width - U(16), U(17));
                 using (var p = Round(field, 5)) using (var b = new SolidBrush(Color.FromArgb(16, 17, 20))) using (var pen = new Pen(Color.FromArgb(40, BodyTheme.Ink), 1f)) { g.FillPath(b, p); g.DrawPath(pen, p); }
-                var df = TextFont(dir, U(6.5f));   // a user folder may be named in Cyrillic or Chinese
+                var df = TextFont(dir, U(6.6f));   // a user folder may be named in Cyrillic or Chinese
                 using (var b = new SolidBrush(Color.FromArgb(200, 203, 210)))
                     g.DrawString(dir, df, b, new RectangleF(field.Left + U(5), field.Top + (field.Height - df.GetHeight(g)) / 2, field.Width - U(10), df.GetHeight(g) + U(1)),
                         new StringFormat { Trimming = StringTrimming.EllipsisPath, FormatFlags = StringFormatFlags.NoWrap });
@@ -660,7 +660,7 @@ namespace TheNorns
                 StarCount(g, spawns, vf2, BodyTheme.Accent, tvx - U(8), y);
                 y += U(12);
                 line(y); y += U(5);
-                var rf2 = NornsFonts.Body(U(6.8f));
+                var rf2 = NornsFonts.Body(U(7));
                 float rowH = U(15);
                 for (int k = 0; k < all.Count && y + rowH < c.Bottom - U(10); k++)
                 {
@@ -671,8 +671,8 @@ namespace TheNorns
                     var mid = (int)dur.TotalHours + ":" + dur.Minutes.ToString("00") + "  ·  " + x.Sites + " " + L.T("anom");
                     using (var b = new SolidBrush(now ? BodyTheme.Ink : Color.FromArgb(190, 193, 200)))
                     {
-                        g.DrawString(when, TextFont(when, U(6.8f)), b, c.Left, y, StringFormat.GenericTypographic);
-                        g.DrawString(mid, TextFont(mid, U(6.8f)), b, c.Left + c.Width * 0.36f, y, StringFormat.GenericTypographic);
+                        g.DrawString(when, TextFont(when, U(7)), b, c.Left, y, StringFormat.GenericTypographic);
+                        g.DrawString(mid, TextFont(mid, U(7)), b, c.Left + c.Width * 0.36f, y, StringFormat.GenericTypographic);
                     }
                     var iv = FormatIsk(x.Isk).ToUpperInvariant();
                     float ivx = c.Right - g.MeasureString(iv, vf2, 1000, StringFormat.GenericTypographic).Width;
@@ -681,7 +681,7 @@ namespace TheNorns
                     y += rowH;
                 }
                 if (all.Count == 1 && all[0].Sites == 0)
-                    using (var b = new SolidBrush(Color.FromArgb(110, BodyTheme.Ink))) { var e2 = L.T("No sites done yet. Every session is kept here from now on."); g.DrawString(e2, TextFont(e2, U(6.8f)), b, new RectangleF(c.Left, y, c.Width, U(30))); }
+                    using (var b = new SolidBrush(Color.FromArgb(110, BodyTheme.Ink))) { var e2 = L.T("No sites done yet. Every session is kept here from now on."); g.DrawString(e2, TextFont(e2, U(6.6f)), b, new RectangleF(c.Left, y, c.Width, U(30))); }
             }
             else
             {
@@ -689,7 +689,7 @@ namespace TheNorns
                 var nm = AppInfo.Name.ToUpperInvariant();
                 Glow(g, nm, NornsFonts.Screen(U(10)), BodyTheme.Ink, c.Left, y);
                 var vt = AppInfo.VersionText.ToUpperInvariant() + "  ·  MIT";
-                using (var b = new SolidBrush(BodyTheme.Accent)) g.DrawString(vt, NornsFonts.Body(U(6.5f)), b, c.Left, y + U(14), StringFormat.GenericTypographic);
+                using (var b = new SolidBrush(BodyTheme.Accent)) g.DrawString(vt, NornsFonts.Body(U(6.6f)), b, c.Left, y + U(14), StringFormat.GenericTypographic);
                 // the update check: only when pressed (nothing goes to the network otherwise)
                 var uk = new RectangleF(c.Right - U(118), y, U(118), U(19));
                 PaintWideKey(g, uk, updateState == 3 ? MaterialIcon.Download : MaterialIcon.Refresh, UpdateLabel(), "update", updateState == 2 || updateState == 3);
@@ -707,7 +707,7 @@ namespace TheNorns
                 else
                 {
                     var text = aboutView == "credits" ? CreditsText() : LegalText();
-                    var f = TextFont(text, U(6.8f));
+                    var f = TextFont(text, U(6.6f));
                     using (var b = new SolidBrush(Color.FromArgb(200, 203, 210))) g.DrawString(text, f, b, box);
                 }
                 g.Restore(st2);
