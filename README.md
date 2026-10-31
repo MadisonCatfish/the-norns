@@ -114,8 +114,9 @@ Self-tests: `TheNorns.exe --selftest-dps <folder>` and `TheNorns-Setup-1.4.0.exe
 
 ## Credits
 
-- Orbitron and Noto Sans (SIL OFL 1.1), Zarame Gothic by _mokuzai_ (SIL OFL 1.1, outlines of ノルン embedded).
+- Orbitron, Noto Sans and Noto Sans SC (SIL OFL 1.1), Zarame Gothic by _mokuzai_ (SIL OFL 1.1, outlines of ノルン embedded).
 - The power display animation after loadersz by lumberjacque (MIT).
+- The display glass's scratches after the free Light Scratches texture by [Poliigon](https://www.poliigon.com/texture/light-scratches-texture/1582).
 - License copies are in `licenses\`.
 
 ## Privacy

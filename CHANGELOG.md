@@ -3,7 +3,7 @@
 ## 1.5.0 — unreleased
 
 - Rare spawns on the ISK grid at once: a faction NPC or commander (Shadow Serpentis Rear Admiral and the like), a titan or a pirate dreadnought shows on the grid as soon as it is first hit, before its bounty, drawn over the grid in its colour (faction blue, titan red, dreadnought orange); its bounty tick then takes its place, also without fading in.
-- Chinese (Simplified): the seventh language, drawn in Microsoft YaHei UI from Windows (the embedded fonts have no Chinese). Settings → General shows the languages in four columns.
+- Chinese (Simplified): the seventh language, drawn in the embedded Noto Sans SC. Settings → General shows the languages in four columns.
 - Formula cards slide in smoothly: a frame of the tilted card now takes about 4 ms instead of 32 ms (the perspective is copied pixel by pixel, the shadow drawn once).
 
 ## 1.4.0 — 2026-10-30

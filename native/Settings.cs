@@ -241,7 +241,7 @@ namespace TheNorns
         void PaintNews(Graphics g, RectangleF box)
         {
             float y = box.Top - newsScroll;
-            var hf = NornsFonts.Screen(U(7)); var bf = NornsFonts.Body(U(6.6f));
+            var hf = NornsFonts.Screen(U(7)); var bf = NornsFonts.Body(U(7.2f));
             using (var hb = new SolidBrush(BodyTheme.Accent)) using (var bb = new SolidBrush(Color.FromArgb(200, 203, 210)))
                 foreach (var raw in Changelog.Replace("\r", "").Split('\n'))
                 {
@@ -256,7 +256,7 @@ namespace TheNorns
                     }
                     var t = l.TrimStart(' ', '-').Replace("`", "").Replace("**", "");
                     float indent = l.StartsWith("  ") ? U(8) : 0;
-                    var f = TextFont(t, U(6.6f)) ?? bf;
+                    var f = TextFont(t, U(7.2f)) ?? bf;
                     var h = g.MeasureString("• " + t, f, (int)(box.Width - indent)).Height;
                     if (y + h > box.Top - U(20) && y < box.Bottom + U(5)) g.DrawString("• " + t, f, bb, new RectangleF(box.Left + indent, y, box.Width - indent, h + U(1)));
                     y += h + U(2);
@@ -278,8 +278,9 @@ namespace TheNorns
 
         static string CreditsText()
         {
-            return L.T("Fonts") + ": Orbitron, Noto Sans (SIL OFL 1.1); Zarame Gothic by _mokuzai_ (SIL OFL 1.1) — ノルン.\n" +
+            return L.T("Fonts") + ": Orbitron, Noto Sans, Noto Sans SC (SIL OFL 1.1); Zarame Gothic by _mokuzai_ (SIL OFL 1.1) — ノルン.\n" +
                    L.T("Animation") + ": loadersz \"working\" by lumberjacque (MIT).\n" +
+                   L.T("Glass texture") + ": Light Scratches by Poliigon (poliigon.com).\n" +
                    L.T("Icons") + ": Google Material Icons / Symbols (Apache 2.0).\n" +
                    L.T("NPC damage types") + ": EVE University wiki.\n" +
                    L.T("Licenses are in the licenses folder next to the app.");
@@ -384,7 +385,7 @@ namespace TheNorns
             }
         }
 
-        // Ukrainian and Chinese: the embedded fonts have no Cyrillic or CJK (Loc.cs)
+        // Ukrainian titles: Orbitron has no Cyrillic (Loc.cs)
         static readonly Dictionary<string, Font> sysFonts = new Dictionary<string, Font>();
         static Font Sys(string family, float px, FontStyle style = FontStyle.Regular)
         {
@@ -394,12 +395,12 @@ namespace TheNorns
         }
         Font TitleFont(string text, float px)
         {
-            return L.Cjk(text) ? Sys("Microsoft YaHei UI", px * NornsFonts.Match("Microsoft YaHei UI", FontStyle.Bold, true), FontStyle.Bold)
+            return L.Cjk(text) ? NornsFonts.Sc(px * NornsFonts.MatchSc(FontStyle.Bold, true), FontStyle.Bold)
                 : L.Cyrillic(text) ? Sys("Segoe UI Semibold", px * NornsFonts.Match("Segoe UI Semibold", FontStyle.Regular, true)) : NornsFonts.Screen(px);
         }
         Font TextFont(string text, float px)
         {
-            return L.Cjk(text) ? Sys("Microsoft YaHei UI", px * NornsFonts.Match("Microsoft YaHei UI", FontStyle.Regular, false))
+            return L.Cjk(text) ? NornsFonts.Sc(px * NornsFonts.MatchSc(FontStyle.Regular, false))
                 : NornsFonts.Body(px);   // Noto Sans has Cyrillic
         }
 
@@ -410,7 +411,7 @@ namespace TheNorns
 
             // header: the settings symbol, the title, the back key
             var title = L.T("Settings");
-            var tf = TitleFont(title, U(9));
+            var tf = TitleFont(title, U(9.28f));
             float th = tf.GetHeight(g);
             var ir = new RectangleF(c.Left, c.Top + (th - U(10)) / 2, U(10), U(10));
             using (var ab = new SolidBrush(BodyTheme.Accent)) MaterialIcon.Draw(g, MaterialIcon.Settings, ir, ab);
@@ -422,7 +423,8 @@ namespace TheNorns
             for (int hk = 0; hk < 2; hk++)
             {
                 string hp = hk == 0 ? "about" : "stats", hid = "page:" + hp;
-                var kr = new RectangleF(back.Left - U(5) - (hk + 1) * U(15) - hk * U(3), c.Top - U(2), U(15), U(15));
+                // 2 px further from the close key (owner, 31.10.2026): 6.6 u at the 125 % size
+                var kr = new RectangleF(back.Left - U(6.6f) - (hk + 1) * U(15) - hk * U(3), c.Top - U(2), U(15), U(15));
                 bool on = page == hp, hot = hotSpot == hid;
                 using (var p = Round(kr, 5))
                 {
@@ -444,7 +446,7 @@ namespace TheNorns
             for (int k = 0; k < Pages.Length; k++)
             {
                 var label = L.T(Pages[k][1]);
-                fonts[k] = TitleFont(label, U(6));
+                fonts[k] = TitleFont(label, U(6.8f));
                 ups[k] = label.ToUpperInvariant();
                 lw[k] = g.MeasureString(ups[k], fonts[k], 1000, StringFormat.GenericTypographic).Width;
             }
@@ -507,7 +509,7 @@ namespace TheNorns
                 // language: the seven, four columns of two (owner, 28.10.2026: three columns; 29.10.2026: four, for
                 // Chinese), a lamp lit at the one in use
                 var lt = L.T("Language");
-                Glow(g, lt, TitleFont(lt, U(6.5f)), Muted, c.Left, y);
+                Glow(g, lt, TitleFont(lt, U(7.2f)), Muted, c.Left, y);
                 y += U(11);
                 float colW = c.Width / 4, rowH = U(16);
                 for (int i = 0; i < L.Languages.Length; i++)
@@ -528,13 +530,13 @@ namespace TheNorns
                 y += 2 * rowH + U(6);
 
                 var updatesT = L.T("Updates");
-                Glow(g, updatesT, TitleFont(updatesT, U(6.5f)), Muted, c.Left, y);
+                Glow(g, updatesT, TitleFont(updatesT, U(7.2f)), Muted, c.Left, y);
                 y += U(11);
                 LampRow(g, c, y, "updatestart", UpdateAtStart, L.T("Check for updates at start"));
                 y += U(19) - 3;
                 y += U(6);
                 var alertsT = L.T("Alerts");
-                Glow(g, alertsT, TitleFont(alertsT, U(6.5f)), Muted, c.Left, y);
+                Glow(g, alertsT, TitleFont(alertsT, U(7.2f)), Muted, c.Left, y);
                 y += U(11);
                 // the sound when a titan or a dreadnought spawns (off by default), and a key to hear it
                 var pk = new RectangleF(c.Right - U(29), y, U(29), U(15));
@@ -563,7 +565,7 @@ namespace TheNorns
             {
                 // window: the body's size and whether it comes back where it was
                 var wt = L.T("Window");
-                Glow(g, wt, TitleFont(wt, U(6.5f)), Muted, c.Left, y);
+                Glow(g, wt, TitleFont(wt, U(7.2f)), Muted, c.Left, y);
                 y += U(11);
                 var sl = L.T("Size");
                 var sf2 = TextFont(sl, U(7.5f));
@@ -601,7 +603,7 @@ namespace TheNorns
                 // there, Select / Detect / Open; then the app's own folder with its size, Open, and the anomaly reset
                 bool resetShown = demoResetShown || clock.Elapsed.TotalSeconds < resetShownUntil;
                 var lt = L.T("Combat log folder");
-                Glow(g, lt, TitleFont(lt, U(6.5f)), Muted, c.Left, y);
+                Glow(g, lt, TitleFont(lt, U(7.2f)), Muted, c.Left, y);
                 y += U(11);
                 var dir = GameLogTail.Dir; var docs = Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments).TrimEnd('\\');
                 bool ok = false;
@@ -610,7 +612,7 @@ namespace TheNorns
                 if (dir.StartsWith(docs + "\\", StringComparison.OrdinalIgnoreCase)) dir = "Documents" + dir.Substring(docs.Length);
                 var field = new RectangleF(c.Left, y, c.Width - U(16), U(17));
                 using (var p = Round(field, 5)) using (var b = new SolidBrush(Color.FromArgb(16, 17, 20))) using (var pen = new Pen(Color.FromArgb(40, BodyTheme.Ink), 1f)) { g.FillPath(b, p); g.DrawPath(pen, p); }
-                var df = TextFont(dir, U(6.6f));   // a user folder may be named in Cyrillic or Chinese
+                var df = TextFont(dir, U(7.2f));   // a user folder may be named in Cyrillic or Chinese
                 using (var b = new SolidBrush(Color.FromArgb(200, 203, 210)))
                     g.DrawString(dir, df, b, new RectangleF(field.Left + U(5), field.Top + (field.Height - df.GetHeight(g)) / 2, field.Width - U(10), df.GetHeight(g) + U(1)),
                         new StringFormat { Trimming = StringTrimming.EllipsisPath, FormatFlags = StringFormatFlags.NoWrap });
@@ -624,11 +626,11 @@ namespace TheNorns
                 y += U(23);
                 var note = ok ? L.T("Combat logs found.") : L.T("No combat logs here yet. They appear once a pilot is in space; or pick the folder.");
                 using (var b = new SolidBrush(ok ? Color.FromArgb(120, BodyTheme.Ink) : Color.FromArgb(220, 255, 120, 110)))
-                    g.DrawString(note, TextFont(note, U(6.6f)), b, new RectangleF(c.Left, y, c.Width, U(20)));
+                    g.DrawString(note, TextFont(note, U(7.2f)), b, new RectangleF(c.Left, y, c.Width, U(20)));
                 y += U(18);
                 if (storage == null) storage = ReadStorage();
                 var dt = L.T("App data");
-                Glow(g, dt, TitleFont(dt, U(6.5f)), Muted, c.Left, y);
+                Glow(g, dt, TitleFont(dt, U(7.2f)), Muted, c.Left, y);
                 var total = storage.FirstOrDefault(r => r.Item3);
                 if (total != null)
                 {
@@ -636,7 +638,7 @@ namespace TheNorns
                     using (var b = new SolidBrush(BodyTheme.Accent)) g.DrawString(total.Item2, nf3, b, c.Right - g.MeasureString(total.Item2, nf3, 1000, StringFormat.GenericTypographic).Width, y, StringFormat.GenericTypographic);
                 }
                 y += U(11);
-                var pf2 = TextFont(AppInfo.DataDir, U(6.6f));
+                var pf2 = TextFont(AppInfo.DataDir, U(7.2f));
                 using (var b = new SolidBrush(Color.FromArgb(150, BodyTheme.Ink)))
                     g.DrawString(Shown(AppInfo.DataDir), pf2, b, new RectangleF(c.Left, y, c.Width, pf2.GetHeight(g) + U(1)), new StringFormat { Trimming = StringTrimming.EllipsisPath, FormatFlags = StringFormatFlags.NoWrap });
                 y += U(13);
@@ -652,7 +654,7 @@ namespace TheNorns
                 all.AddRange(sessions);
                 long isk = all.Sum(x => x.Isk); int sites = all.Sum(x => x.Sites), spawns = all.Sum(x => x.Spawns);
                 var tt = L.T("All sessions");
-                Glow(g, tt, TitleFont(tt, U(6.5f)), Muted, c.Left, y);
+                Glow(g, tt, TitleFont(tt, U(7.2f)), Muted, c.Left, y);
                 var tv = sites + " " + L.T("anom") + "  ·  " + FormatIsk(isk);
                 var vf2 = NornsFonts.Screen(U(6.5f));
                 float tvx = c.Right - g.MeasureString(tv.ToUpperInvariant(), vf2, 1000, StringFormat.GenericTypographic).Width;
@@ -681,15 +683,15 @@ namespace TheNorns
                     y += rowH;
                 }
                 if (all.Count == 1 && all[0].Sites == 0)
-                    using (var b = new SolidBrush(Color.FromArgb(110, BodyTheme.Ink))) { var e2 = L.T("No sites done yet. Every session is kept here from now on."); g.DrawString(e2, TextFont(e2, U(6.6f)), b, new RectangleF(c.Left, y, c.Width, U(30))); }
+                    using (var b = new SolidBrush(Color.FromArgb(110, BodyTheme.Ink))) { var e2 = L.T("No sites done yet. Every session is kept here from now on."); g.DrawString(e2, TextFont(e2, U(7.2f)), b, new RectangleF(c.Left, y, c.Width, U(30))); }
             }
             else
             {
                 // about: name and version, the update check, then one of: what's new / credits / legal (keys at the bottom)
                 var nm = AppInfo.Name.ToUpperInvariant();
-                Glow(g, nm, NornsFonts.Screen(U(10)), BodyTheme.Ink, c.Left, y);
+                Glow(g, nm, NornsFonts.Screen(U(9.6f)), BodyTheme.Ink, c.Left, y);
                 var vt = AppInfo.VersionText.ToUpperInvariant() + "  ·  MIT";
-                using (var b = new SolidBrush(BodyTheme.Accent)) g.DrawString(vt, NornsFonts.Body(U(6.6f)), b, c.Left, y + U(14), StringFormat.GenericTypographic);
+                using (var b = new SolidBrush(BodyTheme.Accent)) g.DrawString(vt, NornsFonts.Body(U(7.2f)), b, c.Left, y + U(14), StringFormat.GenericTypographic);
                 // the update check: only when pressed (nothing goes to the network otherwise)
                 var uk = new RectangleF(c.Right - U(118), y, U(118), U(19));
                 PaintWideKey(g, uk, updateState == 3 ? MaterialIcon.Download : MaterialIcon.Refresh, UpdateLabel(), "update", updateState == 2 || updateState == 3);
@@ -707,17 +709,12 @@ namespace TheNorns
                 else
                 {
                     var text = aboutView == "credits" ? CreditsText() : LegalText();
-                    var f = TextFont(text, U(6.6f));
+                    var f = TextFont(text, U(7.2f));
                     using (var b = new SolidBrush(Color.FromArgb(200, 203, 210))) g.DrawString(text, f, b, box);
                 }
                 g.Restore(st2);
             }
 
-            // the version, bottom right
-            var ver = (AppInfo.Name + " " + AppInfo.VersionText).ToUpperInvariant();
-            var vf = NornsFonts.Body(U(5.5f));
-            using (var b = new SolidBrush(Color.FromArgb(80, BodyTheme.Ink)))
-                g.DrawString(ver, vf, b, c.Right - g.MeasureString(ver, vf, 1000, StringFormat.GenericTypographic).Width, c.Bottom - vf.GetHeight(g), StringFormat.GenericTypographic);
         }
 
         // the Material star and a count after it (the spawns of a session), ending at `right`

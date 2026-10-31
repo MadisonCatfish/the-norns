@@ -48,18 +48,19 @@ namespace TheNorns
     static class NornsFonts
     {
         static PrivateFontCollection pfc;
-        static FontFamily orbitron, grotesk;
+        static FontFamily orbitron, grotesk, sc;
         static readonly Dictionary<string, Font> cache = new Dictionary<string, Font>();
 
         static void Init()
         {
             if (pfc != null) return;
             pfc = new PrivateFontCollection();
-            Load("Orbitron.ttf"); Load("NotoSans.ttf");
+            Load("Orbitron.ttf"); Load("NotoSans.ttf"); Load("NotoSansSC-Regular.ttf"); Load("NotoSansSC-Bold.ttf");
             foreach (var f in pfc.Families)
             {
                 if (f.Name.IndexOf("Orbitron", StringComparison.OrdinalIgnoreCase) >= 0) orbitron = f;
-                if (f.Name.IndexOf("Noto", StringComparison.OrdinalIgnoreCase) >= 0) grotesk = f;
+                else if (f.Name == "Noto Sans SC") sc = f;
+                else if (f.Name.IndexOf("Noto", StringComparison.OrdinalIgnoreCase) >= 0) grotesk = f;
             }
         }
 
@@ -94,6 +95,10 @@ namespace TheNorns
         // Init first: the family is read after the fonts are loaded (the very first size asked for used to get Segoe UI)
         public static Font Screen(float px, FontStyle style = FontStyle.Regular) { Init(); return Get(orbitron, "Segoe UI", px, style); }
         public static Font Body(float px, FontStyle style = FontStyle.Regular) { Init(); return Get(grotesk, "Segoe UI", px, style); }
+        // Chinese (owner, 31.10.2026): Noto Sans SC, Regular and Bold, cut to GB2312 and the app's own strings; sized by
+        // MatchSc so its capitals stand as tall as Orbitron's (title) or Noto Sans' (text)
+        public static Font Sc(float px, FontStyle style = FontStyle.Regular) { Init(); return Get(sc, "Microsoft YaHei UI", px, style); }
+        public static float MatchSc(FontStyle style, bool title) { Init(); return sc == null ? Match("Microsoft YaHei UI", style, title) : Ratio(sc, sc.Name, style, title); }
 
         // a Windows font in place of these (Ukrainian, Chinese: they have no Cyrillic or CJK) is sized by this factor, so
         // its capitals stand as tall as Orbitron's (title) or Space Grotesk's (text): the size does not change with the
@@ -104,9 +109,16 @@ namespace TheNorns
             Init();
             var key = family + "|" + style + "|" + title; float r;
             if (match.TryGetValue(key, out r)) return r;
+            try { using (var sys = new FontFamily(family)) return Ratio(sys, family, style, title); }
+            catch { return match[key] = 1; }
+        }
+        static float Ratio(FontFamily sys, string family, FontStyle style, bool title)
+        {
+            var key = family + "|" + style + "|" + title; float r;
+            if (match.TryGetValue(key, out r)) return r;
             var ours = title ? orbitron : grotesk;
             r = 1;
-            try { if (ours != null) using (var sys = new FontFamily(family)) r = CapHeight(ours, FontStyle.Regular) / CapHeight(sys, sys.IsStyleAvailable(style) ? style : FontStyle.Regular); }
+            try { if (ours != null) r = CapHeight(ours, FontStyle.Regular) / CapHeight(sys, sys.IsStyleAvailable(style) ? style : FontStyle.Regular); }
             catch { r = 1; }
             if (float.IsNaN(r) || r < 0.5f || r > 2f) r = 1;
             return match[key] = r;
@@ -418,8 +430,12 @@ namespace TheNorns
             // the tip after a short rest on the key, not at once (owner, 27.10.2026)
             tip.Hide(this);
             var warn = WarnTip(spot);   // Settings -> Carousel: the EVE client's action on a hotkey (EveO.cs)
-            tipText = hn ? L.T("Settings") : hc ? L.T("Close") : warn;
-            tipAt = hn ? new Point((int)NameRect.Left, (int)(NameRect.Bottom + U(4))) : hc ? new Point((int)CloseRect.Left, (int)(CloseRect.Bottom + U(4))) : warn != null ? new Point(e.X - (int)U(60), e.Y + (int)U(12)) : Point.Empty;
+            // the settings' header keys: their page's name under the key (owner, 31.10.2026)
+            string head = spot == "page:stats" ? L.T("Statistics") : spot == "page:about" ? L.T("About") : null;
+            var headKey = head != null ? spots.First(s => s.Item1 == spot).Item2 : RectangleF.Empty;
+            tipText = hn ? L.T("Settings") : hc ? L.T("Close") : head ?? warn;
+            tipAt = hn ? new Point((int)NameRect.Left, (int)(NameRect.Bottom + U(4))) : hc ? new Point((int)CloseRect.Left, (int)(CloseRect.Bottom + U(4)))
+                : head != null ? new Point((int)headKey.Left, (int)(headKey.Bottom + U(4))) : warn != null ? new Point(e.X - (int)U(60), e.Y + (int)U(12)) : Point.Empty;
             tipDue = clock.Elapsed.TotalSeconds + TipDelay;
             Render();
         }
@@ -1315,20 +1331,77 @@ namespace TheNorns
                     PaintIsk(g, new RectangleF(c.Left, y, c.Width, c.Bottom - y));
                 }
 
-                // the glass lights up where the mouse is
+                // where the mouse is, it lights the dirt on the glass, not the display (owner, 31.10.2026)
                 var m = Potato ? null : DemoMouse ?? glare;
-                if (m != null)
-                {
-                    float rr = U(70);
-                    using (var path = new GraphicsPath())
-                    {
-                        path.AddEllipse(m.Value.X - rr, m.Value.Y - rr, 2 * rr, 2 * rr);
-                        using (var pb = new PathGradientBrush(path) { CenterColor = Color.FromArgb(24, 255, 255, 255), SurroundColors = new[] { Color.FromArgb(0, 255, 255, 255) } })
-                            g.FillPath(pb, path);
-                    }
-                }
+                if (m != null) PaintGlassDirt(g, glassR, m.Value);
                 g.Restore(st);
             }
+        }
+
+        // The cursor as a small light just in front of the glass. Clean glass sends its light on and stays black; only what
+        // scatters it shows: the scratches and the streaks a badly washed rag left. res\glass_smudge.png (from Poliigon
+        // ScratchesLight001, tiled, fixed to the glass): R, G the surface normal, B how much the glass scatters there. Each
+        // texel is lit by a diffuse part and a highlight off its normal (Blinn-Phong), over a wide soft falloff
+        static byte[] dirtMap; static int dirtSide;
+        Bitmap dirtLight;
+        void PaintGlassDirt(Graphics g, RectangleF glass, Point m)
+        {
+            if (dirtMap == null)
+            {
+                dirtMap = new byte[0];
+                try
+                {
+                    using (var s = Assembly.GetExecutingAssembly().GetManifestResourceStream("TheNorns.glass_smudge.png"))
+                    using (var src = new Bitmap(s))
+                    {
+                        dirtSide = src.Width;
+                        var bd = src.LockBits(new Rectangle(0, 0, dirtSide, dirtSide), ImageLockMode.ReadOnly, PixelFormat.Format32bppArgb);
+                        dirtMap = new byte[dirtSide * dirtSide * 4];
+                        for (int row = 0; row < dirtSide; row++) Marshal.Copy(bd.Scan0 + row * bd.Stride, dirtMap, row * dirtSide * 4, dirtSide * 4);
+                        src.UnlockBits(bd);
+                    }
+                }
+                catch { dirtMap = new byte[0]; }
+            }
+            if (dirtMap.Length == 0) return;
+            float rad = U(130), height = U(48);
+            int side = (int)Math.Ceiling(2 * rad);
+            if (dirtLight == null || dirtLight.Width != side) { if (dirtLight != null) dirtLight.Dispose(); dirtLight = new Bitmap(side, side, PixelFormat.Format32bppPArgb); }
+            int x0 = (int)(m.X - rad), y0 = (int)(m.Y - rad), gx = (int)glass.Left, gy = (int)glass.Top;
+            var data = dirtLight.LockBits(new Rectangle(0, 0, side, side), ImageLockMode.WriteOnly, PixelFormat.Format32bppPArgb);
+            var line = new int[side];
+            const float Bump = 3f, Gain = 0.28f;
+            for (int j = 0; j < side; j++)
+            {
+                int py = y0 + j; float dy = m.Y - py;
+                int ty = ((py - gy) % dirtSide + dirtSide) % dirtSide;
+                for (int i = 0; i < side; i++)
+                {
+                    int px = x0 + i; float dx = m.X - px;
+                    float d2 = (dx * dx + dy * dy) / (rad * rad);
+                    if (d2 >= 1) { line[i] = 0; continue; }
+                    int k = (ty * dirtSide + ((px - gx) % dirtSide + dirtSide) % dirtSide) * 4;   // BGRA
+                    float dirt = dirtMap[k] / 255f;
+                    if (dirt < 0.02f) { line[i] = 0; continue; }
+                    float nx = (dirtMap[k + 2] / 127.5f - 1) * Bump, ny = (dirtMap[k + 1] / 127.5f - 1) * Bump, nz = 1;
+                    float nl = (float)Math.Sqrt(nx * nx + ny * ny + 1); nx /= nl; ny /= nl; nz /= nl;
+                    float ll = (float)Math.Sqrt(dx * dx + dy * dy + height * height);
+                    float lx = dx / ll, ly = dy / ll, lz = height / ll;
+                    float hz = lz + 1, hl = (float)Math.Sqrt(lx * lx + ly * ly + hz * hz);
+                    float sp = Math.Max(0, (nx * lx + ny * ly + nz * hz) / hl);
+                    sp *= sp; sp *= sp; sp *= sp * sp;   // ^12: a tight highlight on each scratch's flank
+                    float diffuse = Math.Max(0, nx * lx + ny * ly + nz * lz);
+                    float fall = (1 - d2) * (1 - d2);   // wide and soft, no visible edge
+                    float a = dirt * (0.3f * diffuse + 1.4f * sp) * fall * Gain;
+                    if (a > 1) a = 1;
+                    int ai = (int)(a * 255);
+                    // a cool white, premultiplied
+                    line[i] = ai << 24 | (ai * 228 / 255) << 16 | (ai * 234 / 255) << 8 | (ai * 242 / 255);
+                }
+                Marshal.Copy(line, 0, data.Scan0 + j * data.Stride, side);
+            }
+            dirtLight.UnlockBits(data);
+            g.DrawImageUnscaled(dirtLight, x0, y0);
         }
 
         // emissive text: a faint halo, then the glyphs
@@ -1425,8 +1498,8 @@ namespace TheNorns
         static readonly Color SbLineColor = Color.FromArgb(242, 243, 245);   // the smartbomb line: dotted, in the pilots' white (owner, 27.10.2026)
         void PaintDpsOut(Graphics g, RectangleF r, DateTime now)
         {
-            var label = NornsFonts.Screen(U(9));
-            var val = NornsFonts.Screen(U(9));
+            var label = NornsFonts.Screen(U(8.8f));
+            var val = NornsFonts.Screen(U(8.8f));
             double total = stats.Now(null, true, now);
             var state = stateOut;
             var pilots = stats.Pilots;
@@ -1506,8 +1579,8 @@ namespace TheNorns
         void PaintSmartbombs(Graphics g, RectangleF r, DateTime now)
         {
             var reading = stats.Smartbombs(now);
-            sbFx = FormulaBadge(g, "Eff. DPS · Smartbombs", NornsFonts.Screen(U(9)), r.Left, r.Top);
-            Glow(g, reading != null ? Num(reading.Total) : "0", NornsFonts.Screen(U(9)), BodyTheme.Ink, r.Right, r.Top, true);
+            sbFx = FormulaBadge(g, "Eff. DPS · Smartbombs", NornsFonts.Screen(U(8.8f)), r.Left, r.Top);
+            Glow(g, reading != null ? Num(reading.Total) : "0", NornsFonts.Screen(U(8.8f)), BodyTheme.Ink, r.Right, r.Top, true);
             int n = reading != null ? reading.Modules : 7;
             var area = RectangleF.FromLTRB(r.Left, r.Top + U(15), r.Right, r.Bottom);
             float gap = U(4), w = (area.Width - gap * (n - 1)) / n;
@@ -1574,10 +1647,9 @@ namespace TheNorns
 
         public RectangleF IskRect { get; private set; }
 
-        // the version plate on the bottom band (owner, 28.10.2026): the yellow box shows the app's version; while a newer
-        // one is out it blinks slowly in the same yellow. A click opens About
+        // the version plate on the bottom band (owner, 28.10.2026): the box shows the app's version; while a newer one is
+        // out it blinks slowly, its glow in the same accent. A click opens About
         RectangleF updateMark; bool hoverUpdate, downUpdate;
-        static readonly Color PlateYellow = Color.FromArgb(232, 176, 32);
         static string PlateText { get { return AppInfo.Version; } }
         void PaintVersionPlate(Graphics g)
         {
@@ -1587,12 +1659,12 @@ namespace TheNorns
             var f = NornsFonts.Body(V(5));
             float sp = V(0.72f), ty = box.Top + box.Height / 2 - f.GetHeight(g) / 2;
             // a newer version: the settings' accent, blinking every 2.4 s with quick edges and a held light (owner, 28.10.2026)
-            double a = 1; var col = PlateYellow;
+            double a = 1; var col = BodyTheme.Accent;   // the plate in the accent (owner, 31.10.2026)
             if (updateState == 3)
             {
                 double t = DemoSeconds ?? clock.Elapsed.TotalSeconds, c = 0.5 + 0.5 * Math.Cos(t * Math.PI * 2 / 2.4);
                 double e = Math.Max(0, Math.Min(1, (c - 0.25) / 0.5)); e = e * e * (3 - 2 * e);
-                a = 0.15 + 0.85 * e; col = BodyTheme.Accent;
+                a = 0.15 + 0.85 * e;
                 SoftGlow(g, new PointF(box.Left + box.Width / 2, box.Top + box.Height / 2), box.Width * 0.7f, col, (int)(e * 60));
             }
             if (hoverUpdate || ShowHoverUpdate) using (var hb = new SolidBrush(Color.FromArgb(40, col))) g.FillRectangle(hb, box);
@@ -1625,7 +1697,7 @@ namespace TheNorns
             x = Badge(g, stats.Spawns.Count.ToString(CultureInfo.InvariantCulture), bf, x, r.Top, bh, hoverSpawns || ShowHoverSpawns, null, null, MaterialIcon.Star) + U(4);
             spawnChip = RectangleF.FromLTRB(sx, r.Top, x - U(4), r.Top + bh);
             x = Badge(g, FormatIsk(tr.TotalSessionIsk), bf, x, r.Top, bh, true, "Σ") + U(4);
-            Glow(g, FormatIsk(tr.CurrentAnomalyIsk), NornsFonts.Screen(U(9)), BodyTheme.Ink, r.Right, r.Top, true);
+            Glow(g, FormatIsk(tr.CurrentAnomalyIsk), NornsFonts.Screen(U(8.8f)), BodyTheme.Ink, r.Right, r.Top, true);
 
             if (Compact) { PaintIskRow(g, RectangleF.FromLTRB(r.Left, r.Top + bh + U(5), r.Right, r.Bottom)); return; }
             // the heat grid: every bounty tick of the anomaly (all clients), filled column by column, 10 rows

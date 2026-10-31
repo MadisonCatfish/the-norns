@@ -26,10 +26,10 @@ namespace TheNorns
         };
 
         // Orbitron (titles, numbers) is Latin only: Ukrainian titles are drawn in Segoe UI Semibold. The text face, Noto Sans
-        // (owner, 30.10.2026), has Latin and Cyrillic; Chinese is drawn in Microsoft YaHei UI (on every Windows since Vista)
+        // (owner, 30.10.2026), has Latin and Cyrillic; Chinese is drawn in the embedded Noto Sans SC (owner, 31.10.2026)
         public static bool Latin { get { return Code != "uk" && Code != "zh"; } }
         public static bool TextCovered { get { return Code != "zh"; } }
-        public static string SysFamily { get { return Code == "zh" ? "Microsoft YaHei UI" : "Segoe UI"; } }
+        public static string SysFamily { get { return "Segoe UI"; } }   // Ukrainian titles
         public static bool Cyrillic(string s) { return s.Any(ch => ch >= 'Ѐ' && ch <= 'ӿ'); }
         // Chinese: the ideographs, their punctuation and full-width forms (not the kana of ノルン in the credits)
         public static bool Cjk(string s) { return s.Any(ch => ch >= '　' && ch <= '〿' || ch >= '一' && ch <= '鿿' || ch >= '豈' && ch <= '﫿' || ch >= '＀' && ch <= '￯'); }

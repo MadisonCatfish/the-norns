@@ -149,7 +149,7 @@ namespace TheNorns
         {
             // the mode: two lamps, as the languages
             var mt = L.T("Mode");
-            Glow(g, mt, TitleFont(mt, U(6.5f)), Muted, c.Left, y);
+            Glow(g, mt, TitleFont(mt, U(7.2f)), Muted, c.Left, y);
             y += U(11);
             var modes = new[] { new[] { "standard", "Standard" }, new[] { "competition", "Competition" } };
             float colW = c.Width / 3;
@@ -184,7 +184,7 @@ namespace TheNorns
             var inner = RectangleF.Inflate(box, -U(7), -U(6));
             float yy = inner.Top;
             var rt = L.T("Runner");
-            var rtf = TitleFont(rt, U(6.5f));
+            var rtf = TitleFont(rt, U(7.2f));
             Glow(g, rt, rtf, BodyTheme.Ink, inner.Left, yy);
             HelpKey(g, inner.Left + g.MeasureString(rt.ToUpperInvariant(), rtf, 1000, StringFormat.GenericTypographic).Width + U(5), yy + (rtf.GetHeight(g) - U(11)) / 2, "help:runner");
             yy += U(13);
@@ -199,7 +199,7 @@ namespace TheNorns
             NumberField(g, new RectangleF(fx, yy, 2 * fw4 + gap, fh), "repair", RunnerRepair, "hp/s", null, Color.Empty);
             yy += fh + U(10);
             var vt = L.T("Vorton · damage caused per ship (average)");
-            Glow(g, vt, TitleFont(vt, U(6.5f)), BodyTheme.Ink, inner.Left, yy);
+            Glow(g, vt, TitleFont(vt, U(7.2f)), BodyTheme.Ink, inner.Left, yy);
             yy += U(13);
             RowLabel(g, L.T("One shot"), inner.Left, yy, fh);
             NumberField(g, new RectangleF(fx, yy, 2 * fw4 + gap, fh), "shot0", VortonShot[0], "HP", DamageIcon(Dmg.EM), DamageColor(Dmg.EM));

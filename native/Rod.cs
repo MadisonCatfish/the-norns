@@ -114,8 +114,8 @@ namespace TheNorns
         {
             if (rodDemoNext != DateTime.MaxValue) FeedRodDemo();
             double shot = VortonShot[0] + VortonShot[1];
-            sbFx = FormulaBadge(g, "Eff. DPS · Lightning rod", NornsFonts.Screen(U(9)), r.Left, r.Top);
-            var big = NornsFonts.Screen(U(9));
+            sbFx = FormulaBadge(g, "Eff. DPS · Lightning rod", NornsFonts.Screen(U(8.8f)), r.Left, r.Top);
+            var big = NornsFonts.Screen(U(8.8f));
             Glow(g, Num(stats.RodDps(now, shot)), big, BodyTheme.Ink, r.Right, r.Top, true);
             // what the runner takes against its repair, small under the number
             double takes = stats.RunnerVortonTaken(now) + stats.RunnerNpcTaken(now);

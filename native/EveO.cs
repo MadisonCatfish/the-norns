@@ -246,7 +246,7 @@ namespace TheNorns
                     using (var pen = new Pen(cur ? BodyTheme.Accent : Color.FromArgb(50, BodyTheme.Ink), 1f)) g.DrawPath(pen, p);
                 }
                 var lab = L.T(side == "left" ? "Left" : side == "top" ? "Top" : "Right");
-                var lf = TextFont(lab, U(6.6f));
+                var lf = TextFont(lab, U(7.2f));
                 var ls = g.MeasureString(lab, lf, 1000, StringFormat.GenericTypographic);
                 using (var b = new SolidBrush(cur ? BodyTheme.Accent : BodyTheme.Ink)) g.DrawString(lab, lf, b, br.Left + (br.Width - ls.Width) / 2, br.Top + (br.Height - ls.Height) / 2, StringFormat.GenericTypographic);
                 spots.Add(Tuple.Create(id, br));
@@ -255,7 +255,7 @@ namespace TheNorns
 
             // the hotkeys: a label and a key-like field each
             var ht = L.T("Hotkeys");
-            Glow(g, ht, TitleFont(ht, U(6.5f)), Muted, c.Left, y);
+            Glow(g, ht, TitleFont(ht, U(7.2f)), Muted, c.Left, y);
             y += U(11);
             float labelW = U(70), fh = U(15);
             foreach (var row in new[] { new[] { "fleet_next", "Next client" }, new[] { "fleet_prev", "Previous client" } })
@@ -269,7 +269,7 @@ namespace TheNorns
             }
             y += U(3);
             var hint = L.T("Click a field and press the keys. Backspace clears it, Esc leaves it as it was. A key another program already holds can't be used.");
-            var hf = TextFont(hint, U(6.6f));
+            var hf = TextFont(hint, U(7.2f));
             var hh = g.MeasureString(hint, hf, (int)c.Width).Height;
             using (var b = new SolidBrush(Color.FromArgb(150, BodyTheme.Ink))) g.DrawString(hint, hf, b, new RectangleF(c.Left, y, c.Width, hh + U(2)));
             y += hh + U(12);
@@ -305,7 +305,7 @@ namespace TheNorns
         {
             var order = ClientOrder();
             var ct = L.T("Clients");
-            var ctf = TitleFont(ct, U(6.5f));
+            var ctf = TitleFont(ct, U(7.2f));
             Glow(g, ct, ctf, Muted, c.Left, y);
             if (order.Count > 0)
             {
@@ -344,7 +344,7 @@ namespace TheNorns
             }
             y = box.Bottom + U(5);
             var hint = L.T("Drag a row to change the switching order. The pin keeps a client open when the others are minimized.");
-            var hf = TextFont(hint, U(6.6f));
+            var hf = TextFont(hint, U(7.2f));
             var hh = g.MeasureString(hint, hf, (int)c.Width).Height;
             using (var b = new SolidBrush(Color.FromArgb(150, BodyTheme.Ink))) g.DrawString(hint, hf, b, new RectangleF(c.Left, y, c.Width, hh + U(2)));
             return y + hh + U(4);
@@ -391,7 +391,7 @@ namespace TheNorns
             else
             {
                 var t = L.T("offline");
-                var tf = TextFont(t, U(6));
+                var tf = TextFont(t, U(6.4f));
                 float tw = g.MeasureString(t, tf, 1000, StringFormat.GenericTypographic).Width;
                 using (var b = new SolidBrush(Color.FromArgb(100, BodyTheme.Ink))) g.DrawString(t, tf, b, rr.Right - U(5) - tw, cy - tf.GetHeight(g) / 2, StringFormat.GenericTypographic);
             }
@@ -445,7 +445,7 @@ namespace TheNorns
             if (note != null)
             {
                 float tw = g.MeasureString(text, f, 10000, StringFormat.GenericTypographic).Width;
-                var nf = TextFont(note, U(6));
+                var nf = TextFont(note, U(6.4f));
                 using (var b = new SolidBrush(Color.FromArgb(120, BodyTheme.Ink))) g.DrawString(note, nf, b, lx + dd + U(6) + tw + U(4), ly - nf.GetHeight(g) / 2 + U(0.5f), StringFormat.GenericTypographic);
             }
             spots.Add(Tuple.Create(id, r));
@@ -509,7 +509,7 @@ namespace TheNorns
             if (bad)
             {
                 var t = L.T("taken");
-                var f = TextFont(t, U(6));
+                var f = TextFont(t, U(6.4f));
                 float tw = g.MeasureString(t, f, 1000, StringFormat.GenericTypographic).Width;
                 using (var b = new SolidBrush(AlarmRed)) g.DrawString(t, f, b, r.Right - U(5) - tw, r.Top + (r.Height - f.GetHeight(g)) / 2, StringFormat.GenericTypographic);
             }
