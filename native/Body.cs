@@ -2083,6 +2083,13 @@ namespace TheNorns
                     f.DemoKeys = new Dictionary<string, string[]> { { "fleet_next", new[] { "Control+2" } }, { "fleet_prev", new string[0] } };
                     FleetOn = false; f.DemoSettings(true, null, false, "eveo"); save(f, "dps_settings_eveo_off.png");
                     FleetOn = true; f.DemoSettings(true, null, false, "eveo"); save(f, "dps_settings_eveo.png");
+                    // every tab can be clicked from Carousel, the hotkey warning shown (owner, 31.10.2026: Data could not)
+                    foreach (var pg in Pages)
+                    {
+                        var ts = f.spots.FirstOrDefault(s => s.Item1 == "page:" + pg[0]);
+                        var at = ts == null ? Point.Empty : new Point((int)(ts.Item2.Left + ts.Item2.Width / 2), (int)(ts.Item2.Top + ts.Item2.Height / 2));
+                        sb.AppendLine("carousel: tab " + pg[0] + (ts != null && f.SpotAt(at) == ts.Item1 ? " clickable" : " NOT clickable"));
+                    }
                     FleetPreview = false; save(f, "dps_settings_eveo_nopreview.png"); FleetPreview = true;
                     f.keyCapture = "fleet_prev"; save(f, "dps_settings_eveo_capture.png"); f.keyCapture = null;
                     f.DemoKeys["fleet_prev"] = new[] { "2" }; f.DemoKeyState = new Dictionary<string, string> { { "fleet_prev", "taken" } };

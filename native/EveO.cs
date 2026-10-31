@@ -266,7 +266,12 @@ namespace TheNorns
                 // a key the EVE client has by default: the band's warning triangle inside the field at its right end, no
                 // frame (owner, 31.10.2026), its action as a tip
                 if (keyCapture != row[0] && KeysOf(row[0]).Any(k => EveKeys.Action(k) != null))
+                {
+                    // the field's own spot stops short of the icon, so the icon gives the tip, not the capture
+                    int fs = spots.FindLastIndex(sp => sp.Item1 == "eveo:key:" + row[0]);
+                    if (fs >= 0) spots[fs] = Tuple.Create(spots[fs].Item1, RectangleF.FromLTRB(kf.Left, kf.Top, kf.Right - U(15), kf.Bottom));
                     WarnBadge(g, kf, "eveo:warn:" + row[0]);
+                }
                 y += fh + U(6);
             }
             y += U(3);
@@ -460,7 +465,7 @@ namespace TheNorns
             bool hot = hotSpot == id;
             if (hot) SoftGlow(g, new PointF(r.Left + r.Width / 2, r.Top + r.Height / 2), U(7), BodyTheme.Accent, 70);
             WarnTriangle(g, r.Left + r.Width / 2, r.Top + r.Height / 2 + U(0.3f), U(0.95f), BodyTheme.Accent);
-            spots.Insert(0, Tuple.Create(id, r));   // over the field's own spot: the tip, not the capture
+            spots.Add(Tuple.Create(id, r));
         }
 
         // the tip over the warning: what the EVE client does on those keys
