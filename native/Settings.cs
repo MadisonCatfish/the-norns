@@ -77,6 +77,7 @@ namespace TheNorns
             if (ActivateMode(id)) return;
             if (ActivateEveO(id)) return;
             if (id == "back") { ToggleSettings(); return; }
+            if (id == "stats:calendar") { OpenCalendar(); return; }
             if (id == "logs") { OpenGameLogs(); return; }
             if (id == "dir:select")
             {
@@ -270,6 +271,7 @@ namespace TheNorns
             base.OnMouseWheel(e);
             if (fleet != null && !Compact && PowerRect.Contains(e.Location)) { fleet.Wheel(e.Delta); return; }   // the client module: the wheel flips clients
             if (ScrollEveO(e.Location, e.Delta)) { Render(); return; }   // Settings -> Carousel scrolls (EveO.cs)
+            if (ScrollStats(e.Location, e.Delta)) { Render(); return; }  // the Statistics list (Statistics.cs)
             if (settingsOpen && tabRow.Contains(e.Location)) { ScrollTabs(-Math.Sign(e.Delta)); Render(); return; }   // the wheel over the tabs scrolls them
             if (!settingsOpen || page != "about" || aboutView != "news") return;
             newsScroll = Math.Max(0, Math.Min(Math.Max(0, newsHeight - newsBox), newsScroll - Math.Sign(e.Delta) * U(24)));
@@ -393,12 +395,12 @@ namespace TheNorns
             if (!sysFonts.TryGetValue(key, out f)) sysFonts[key] = f = new Font(family, px, style, GraphicsUnit.Pixel);
             return f;
         }
-        Font TitleFont(string text, float px)
+        internal static Font TitleFont(string text, float px)
         {
             return L.Cjk(text) ? NornsFonts.Sc(px * NornsFonts.MatchSc(FontStyle.Bold, true), FontStyle.Bold)
                 : L.Cyrillic(text) ? Sys("Segoe UI Semibold", px * NornsFonts.Match("Segoe UI Semibold", FontStyle.Regular, true)) : NornsFonts.Screen(px);
         }
-        Font TextFont(string text, float px)
+        internal static Font TextFont(string text, float px)
         {
             return L.Cjk(text) ? NornsFonts.Sc(px * NornsFonts.MatchSc(FontStyle.Regular, false))
                 : NornsFonts.Body(px);   // Noto Sans has Cyrillic
@@ -425,15 +427,7 @@ namespace TheNorns
                 string hp = hk == 0 ? "about" : "stats", hid = "page:" + hp;
                 // 2 px further from the close key (owner, 31.10.2026): 6.6 u at the 125 % size
                 var kr = new RectangleF(back.Left - U(6.6f) - (hk + 1) * U(15) - hk * U(3), c.Top - U(2), U(15), U(15));
-                bool on = page == hp, hot = hotSpot == hid;
-                using (var p = Round(kr, 5))
-                {
-                    using (var b = new SolidBrush(on ? Color.FromArgb(40, BodyTheme.Accent) : hot ? Color.FromArgb(26, BodyTheme.Ink) : Color.FromArgb(12, BodyTheme.Ink))) g.FillPath(b, p);
-                    using (var pen = new Pen(on ? BodyTheme.Accent : Color.FromArgb(50, BodyTheme.Ink), 1f)) g.DrawPath(pen, p);
-                }
-                float hic = U(9);
-                using (var b = new SolidBrush(on ? BodyTheme.Accent : BodyTheme.Ink)) MaterialIcon.Draw(g, hk == 0 ? MaterialIcon.Info : MaterialIcon.BarChart, new RectangleF(kr.Left + (kr.Width - hic) / 2, kr.Top + (kr.Height - hic) / 2, hic, hic), b);
-                spots.Add(Tuple.Create(hid, kr));
+                SquareKey(g, kr, hk == 0 ? MaterialIcon.Info : MaterialIcon.BarChart, false, hid, page == hp);
             }
             float y = c.Top + Math.Max(th, U(13)) + U(6);
             line(y); y += U(7);
@@ -646,45 +640,7 @@ namespace TheNorns
                 y += U(23);
                 PaintWideKey(g, new RectangleF(c.Left, y, c.Width, U(19)), MaterialIcon.Refresh, resetShown ? L.T("Anomaly counter reset") : L.T("Reset anomaly counter"), "reset", resetShown);
             }
-            else if (page == "stats")
-            {
-                // this session and the ones before: when, how long, sites done, ISK
-                if (sessions == null) sessions = ReadSessions();
-                var all = new List<SessionInfo> { CurrentSession() };
-                all.AddRange(sessions);
-                long isk = all.Sum(x => x.Isk); int sites = all.Sum(x => x.Sites), spawns = all.Sum(x => x.Spawns);
-                var tt = L.T("All sessions");
-                Glow(g, tt, TitleFont(tt, U(7.2f)), Muted, c.Left, y);
-                var tv = sites + " " + L.T("anom") + "  ·  " + FormatIsk(isk);
-                var vf2 = NornsFonts.Screen(U(6.5f));
-                float tvx = c.Right - g.MeasureString(tv.ToUpperInvariant(), vf2, 1000, StringFormat.GenericTypographic).Width;
-                using (var b = new SolidBrush(BodyTheme.Accent)) g.DrawString(tv.ToUpperInvariant(), vf2, b, tvx, y, StringFormat.GenericTypographic);
-                StarCount(g, spawns, vf2, BodyTheme.Accent, tvx - U(8), y);
-                y += U(12);
-                line(y); y += U(5);
-                var rf2 = NornsFonts.Body(U(7));
-                float rowH = U(15);
-                for (int k = 0; k < all.Count && y + rowH < c.Bottom - U(10); k++)
-                {
-                    var x = all[k];
-                    bool now = k == 0;
-                    var when = now ? L.T("This session") : x.Start.ToString("dd.MM HH:mm", CultureInfo.InvariantCulture);
-                    var dur = x.End - x.Start;
-                    var mid = (int)dur.TotalHours + ":" + dur.Minutes.ToString("00") + "  ·  " + x.Sites + " " + L.T("anom");
-                    using (var b = new SolidBrush(now ? BodyTheme.Ink : Color.FromArgb(190, 193, 200)))
-                    {
-                        g.DrawString(when, TextFont(when, U(7)), b, c.Left, y, StringFormat.GenericTypographic);
-                        g.DrawString(mid, TextFont(mid, U(7)), b, c.Left + c.Width * 0.36f, y, StringFormat.GenericTypographic);
-                    }
-                    var iv = FormatIsk(x.Isk).ToUpperInvariant();
-                    float ivx = c.Right - g.MeasureString(iv, vf2, 1000, StringFormat.GenericTypographic).Width;
-                    using (var b = new SolidBrush(now ? BodyTheme.Accent : BodyTheme.Ink)) g.DrawString(iv, vf2, b, ivx, y + U(0.5f), StringFormat.GenericTypographic);
-                    StarCount(g, x.Spawns, vf2, x.Spawns > 0 ? BodyTheme.Ink : Color.FromArgb(90, BodyTheme.Ink), c.Right - U(62), y + U(0.5f));
-                    y += rowH;
-                }
-                if (all.Count == 1 && all[0].Sites == 0)
-                    using (var b = new SolidBrush(Color.FromArgb(110, BodyTheme.Ink))) { var e2 = L.T("No sites done yet. Every session is kept here from now on."); g.DrawString(e2, TextFont(e2, U(7.2f)), b, new RectangleF(c.Left, y, c.Width, U(30))); }
-            }
+            else if (page == "stats") PaintStats(g, c, y, line);
             else
             {
                 // about: name and version, the update check, then one of: what's new / credits / legal (keys at the bottom)
@@ -718,25 +674,21 @@ namespace TheNorns
         }
 
         // the Material star and a count after it (the spawns of a session), ending at `right`
-        void StarCount(Graphics g, int n, Font f, Color c, float right, float y)
-        {
-            float h = f.GetHeight(g), ic = U(7.5f);
-            float x = right - ic - U(2) - g.MeasureString(n.ToString(CultureInfo.InvariantCulture), f, 1000, StringFormat.GenericTypographic).Width;
-            using (var b = new SolidBrush(c))
-            {
-                MaterialIcon.Draw(g, MaterialIcon.Star, new RectangleF(x, y + (h - ic) / 2 - U(0.5f), ic, ic), b);
-                g.DrawString(n.ToString(CultureInfo.InvariantCulture), f, b, x + ic + U(2), y, StringFormat.GenericTypographic);
-            }
-        }
 
         // a full-width key on the screen: a dark key face, the icon and the label; lit = the action just happened
         void PaintWideKey(Graphics g, RectangleF r, string icon, string label, string id, bool lit)
         {
-            bool hot = hotSpot == id, down = downSpot == id;
-            using (var rim = Round(r, 5)) using (var b = new SolidBrush(BodyTheme.KeyRim)) g.FillPath(b, rim);
+            WideKey(g, r, icon, label, lit, hotSpot == id, downSpot == id);
+            spots.Add(Tuple.Create(id, r));
+        }
+        // the same key drawn anywhere (the calendar card)
+        internal static void WideKey(Graphics g, RectangleF r, string icon, string label, bool lit, bool hot, bool down)
+        {
+            Func<float, float> U = v => v * Theme.K * UiScale;
+            using (var rim = Theme.Round(r, U(5 * 0.6f), 0.6f)) using (var b = new SolidBrush(BodyTheme.KeyRim)) g.FillPath(b, rim);
             var face = RectangleF.Inflate(r, -U(1), -U(1));
             if (down) face.Offset(0, U(0.5f));
-            using (var fp = Round(face, 4.5f))
+            using (var fp = Theme.Round(face, U(4.5f * 0.6f), 0.6f))
             {
                 Color top = hot ? Color.FromArgb(54, 56, 61) : BodyTheme.KeyTop, bottom = hot ? Color.FromArgb(32, 34, 38) : BodyTheme.KeyBottom;
                 if (down) { top = Color.FromArgb(24, 25, 28); bottom = Color.FromArgb(34, 35, 39); }
@@ -753,7 +705,21 @@ namespace TheNorns
             using (var tb = new SolidBrush(lit ? BodyTheme.Accent : hot ? BodyTheme.Ink : Color.FromArgb(200, 203, 210)))
                 g.DrawString(label, f, tb, new RectangleF(ir.Right + U(6), face.Top + (face.Height - f.GetHeight(g)) / 2, face.Right - ir.Right - U(12), f.GetHeight(g) + U(1)),
                     new StringFormat(StringFormat.GenericTypographic) { Trimming = StringTrimming.EllipsisCharacter, FormatFlags = StringFormatFlags.NoWrap });
-            spots.Add(Tuple.Create(id, r));
+        }
+
+        // a square key with an icon (the settings' header, the calendar on Statistics); on: lit in the accent
+        void SquareKey(Graphics g, RectangleF kr, string icon, bool symbol, string id, bool on)
+        {
+            bool hot = hotSpot == id;
+            using (var p = Round(kr, 5))
+            {
+                using (var b = new SolidBrush(on ? Color.FromArgb(40, BodyTheme.Accent) : hot ? Color.FromArgb(26, BodyTheme.Ink) : Color.FromArgb(12, BodyTheme.Ink))) g.FillPath(b, p);
+                using (var pen = new Pen(on ? BodyTheme.Accent : Color.FromArgb(50, BodyTheme.Ink), 1f)) g.DrawPath(pen, p);
+            }
+            float hic = U(9);
+            var ir = new RectangleF(kr.Left + (kr.Width - hic) / 2, kr.Top + (kr.Height - hic) / 2, hic, hic);
+            using (var b = new SolidBrush(on ? BodyTheme.Accent : BodyTheme.Ink)) { if (symbol) MaterialIcon.DrawSymbol(g, icon, ir, b); else MaterialIcon.Draw(g, icon, ir, b); }
+            spots.Add(Tuple.Create(id, kr));
         }
     }
 }

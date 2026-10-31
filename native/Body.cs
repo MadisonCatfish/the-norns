@@ -502,7 +502,8 @@ namespace TheNorns
             tip.Hide(this);
             var warn = WarnTip(spot);   // Settings -> Carousel: the EVE client's action on a hotkey (EveO.cs)
             // the settings' header keys: their page's name under the key (owner, 31.10.2026)
-            string head = spot == "page:stats" ? L.T("Statistics") : spot == "page:about" ? L.T("About") : null;
+            string head = spot == "page:stats" ? L.T("Statistics") : spot == "page:about" ? L.T("About") : spot == "stats:calendar" ? L.T("Calendar")
+                : spot == "stats:titans" ? L.T("Titans") : spot == "stats:dreads" ? L.T("Pirate dreadnoughts") : null;
             var headKey = head != null ? spots.First(s => s.Item1 == spot).Item2 : RectangleF.Empty;
             tipText = hn ? L.T("Settings") : hc ? L.T("Close") : head ?? warn;
             tipAt = hn ? new Point((int)NameRect.Left, (int)(NameRect.Bottom + U(4))) : hc ? new Point((int)CloseRect.Left, (int)(CloseRect.Bottom + U(4)))
@@ -2115,9 +2116,18 @@ namespace TheNorns
                 {
                     new SessionInfo { Start = now.AddDays(-1).AddHours(-3), End = now.AddDays(-1), Sites = 14, Isk = 1840000000, Spawns = 5 },
                     new SessionInfo { Start = now.AddDays(-2).AddHours(-2), End = now.AddDays(-2).AddMinutes(-20), Sites = 9, Isk = 1120000000, Spawns = 4 },
-                    new SessionInfo { Start = now.AddDays(-4).AddHours(-1), End = now.AddDays(-4), Sites = 5, Isk = 610000000 },
+                    new SessionInfo { Start = now.AddDays(-4).AddHours(-1), End = now.AddDays(-4), Sites = 5, Isk = 610000000, Titans = 1 },
                 };
-                f.DemoSettings(true, null, false, "stats"); save(f, "dps_settings_stats.png"); f.DemoSessions = null;
+                // a long history: the list scrolls; titans and dreadnoughts in their columns
+                for (int k = 5; k < 40; k += 2)
+                    f.DemoSessions.Add(new SessionInfo { Start = now.Date.AddDays(-k).AddHours(19), End = now.Date.AddDays(-k).AddHours(20.5), Sites = 3 + k % 7, Isk = 90000000L * (3 + k % 7), Spawns = k % 5 == 0 ? 1 : 0, Titans = k % 11 == 0 ? 1 : 0, Dreads = k % 9 == 0 ? 1 : 0 });
+                f.DemoSettings(true, null, false, "stats"); save(f, "dps_settings_stats.png");
+                f.statsScroll = 1000; save(f, "dps_settings_stats_scrolled.png"); f.statsScroll = 0;
+                f.DemoStatFrom = now.Date.AddDays(-9); f.DemoStatTo = now.Date.AddDays(-2); save(f, "dps_settings_stats_period.png");
+                using (var b = f.Draw()) FormulaWindow.SaveDemo(b, f.CalendarCard(), 1, Path.Combine(dir, "dps_stats_calendar.png"));
+                f.DemoStatFrom = f.DemoStatTo = null; f.statFrom = f.statTo = null;
+                using (var b = f.Draw()) FormulaWindow.SaveDemo(b, f.CalendarCard(), 1, Path.Combine(dir, "dps_stats_calendar_all.png"));
+                f.DemoSessions = null;
                 f.DemoSettings(true, "page:about", false, "display"); save(f, "dps_settings_display.png");
                 f.DemoSettings(true, "page:general", false, "about"); save(f, "dps_settings_about.png");
                 f.DemoAboutView = "credits"; save(f, "dps_settings_about_credits.png");

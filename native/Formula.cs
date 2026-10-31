@@ -20,6 +20,16 @@ namespace TheNorns
         public float Height = 0.85f;   // the card's height against the main window's
         // a long text scrolls with the wheel at full size instead of shrinking to fit; "# " starts a section heading
         public bool Scroll;
+        public string Icon;            // a Material Icons path in place of the function symbol
+        public ICardContent Content;   // drawn below the title line in place of the text (the calendar)
+    }
+
+    // what a card can show instead of its text: painted into the card's area (card px), with the mouse over it; a click
+    // returns true when it changed something
+    interface ICardContent
+    {
+        void Paint(Graphics g, RectangleF area, PointF? hover);
+        bool Click(PointF p);
     }
 
     class FormulaWindow : Form
@@ -118,20 +128,24 @@ namespace TheNorns
         }
         // the mouse on the card's glass, card px: it lights the dirt there as on the body's screen (owner, 31.10.2026)
         PointF? lightAt;
+        PointF? hoverAt;   // a card with content: the mouse over it, card px
         protected override void OnMouseMove(MouseEventArgs e)
         {
             base.OnMouseMove(e);
             var p = new PointF(e.X - Margin, e.Y - Margin);
             lightAt = !DpsForm.Potato && GlassIn(cardPx).Contains(p) ? (PointF?)p : null;
             bool h = CloseRect.Contains(e.Location);
-            if (h != hoverClose) { hoverClose = h; Redraw(); } else Render();
+            if (text.Content != null) { hoverAt = p; hoverClose = h; Redraw(); }
+            else if (h != hoverClose) { hoverClose = h; Redraw(); } else Render();
         }
-        protected override void OnMouseLeave(EventArgs e) { base.OnMouseLeave(e); lightAt = null; if (hoverClose || downClose) { hoverClose = downClose = false; Redraw(); } else Render(); }
+        protected override void OnMouseLeave(EventArgs e) { base.OnMouseLeave(e); lightAt = null; hoverAt = null; if (hoverClose || downClose || text.Content != null) { hoverClose = downClose = false; Redraw(); } else Render(); }
         protected override void OnMouseDown(MouseEventArgs e) { base.OnMouseDown(e); if (e.Button == MouseButtons.Left && CloseRect.Contains(e.Location)) { downClose = true; Redraw(); } }
         protected override void OnMouseUp(MouseEventArgs e)
         {
             base.OnMouseUp(e);
-            bool was = downClose; downClose = false; Redraw();
+            bool was = downClose; downClose = false;
+            if (!was && e.Button == MouseButtons.Left && text.Content != null) text.Content.Click(new PointF(e.X - Margin, e.Y - Margin));
+            Redraw();
             if (was && e.Button == MouseButtons.Left && CloseRect.Contains(e.Location)) Close();
         }
         void Redraw() { if (card != null) { card.Dispose(); card = null; } Render(); }
@@ -157,7 +171,7 @@ namespace TheNorns
                 p = Math.Min(1, t / OpenSecs);
                 if (p >= 1) timer.Stop();
             }
-            if (card == null) card = DrawCard(cardPx, text, hoverClose, downClose, scroll, out maxScroll);
+            if (card == null) card = DrawCard(cardPx, text, hoverClose, downClose, scroll, out maxScroll, hoverAt);
             using (var lit = Lit(card, lightAt))
             using (var bmp = Frame(lit ?? card, Size, Ease(p))) AppChrome.PresentLayered(this, bmp);
         }
@@ -277,7 +291,7 @@ namespace TheNorns
 
         // the card: a thin rim of the hull around a black OLED glass; the title in Orbitron caps, the text in Noto Sans
         // (a Windows font in Ukrainian and Chinese - the embedded fonts have no Cyrillic or CJK), made smaller until it fits
-        static Bitmap DrawCard(Size size, FormulaText text, bool hoverClose, bool downClose, float scroll, out float maxScroll)
+        static Bitmap DrawCard(Size size, FormulaText text, bool hoverClose, bool downClose, float scroll, out float maxScroll, PointF? hover = null)
         {
             maxScroll = 0;
             var bmp = new Bitmap(size.Width, size.Height, PixelFormat.Format32bppArgb);
@@ -310,14 +324,16 @@ namespace TheNorns
 
                 // title: the function symbol in the accent, then the section's name
                 float pad = U(12), x = glass.Left + pad, ty = close.Top + close.Height / 2;
-                var tf = NornsFonts.Screen(U(8.8f));
+                var title = L.T(text.Title);
+                var tf = DpsForm.TitleFont(title, U(8.8f));   // Orbitron; a Windows or the embedded SC face where it has no glyphs
                 var ir = new RectangleF(x, ty - U(5.5f), U(11), U(11));
-                using (var ab = new SolidBrush(BodyTheme.Accent)) MaterialIcon.DrawSymbol(g, MaterialIcon.Function, ir, ab);
+                using (var ab = new SolidBrush(BodyTheme.Accent)) { if (text.Icon != null) MaterialIcon.Draw(g, text.Icon, ir, ab); else MaterialIcon.DrawSymbol(g, MaterialIcon.Function, ir, ab); }
                 using (var tb = new SolidBrush(BodyTheme.Ink))
-                    g.DrawString(text.Title.ToUpperInvariant(), tf, tb, new RectangleF(ir.Right + U(6), ty - tf.GetHeight(g) / 2, close.Left - ir.Right - U(12), tf.GetHeight(g) + U(2)),
+                    g.DrawString(title.ToUpperInvariant(), tf, tb, new RectangleF(ir.Right + U(6), ty - tf.GetHeight(g) / 2, close.Left - ir.Right - U(12), tf.GetHeight(g) + U(2)),
                         new StringFormat(StringFormat.GenericTypographic) { Trimming = StringTrimming.EllipsisCharacter, FormatFlags = StringFormatFlags.NoWrap });
                 float lineY = close.Bottom + U(8);
                 using (var pen = new Pen(Color.FromArgb(34, BodyTheme.Ink), 1f)) g.DrawLine(pen, x, lineY, glass.Right - pad, lineY);
+                if (text.Content != null) { text.Content.Paint(g, RectangleF.FromLTRB(x, lineY + U(9), glass.Right - pad, glass.Bottom - pad), hover); return bmp; }
 
                 // the text: the first paragraph brighter and larger (what it is), the rest as plain paragraphs. Translated as
                 // a whole, or paragraph by paragraph when only those are in the language file
