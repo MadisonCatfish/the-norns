@@ -178,7 +178,7 @@ namespace TheNorns
                 using (var b = new SolidBrush(now ? BodyTheme.Ink : Color.FromArgb(190, 193, 200)))
                 {
                     g.DrawString(when, TextFont(when, U(7)), b, c.Left, ry, StringFormat.GenericTypographic);
-                    g.DrawString(mid, TextFont(mid, U(7)), b, c.Left + c.Width * 0.3f, ry, StringFormat.GenericTypographic);
+                    g.DrawString(mid, TextFont(mid, U(7)), b, c.Left + c.Width * 0.25f, ry, StringFormat.GenericTypographic);
                 }
                 var iv = FormatIsk(x.Isk).ToUpperInvariant();
                 float ivx = right - g.MeasureString(iv, vf, 1000, StringFormat.GenericTypographic).Width;

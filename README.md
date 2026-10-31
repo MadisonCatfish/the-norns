@@ -15,6 +15,7 @@ It runs 100% locally on your PC: no cloud, no account, no telemetry. It only **r
 - It never sends anything to the game: no key presses, no clicks, no screen capture / OCR.
 - It does not read game memory, network traffic or cache files.
 - It does not modify the EVE client or its settings.
+- Carousel (off by default) only brings the EVE window you pick to the front, as clicking it on the taskbar would, and can minimize the one you leave; its live picture is the window thumbnail Windows itself draws (as in Alt+Tab).
 - The only network request is the update check (the GitHub Releases API): at start and when you press it. It can be turned off in Settings → General.
 
 ---
@@ -61,7 +62,8 @@ Whether you are just training skills for your Skybreakers / Stormbringers or fin
 - The version plate on the bottom band blinks when a newer release is out; a click opens About → Download.
 - **Compact mode:** a shorter body for many-client screens — no power display or printed band, and the ISK grid folded into one row of column averages.
 - **Potato mode:** 5 fps, no glow or shimmer, a plain hull: about 3.5 % of one CPU core instead of about 30 %.
-- Click the **ノルン** badge to open in-place settings: UI scaling (100% / 125% / 150%), log directory detection, session history, and update checks.
+- Click the **ノルン** badge to open in-place settings: UI scaling (100% / 125% / 150%), log directory detection, and update checks.
+- **Statistics** (a key in the settings' header): every session with its sites, rare spawns, titans, dreadnoughts and ISK, kept on your PC across updates; a calendar picks a day or a period.
 
 ### 7. Competition Mode
 - For several fleet packs in one system: the anchor is a fast frigate runner instead of a smartbombing battleship. The Thunderchilds' Vorton projectors hit the runner and the lightning arcs on to the NPCs.
@@ -72,30 +74,35 @@ Whether you are just training skills for your Skybreakers / Stormbringers or fin
   <img src="https://github.com/user-attachments/assets/856bd071-d10b-4311-bebe-8cb03a0e5fcc" width="640" alt="The Norns — Competition mode in a site: Vorton lightning through the runner and the Lightning rod ECG" />
 </p>
 
-### 8. Multi-Language Support
-Available in 6 languages, auto-detected or selectable:
+### 8. Carousel
+- Off by default (Settings → Carousel). The active EVE window's live picture on the power display, with its character's name.
+- Next / previous hotkeys, the wheel over the power display, or a click on the client squares beside the body.
+- The order is set by dragging rows in the clients table; the window you leave can be minimized, and a pin keeps one open.
+
+### 9. Multi-Language Support
+Available in 7 languages, auto-detected or selectable:
 - English
 - Ukrainian (Українська)
 - Spanish (Español)
 - German (Deutsch)
 - Italian (Italiano)
 - French (Français)
+- Chinese, Simplified (简体中文)
 
 ---
 
 ## Planned Features (Roadmap)
 
 - **Classic Mode:** For players dedicated to 2010-era pure smartbombing battleship fleets (Machariel, Praxis, Rokh without EDENCOM).
-- **Chinese (中文) Localization.**
 - **Customizable UI Themes:** Player-selectable colorways and skins.
 
 ---
 
 ## Install
 
-Run `TheNorns-Setup-1.4.0.exe`. It installs for your Windows user profile, requires no administrator privileges, and can be cleanly uninstalled from Windows Settings → Apps. 
+Run `TheNorns-Setup-1.5.0.exe`. It installs for your Windows user profile, requires no administrator privileges, and can be cleanly uninstalled from Windows Settings → Apps. 
 
-Alternatively, extract `TheNorns-1.4.0-portable.zip` and run `TheNorns.exe` directly.
+Alternatively, extract `TheNorns-1.5.0-portable.zip` and run `TheNorns.exe` directly.
 
 Your settings and session statistics are stored in `%LOCALAPPDATA%\The Norns`.
 
@@ -110,7 +117,7 @@ powershell -ExecutionPolicy Bypass -File native\build.ps1 -Out <folder> -Setup  
 
 The release files are built the same way by GitHub Actions (`.github/workflows/build.yml`, Visual Studio 2022 on a Windows runner) on every pushed `v*` tag, and can be started by hand from the Actions tab.
 
-Self-tests: `TheNorns.exe --selftest-dps <folder>` and `TheNorns-Setup-1.4.0.exe --selftest <folder>`.
+Self-tests: `TheNorns.exe --selftest-dps <folder>` and `TheNorns-Setup-1.5.0.exe --selftest <folder>`.
 
 ## Credits
 
