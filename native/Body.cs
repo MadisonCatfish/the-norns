@@ -129,6 +129,77 @@ namespace TheNorns
         }
     }
 
+    // the dirt on a display glass, lit by the cursor (the body's screen, the formula cards)
+    static class GlassDirt
+    {
+        // The cursor as a small light just in front of the glass. Clean glass sends its light on and stays black; only what
+        // scatters it shows: the scratches and the streaks a badly washed rag left. res\glass_smudge.png (from Poliigon
+        // ScratchesLight001, tiled, fixed to the glass): R, G the surface normal, B how much the glass scatters there. Each
+        // texel is lit by a diffuse part and a highlight off its normal (Blinn-Phong), over a wide soft falloff
+        static byte[] dirtMap; static int dirtSide;
+        static Bitmap dirtLight;
+        // glass: the glass in g's coordinates (the map is fixed to its corner); m: the mouse; u: one sketch unit in px
+        public static void Paint(Graphics g, RectangleF glass, PointF m, float u)
+        {
+            if (dirtMap == null)
+            {
+                dirtMap = new byte[0];
+                try
+                {
+                    using (var s = Assembly.GetExecutingAssembly().GetManifestResourceStream("TheNorns.glass_smudge.png"))
+                    using (var src = new Bitmap(s))
+                    {
+                        dirtSide = src.Width;
+                        var bd = src.LockBits(new Rectangle(0, 0, dirtSide, dirtSide), ImageLockMode.ReadOnly, PixelFormat.Format32bppArgb);
+                        dirtMap = new byte[dirtSide * dirtSide * 4];
+                        for (int row = 0; row < dirtSide; row++) Marshal.Copy(bd.Scan0 + row * bd.Stride, dirtMap, row * dirtSide * 4, dirtSide * 4);
+                        src.UnlockBits(bd);
+                    }
+                }
+                catch { dirtMap = new byte[0]; }
+            }
+            if (dirtMap.Length == 0) return;
+            float rad = 130 * u, height = 48 * u;
+            int side = (int)Math.Ceiling(2 * rad);
+            if (dirtLight == null || dirtLight.Width != side) { if (dirtLight != null) dirtLight.Dispose(); dirtLight = new Bitmap(side, side, PixelFormat.Format32bppPArgb); }
+            int x0 = (int)(m.X - rad), y0 = (int)(m.Y - rad), gx = (int)glass.Left, gy = (int)glass.Top;
+            var data = dirtLight.LockBits(new Rectangle(0, 0, side, side), ImageLockMode.WriteOnly, PixelFormat.Format32bppPArgb);
+            var line = new int[side];
+            const float Bump = 3f, Gain = 0.196f;   // 0.28 less 30 % (owner, 31.10.2026)
+            for (int j = 0; j < side; j++)
+            {
+                int py = y0 + j; float dy = m.Y - py;
+                int ty = ((py - gy) % dirtSide + dirtSide) % dirtSide;
+                for (int i = 0; i < side; i++)
+                {
+                    int px = x0 + i; float dx = m.X - px;
+                    float d2 = (dx * dx + dy * dy) / (rad * rad);
+                    if (d2 >= 1) { line[i] = 0; continue; }
+                    int k = (ty * dirtSide + ((px - gx) % dirtSide + dirtSide) % dirtSide) * 4;   // BGRA
+                    float dirt = dirtMap[k] / 255f;
+                    if (dirt < 0.02f) { line[i] = 0; continue; }
+                    float nx = (dirtMap[k + 2] / 127.5f - 1) * Bump, ny = (dirtMap[k + 1] / 127.5f - 1) * Bump, nz = 1;
+                    float nl = (float)Math.Sqrt(nx * nx + ny * ny + 1); nx /= nl; ny /= nl; nz /= nl;
+                    float ll = (float)Math.Sqrt(dx * dx + dy * dy + height * height);
+                    float lx = dx / ll, ly = dy / ll, lz = height / ll;
+                    float hz = lz + 1, hl = (float)Math.Sqrt(lx * lx + ly * ly + hz * hz);
+                    float sp = Math.Max(0, (nx * lx + ny * ly + nz * hz) / hl);
+                    sp *= sp; sp *= sp; sp *= sp * sp;   // ^12: a tight highlight on each scratch's flank
+                    float diffuse = Math.Max(0, nx * lx + ny * ly + nz * lz);
+                    float fall = (1 - d2) * (1 - d2);   // wide and soft, no visible edge
+                    float a = dirt * (0.3f * diffuse + 1.4f * sp) * fall * Gain;
+                    if (a > 1) a = 1;
+                    int ai = (int)(a * 255);
+                    // a cool white, premultiplied
+                    line[i] = ai << 24 | (ai * 228 / 255) << 16 | (ai * 234 / 255) << 8 | (ai * 242 / 255);
+                }
+                Marshal.Copy(line, 0, data.Scan0 + j * data.Stride, side);
+            }
+            dirtLight.UnlockBits(data);
+            g.DrawImageUnscaled(dirtLight, x0, y0);
+        }
+    }
+
     // loadersz "working" (MIT, (c) 2026 lumberjacque, npm loadersz 0.8.0, src/core/modes/foundational.ts) redrawn in GDI:
     // tilted rings of small dots around a turning sphere, two bright dots orbiting each ring. The owner's settings:
     // speed 2.1, density 1.45 (10 rings of 41 dots), particle radius 1.7, colour = the accent.
@@ -1333,75 +1404,9 @@ namespace TheNorns
 
                 // where the mouse is, it lights the dirt on the glass, not the display (owner, 31.10.2026)
                 var m = Potato ? null : DemoMouse ?? glare;
-                if (m != null) PaintGlassDirt(g, glassR, m.Value);
+                if (m != null) GlassDirt.Paint(g, glassR, m.Value, U(1));
                 g.Restore(st);
             }
-        }
-
-        // The cursor as a small light just in front of the glass. Clean glass sends its light on and stays black; only what
-        // scatters it shows: the scratches and the streaks a badly washed rag left. res\glass_smudge.png (from Poliigon
-        // ScratchesLight001, tiled, fixed to the glass): R, G the surface normal, B how much the glass scatters there. Each
-        // texel is lit by a diffuse part and a highlight off its normal (Blinn-Phong), over a wide soft falloff
-        static byte[] dirtMap; static int dirtSide;
-        Bitmap dirtLight;
-        void PaintGlassDirt(Graphics g, RectangleF glass, Point m)
-        {
-            if (dirtMap == null)
-            {
-                dirtMap = new byte[0];
-                try
-                {
-                    using (var s = Assembly.GetExecutingAssembly().GetManifestResourceStream("TheNorns.glass_smudge.png"))
-                    using (var src = new Bitmap(s))
-                    {
-                        dirtSide = src.Width;
-                        var bd = src.LockBits(new Rectangle(0, 0, dirtSide, dirtSide), ImageLockMode.ReadOnly, PixelFormat.Format32bppArgb);
-                        dirtMap = new byte[dirtSide * dirtSide * 4];
-                        for (int row = 0; row < dirtSide; row++) Marshal.Copy(bd.Scan0 + row * bd.Stride, dirtMap, row * dirtSide * 4, dirtSide * 4);
-                        src.UnlockBits(bd);
-                    }
-                }
-                catch { dirtMap = new byte[0]; }
-            }
-            if (dirtMap.Length == 0) return;
-            float rad = U(130), height = U(48);
-            int side = (int)Math.Ceiling(2 * rad);
-            if (dirtLight == null || dirtLight.Width != side) { if (dirtLight != null) dirtLight.Dispose(); dirtLight = new Bitmap(side, side, PixelFormat.Format32bppPArgb); }
-            int x0 = (int)(m.X - rad), y0 = (int)(m.Y - rad), gx = (int)glass.Left, gy = (int)glass.Top;
-            var data = dirtLight.LockBits(new Rectangle(0, 0, side, side), ImageLockMode.WriteOnly, PixelFormat.Format32bppPArgb);
-            var line = new int[side];
-            const float Bump = 3f, Gain = 0.28f;
-            for (int j = 0; j < side; j++)
-            {
-                int py = y0 + j; float dy = m.Y - py;
-                int ty = ((py - gy) % dirtSide + dirtSide) % dirtSide;
-                for (int i = 0; i < side; i++)
-                {
-                    int px = x0 + i; float dx = m.X - px;
-                    float d2 = (dx * dx + dy * dy) / (rad * rad);
-                    if (d2 >= 1) { line[i] = 0; continue; }
-                    int k = (ty * dirtSide + ((px - gx) % dirtSide + dirtSide) % dirtSide) * 4;   // BGRA
-                    float dirt = dirtMap[k] / 255f;
-                    if (dirt < 0.02f) { line[i] = 0; continue; }
-                    float nx = (dirtMap[k + 2] / 127.5f - 1) * Bump, ny = (dirtMap[k + 1] / 127.5f - 1) * Bump, nz = 1;
-                    float nl = (float)Math.Sqrt(nx * nx + ny * ny + 1); nx /= nl; ny /= nl; nz /= nl;
-                    float ll = (float)Math.Sqrt(dx * dx + dy * dy + height * height);
-                    float lx = dx / ll, ly = dy / ll, lz = height / ll;
-                    float hz = lz + 1, hl = (float)Math.Sqrt(lx * lx + ly * ly + hz * hz);
-                    float sp = Math.Max(0, (nx * lx + ny * ly + nz * hz) / hl);
-                    sp *= sp; sp *= sp; sp *= sp * sp;   // ^12: a tight highlight on each scratch's flank
-                    float diffuse = Math.Max(0, nx * lx + ny * ly + nz * lz);
-                    float fall = (1 - d2) * (1 - d2);   // wide and soft, no visible edge
-                    float a = dirt * (0.3f * diffuse + 1.4f * sp) * fall * Gain;
-                    if (a > 1) a = 1;
-                    int ai = (int)(a * 255);
-                    // a cool white, premultiplied
-                    line[i] = ai << 24 | (ai * 228 / 255) << 16 | (ai * 234 / 255) << 8 | (ai * 242 / 255);
-                }
-                Marshal.Copy(line, 0, data.Scan0 + j * data.Stride, side);
-            }
-            dirtLight.UnlockBits(data);
-            g.DrawImageUnscaled(dirtLight, x0, y0);
         }
 
         // emissive text: a faint halo, then the glyphs
@@ -2358,6 +2363,7 @@ namespace TheNorns
                     FormulaWindow.SaveDemo(b, FormulaWindow.Smartbombs, 0.45, Path.Combine(dir, "dps_formula_opening.png"));
                     FormulaWindow.SaveDemo(b, FormulaWindow.Smartbombs, 1, Path.Combine(dir, "dps_formula_smartbombs.png"));
                     FormulaWindow.SaveDemo(b, FormulaWindow.Vorton, 1, Path.Combine(dir, "dps_formula_vorton.png"));
+                    FormulaWindow.SaveDemo(b, FormulaWindow.Vorton, 1, Path.Combine(dir, "dps_formula_glass_light.png"), 0, new PointF(0.72f, 0.78f));
                     sb.AppendLine(FormulaWindow.Bench(b.Size, FormulaWindow.Smartbombs));
                     sb.AppendLine(FormulaWindow.Bench(b.Size, HelpRunner));
                 }

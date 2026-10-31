@@ -261,10 +261,12 @@ namespace TheNorns
             foreach (var row in new[] { new[] { "fleet_next", "Next client" }, new[] { "fleet_prev", "Previous client" } })
             {
                 RowLabel(g, L.T(row[1]), c.Left, y, fh);
-                KeyField(g, RectangleF.FromLTRB(c.Left + labelW, y, c.Right - fh - U(4), y + fh), row[0]);
-                // a key the EVE client has by default: the band's warning triangle in a yellow square key, its action as a tip
+                var kf = RectangleF.FromLTRB(c.Left + labelW, y, c.Right, y + fh);
+                KeyField(g, kf, row[0]);
+                // a key the EVE client has by default: the band's warning triangle inside the field at its right end, no
+                // frame (owner, 31.10.2026), its action as a tip
                 if (keyCapture != row[0] && KeysOf(row[0]).Any(k => EveKeys.Action(k) != null))
-                    WarnBadge(g, new RectangleF(c.Right - fh, y, fh, fh), "eveo:warn:" + row[0]);
+                    WarnBadge(g, kf, "eveo:warn:" + row[0]);
                 y += fh + U(6);
             }
             y += U(3);
@@ -454,15 +456,11 @@ namespace TheNorns
         // as big as the tabs' arrow keys (owner, 29.10.2026: the same kind of key), at the right of r, centred on its height
         void WarnBadge(Graphics g, RectangleF r, string id)
         {
-            r = new RectangleF(r.Right - U(14), r.Top + (r.Height - U(13)) / 2, U(14), U(13));
+            r = new RectangleF(r.Right - U(13), r.Top + (r.Height - U(11)) / 2, U(11), U(11));
             bool hot = hotSpot == id;
-            using (var p = Round(r, 5))
-            {
-                using (var b = new SolidBrush(Color.FromArgb(hot ? 60 : 34, BodyTheme.Accent))) g.FillPath(b, p);
-                using (var pen = new Pen(BodyTheme.Accent, 1f)) g.DrawPath(pen, p);
-            }
-            WarnTriangle(g, r.Left + r.Width / 2, r.Top + r.Height / 2 + U(0.3f), U(1.25f), BodyTheme.Accent);
-            spots.Add(Tuple.Create(id, r));
+            if (hot) SoftGlow(g, new PointF(r.Left + r.Width / 2, r.Top + r.Height / 2), U(7), BodyTheme.Accent, 70);
+            WarnTriangle(g, r.Left + r.Width / 2, r.Top + r.Height / 2 + U(0.3f), U(0.95f), BodyTheme.Accent);
+            spots.Insert(0, Tuple.Create(id, r));   // over the field's own spot: the tip, not the capture
         }
 
         // the tip over the warning: what the EVE client does on those keys

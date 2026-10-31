@@ -116,8 +116,17 @@ namespace TheNorns
             }
             base.WndProc(ref m);
         }
-        protected override void OnMouseMove(MouseEventArgs e) { base.OnMouseMove(e); bool h = CloseRect.Contains(e.Location); if (h != hoverClose) { hoverClose = h; Redraw(); } }
-        protected override void OnMouseLeave(EventArgs e) { base.OnMouseLeave(e); if (hoverClose || downClose) { hoverClose = downClose = false; Redraw(); } }
+        // the mouse on the card's glass, card px: it lights the dirt there as on the body's screen (owner, 31.10.2026)
+        PointF? lightAt;
+        protected override void OnMouseMove(MouseEventArgs e)
+        {
+            base.OnMouseMove(e);
+            var p = new PointF(e.X - Margin, e.Y - Margin);
+            lightAt = !DpsForm.Potato && GlassIn(cardPx).Contains(p) ? (PointF?)p : null;
+            bool h = CloseRect.Contains(e.Location);
+            if (h != hoverClose) { hoverClose = h; Redraw(); } else Render();
+        }
+        protected override void OnMouseLeave(EventArgs e) { base.OnMouseLeave(e); lightAt = null; if (hoverClose || downClose) { hoverClose = downClose = false; Redraw(); } else Render(); }
         protected override void OnMouseDown(MouseEventArgs e) { base.OnMouseDown(e); if (e.Button == MouseButtons.Left && CloseRect.Contains(e.Location)) { downClose = true; Redraw(); } }
         protected override void OnMouseUp(MouseEventArgs e)
         {
@@ -149,7 +158,25 @@ namespace TheNorns
                 if (p >= 1) timer.Stop();
             }
             if (card == null) card = DrawCard(cardPx, text, hoverClose, downClose, scroll, out maxScroll);
-            using (var bmp = Frame(card, Size, Ease(p))) AppChrome.PresentLayered(this, bmp);
+            using (var lit = Lit(card, lightAt))
+            using (var bmp = Frame(lit ?? card, Size, Ease(p))) AppChrome.PresentLayered(this, bmp);
+        }
+
+        // the card's glass, in card px
+        static RectangleF GlassIn(Size card) { return RectangleF.Inflate(new RectangleF(0, 0, card.Width, card.Height), -U(3.5f), -U(3.5f)); }
+
+        // a copy of the card with the cursor's light on the dirt of its glass; null when there is no light
+        static Bitmap Lit(Bitmap card, PointF? light)
+        {
+            if (light == null) return null;
+            var lit = new Bitmap(card);
+            using (var g = Graphics.FromImage(lit))
+            {
+                var glass = GlassIn(card.Size);
+                using (var gp = Theme.Round(glass, U(17 * 0.6f), 0.6f)) g.SetClip(gp);
+                GlassDirt.Paint(g, glass, light.Value, U(1));
+            }
+            return lit;
         }
 
         static double Ease(double p) { p = Math.Max(0, Math.Min(1, p)); return 1 - Math.Pow(1 - p, 3); }
@@ -271,7 +298,7 @@ namespace TheNorns
                     using (var lg = new LinearGradientBrush(all, Color.FromArgb(80, 255, 255, 255), Color.FromArgb(120, 0, 0, 0), 90f))
                     using (var pen = new Pen(lg, 1f)) g.DrawPath(pen, ep);
                 }
-                var glass = RectangleF.Inflate(all, -U(3.5f), -U(3.5f));
+                var glass = GlassIn(size);
                 using (var gp = Theme.Round(glass, U(17 * 0.6f), 0.6f))
                 {
                     using (var b = new SolidBrush(Color.Black)) g.FillPath(b, gp);
@@ -372,7 +399,7 @@ namespace TheNorns
         }
 
         // selftest: the main window's image with the formula window over it at animation state p, on a dark backdrop
-        public static void SaveDemo(Bitmap main, FormulaText text, double p, string path, float scroll = 0)
+        public static void SaveDemo(Bitmap main, FormulaText text, double p, string path, float scroll = 0, PointF? light = null)
         {
             float maxScroll;
             var cs = CardSize(main.Size, text); var size = new Size((int)cs.Width, (int)cs.Height);
@@ -383,7 +410,8 @@ namespace TheNorns
             using (var bmp = new Bitmap(W, H, PixelFormat.Format32bppArgb))
             using (var g = Graphics.FromImage(bmp))
             using (var card = DrawCard(size, text, false, false, scroll, out maxScroll))
-            using (var frame = Frame(card, win, Ease(p)))
+            using (var lit = Lit(card, light == null ? (PointF?)null : new PointF(size.Width * light.Value.X, size.Height * light.Value.Y)))
+            using (var frame = Frame(lit ?? card, win, Ease(p)))
             {
                 g.Clear(Color.FromArgb(38, 40, 46));
                 g.DrawImageUnscaled(main, (int)o, (int)o);
