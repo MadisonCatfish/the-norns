@@ -75,7 +75,7 @@ export function HeroDynamicTitle({ prefix, phrases, fallbackTitle }: HeroDynamic
 
   return (
     <h1 className="hero-title hero-dynamic-title-wrap">
-      <span className="hero-title-prefix">{staticPrefix} </span>
+      <span className="hero-title-prefix">{staticPrefix ? staticPrefix.trim() : ""}</span>{" "}
       <span
         className={`accent-text hero-dynamic-phrase phrase-${phase}`}
         style={{
