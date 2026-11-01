@@ -1,0 +1,35 @@
+{
+  "name": "the-norns-web",
+  "version": "1.0.0",
+  "description": "The Norns official website & telemetry companion hub",
+  "license": "MIT",
+  "type": "module",
+  "scripts": {
+    "build": "cross-env NODE_OPTIONS=\"--no-deprecation\" next build",
+    "dev": "cross-env NODE_OPTIONS=\"--no-deprecation\" next dev",
+    "generate:importmap": "cross-env NODE_OPTIONS=\"--no-deprecation\" payload generate:importmap",
+    "generate:types": "cross-env NODE_OPTIONS=\"--no-deprecation\" payload generate:types",
+    "payload": "cross-env NODE_OPTIONS=\"--no-deprecation\" payload",
+    "start": "cross-env NODE_OPTIONS=\"--no-deprecation\" next start"
+  },
+  "dependencies": {
+    "@payloadcms/db-sqlite": "^3.92.1",
+    "@payloadcms/next": "^3.92.1",
+    "@payloadcms/richtext-lexical": "^3.92.1",
+    "@payloadcms/ui": "^3.92.1",
+    "cross-env": "^7.0.3",
+    "dotenv": "^16.4.7",
+    "graphql": "^16.10.0",
+    "next": "15.4.11",
+    "payload": "^3.92.1",
+    "react": "19.0.0",
+    "react-dom": "19.0.0",
+    "sharp": "^0.33.5"
+  },
+  "devDependencies": {
+    "@types/node": "^22.10.0",
+    "@types/react": "^19.0.0",
+    "@types/react-dom": "^19.0.0",
+    "typescript": "^5.7.0"
+  }
+}

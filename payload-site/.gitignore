@@ -1,0 +1,35 @@
+# dependencies
+/node_modules
+/.pnp
+.pnp.js
+.yarn/install-state.gz
+
+# Next.js build output
+/.next/
+/out/
+/build
+
+# Local SQLite databases & locks
+*.db
+*.db-shm
+*.db-wal
+payload.db
+
+# Environment and secrets
+.env
+.env*.local
+!.env.example
+
+# Media uploads (local dev)
+/public/media
+/media
+
+# Cache and logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.DS_Store
+*.tsbuildinfo
+next-env.d.ts
+.vercel

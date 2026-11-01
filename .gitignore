@@ -18,3 +18,17 @@ UI moodboard/
 STATUS.md
 FIXES.md
 publish/
+
+# wrangler files
+.wrangler
+.dev.vars*
+!.dev.vars.example
+.env*
+!.env.example
+
+# Payload CMS web app
+payload-site/node_modules/
+payload-site/.next/
+payload-site/*.db*
+payload-site/.env
+payload-site/.env*.local
