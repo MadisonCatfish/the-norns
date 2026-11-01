@@ -1,6 +1,25 @@
 import React from 'react'
 
+export interface NavLinkItem {
+  id?: string | null
+  label: string
+  url: string
+  sectionId?: string | null
+  newTab?: boolean | null
+}
+
+export interface HeaderData {
+  brandName?: string | null
+  brandKatakana?: string | null
+  logoUrl?: string | null
+  links?: NavLinkItem[] | null
+  showCta?: boolean | null
+  ctaLabel?: string | null
+  ctaUrl?: string | null
+}
+
 interface NavigationProps {
+  data?: HeaderData | null
   activePage?: 'overview' | 'doctrine' | 'compliance' | 'source' | 'roadmap' | 'faq'
   installerUrl?: string
   versionTag?: string
@@ -8,31 +27,75 @@ interface NavigationProps {
 }
 
 export function Navigation({
+  data,
   activePage = 'overview',
   installerUrl = 'https://github.com/MadisonCatfish/the-norns/releases/download/v1.4.0/TheNorns-Setup-1.4.0.exe',
   versionTag = 'v1.5.0',
   portableUrl = 'https://github.com/MadisonCatfish/the-norns/releases/download/v1.4.0/TheNorns-1.4.0-portable.zip',
 }: NavigationProps) {
+  const brandName = data?.brandName || 'THE NORNS'
+  const brandKatakana = data?.brandKatakana ?? 'ノルン'
+  const logoUrl = data?.logoUrl || '/assets/logo-64.png'
+
+  const defaultLinks: NavLinkItem[] = [
+    { label: 'Overview', url: '/#overview', sectionId: 'overview', newTab: false },
+    { label: 'Doctrine', url: '/#capabilities', sectionId: 'capabilities', newTab: false },
+    { label: 'Compliance', url: '/#pipeline', sectionId: 'pipeline', newTab: false },
+    { label: 'Source & Build', url: '/source', sectionId: 'source', newTab: false },
+    { label: 'Roadmap', url: '/roadmap', sectionId: 'roadmap', newTab: false },
+    { label: 'EULA', url: '/eula.txt', sectionId: 'eula', newTab: false },
+    { label: 'GitHub', url: 'https://github.com/MadisonCatfish/the-norns', newTab: true },
+  ]
+
+  const links = data?.links && data.links.length > 0 ? data.links : defaultLinks
+
+  const showCta = data?.showCta ?? true
+  const ctaLabel = data?.ctaLabel?.trim() ? data.ctaLabel : `Download ${versionTag}`
+  const ctaUrl = data?.ctaUrl?.trim() ? data.ctaUrl : installerUrl
+
+  const isLinkActive = (item: NavLinkItem) => {
+    if (item.sectionId && item.sectionId.toLowerCase() === activePage) return true
+    if (activePage === 'overview' && (item.url === '/#overview' || item.url === '#overview' || item.url === '/')) return true
+    if (activePage === 'doctrine' && (item.url.includes('#capabilities'))) return true
+    if (activePage === 'compliance' && (item.url.includes('#pipeline'))) return true
+    if (activePage === 'source' && (item.url.includes('source'))) return true
+    if (activePage === 'roadmap' && (item.url.includes('roadmap'))) return true
+    if (activePage === 'faq' && (item.url.includes('#faq'))) return true
+    return false
+  }
+
   return (
     <>
       <nav className="nav-bar">
         <a href="/" className="brand-group">
-          <img src="/assets/logo-64.png" alt="The Norns Logo" className="brand-logo-img" width="32" height="32" />
+          <img src={logoUrl} alt={`${brandName} Logo`} className="brand-logo-img" width="32" height="32" />
           <div className="brand-title-row">
-            <span className="brand-name">THE NORNS</span>
-            <span className="brand-katakana">ノルン</span>
+            <span className="brand-name">{brandName}</span>
+            {brandKatakana && <span className="brand-katakana">{brandKatakana}</span>}
           </div>
         </a>
 
         <div className="nav-links">
-          <a href="/#overview" className={activePage === 'overview' ? 'active' : ''} data-section="overview">Overview</a>
-          <a href="/#capabilities" className={activePage === 'doctrine' ? 'active' : ''} data-section="capabilities">Doctrine</a>
-          <a href="/#pipeline" className={activePage === 'compliance' ? 'active' : ''} data-section="pipeline">Compliance</a>
-          <a href="/source" className={activePage === 'source' ? 'active' : ''}>Source &amp; Build</a>
-          <a href="/roadmap" className={activePage === 'roadmap' ? 'active' : ''}>Roadmap</a>
-          <a href="/eula.txt">EULA</a>
-          <a href="https://github.com/MadisonCatfish/the-norns" target="_blank" rel="noopener">GitHub</a>
-          <a href={installerUrl} className="nav-cta">Download {versionTag}</a>
+          {links.map((link, idx) => {
+            const active = isLinkActive(link)
+            return (
+              <a
+                key={link.id || idx}
+                href={link.url}
+                className={active ? 'active' : ''}
+                data-section={link.sectionId || undefined}
+                target={link.newTab ? '_blank' : undefined}
+                rel={link.newTab ? 'noopener' : undefined}
+              >
+                {link.label}
+              </a>
+            )
+          })}
+          {showCta && (
+            <a href={ctaUrl} className="nav-cta">
+              {ctaLabel}
+            </a>
+          )}
         </div>
 
         <button type="button" className="nav-toggle" id="drawer-open" aria-label="Menu" aria-expanded="false" aria-controls="mobile-drawer">
@@ -50,10 +113,10 @@ export function Navigation({
           <nav className="Drawer-sheet" tabIndex={-1} aria-label="Mobile Navigation">
             <div className="Drawer-header">
               <a href="/" className="brand-group">
-                <img src="/assets/logo-64.png" alt="The Norns Logo" className="brand-logo-img" width="32" height="32" />
+                <img src={logoUrl} alt={`${brandName} Logo`} className="brand-logo-img" width="32" height="32" />
                 <div className="brand-title-row">
-                  <span className="brand-name">THE NORNS</span>
-                  <span className="brand-katakana">ノルン</span>
+                  <span className="brand-name">{brandName}</span>
+                  {brandKatakana && <span className="brand-katakana">{brandKatakana}</span>}
                 </div>
               </a>
               <button type="button" className="Drawer-close" id="drawer-close" aria-label="Close menu">
@@ -64,17 +127,25 @@ export function Navigation({
               </button>
             </div>
             <ul className="Drawer-links">
-              <li><a href="/#overview" className={activePage === 'overview' ? 'active' : ''}>Overview</a></li>
-              <li><a href="/#capabilities" className={activePage === 'doctrine' ? 'active' : ''}>Doctrine</a></li>
-              <li><a href="/#pipeline" className={activePage === 'compliance' ? 'active' : ''}>Compliance</a></li>
-              <li><a href="/#faq" className={activePage === 'faq' ? 'active' : ''}>FAQ</a></li>
-              <li><a href="/source" className={activePage === 'source' ? 'active' : ''}>Source &amp; Build</a></li>
-              <li><a href="/roadmap" className={activePage === 'roadmap' ? 'active' : ''}>Roadmap</a></li>
-              <li><a href="/eula.txt">EULA</a></li>
-              <li><a href="https://github.com/MadisonCatfish/the-norns" target="_blank" rel="noopener">GitHub</a></li>
+              {links.map((link, idx) => {
+                const active = isLinkActive(link)
+                return (
+                  <li key={link.id || idx}>
+                    <a
+                      href={link.url}
+                      className={active ? 'active' : ''}
+                      data-section={link.sectionId || undefined}
+                      target={link.newTab ? '_blank' : undefined}
+                      rel={link.newTab ? 'noopener' : undefined}
+                    >
+                      {link.label}
+                    </a>
+                  </li>
+                )
+              })}
             </ul>
             <div className="Drawer-footer">
-              <a href={installerUrl} className="btn-drawer btn-drawer-primary">Download {versionTag} (.exe)</a>
+              <a href={ctaUrl} className="btn-drawer btn-drawer-primary">{ctaLabel} (.exe)</a>
               <a href={portableUrl} className="btn-drawer btn-drawer-secondary">Portable (.zip)</a>
             </div>
           </nav>

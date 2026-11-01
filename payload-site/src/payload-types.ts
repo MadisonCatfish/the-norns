@@ -100,10 +100,12 @@ export interface Config {
   };
   fallbackLocale: null;
   globals: {
+    header: Header;
     'site-settings': SiteSetting;
     footer: Footer;
   };
   globalsSelect: {
+    header: HeaderSelect<false> | HeaderSelect<true>;
     'site-settings': SiteSettingsSelect<false> | SiteSettingsSelect<true>;
     footer: FooterSelect<false> | FooterSelect<true>;
   };
@@ -561,6 +563,31 @@ export interface PayloadMigrationsSelect<T extends boolean = true> {
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "header".
+ */
+export interface Header {
+  id: number;
+  brandName: string;
+  brandKatakana?: string | null;
+  logoUrl?: string | null;
+  links?:
+    | {
+        label: string;
+        url: string;
+        sectionId?: string | null;
+        newTab?: boolean | null;
+        id?: string | null;
+      }[]
+    | null;
+  showCta?: boolean | null;
+  ctaLabel?: string | null;
+  ctaUrl?: string | null;
+  _status?: ('draft' | 'published') | null;
+  updatedAt?: string | null;
+  createdAt?: string | null;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "site-settings".
  */
 export interface SiteSetting {
@@ -619,6 +646,31 @@ export interface Footer {
   _status?: ('draft' | 'published') | null;
   updatedAt?: string | null;
   createdAt?: string | null;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "header_select".
+ */
+export interface HeaderSelect<T extends boolean = true> {
+  brandName?: T;
+  brandKatakana?: T;
+  logoUrl?: T;
+  links?:
+    | T
+    | {
+        label?: T;
+        url?: T;
+        sectionId?: T;
+        newTab?: T;
+        id?: T;
+      };
+  showCta?: T;
+  ctaLabel?: T;
+  ctaUrl?: T;
+  _status?: T;
+  updatedAt?: T;
+  createdAt?: T;
+  globalType?: T;
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema

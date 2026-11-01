@@ -11,6 +11,7 @@ export const revalidate = 0
 export default async function RoadmapPage() {
   let roadmapItems: RoadmapItem[] = []
   let footerData: any = null
+  let headerData: any = null
   let latestRelease: any = null
 
   try {
@@ -24,7 +25,11 @@ export default async function RoadmapPage() {
     })
     roadmapItems = (roadmapRes.docs as any) || []
 
-    // Fetch footer data
+    // Fetch header and footer data
+    headerData = await payload.findGlobal({
+      slug: 'header',
+    })
+
     footerData = await payload.findGlobal({
       slug: 'footer',
     })
@@ -47,6 +52,7 @@ export default async function RoadmapPage() {
   return (
     <>
       <Navigation
+        data={headerData}
         activePage="roadmap"
         installerUrl={installerUrl}
         portableUrl={portableUrl}

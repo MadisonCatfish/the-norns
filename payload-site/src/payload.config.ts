@@ -14,6 +14,7 @@ import { Metrics } from './collections/Metrics'
 import { Roadmap } from './collections/Roadmap'
 import { SiteSettings } from './globals/SiteSettings'
 import { Footer } from './globals/Footer'
+import { Header } from './globals/Header'
 
 const filename = fileURLToPath(import.meta.url)
 const dirname = path.dirname(filename)
@@ -37,7 +38,7 @@ export default buildConfig({
     },
   },
   collections: [Users, Media, Releases, FAQ, Compliance, Features, Metrics, Roadmap],
-  globals: [SiteSettings, Footer],
+  globals: [Header, SiteSettings, Footer],
   editor: lexicalEditor(),
   secret: process.env.PAYLOAD_SECRET || 'the-norns-telemetry-payload-secret-key-super-secure-2026',
   typescript: {

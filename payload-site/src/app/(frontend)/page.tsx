@@ -2,6 +2,7 @@ import React from 'react'
 import { getPayload } from 'payload'
 import config from '@payload-config'
 import { Footer } from '@/components/Footer'
+import { Navigation } from '@/components/Navigation'
 import { HeroPinnedSection } from '@/components/HeroPinnedSection'
 
 export const dynamic = 'force-dynamic'
@@ -15,6 +16,7 @@ export default async function HomePage() {
   let featuresList: any[] = []
   let metricsList: any[] = []
   let footerData: any = null
+  let headerData: any = null
 
   try {
     const payload = await getPayload({ config })
@@ -68,6 +70,11 @@ export default async function HomePage() {
     footerData = await payload.findGlobal({
       slug: 'footer',
     })
+
+    // Fetch Header
+    headerData = await payload.findGlobal({
+      slug: 'header',
+    })
   } catch (err) {
     console.error('Payload fetch error:', err)
   }
@@ -78,71 +85,13 @@ export default async function HomePage() {
 
   return (
     <>
-      <nav className="nav-bar">
-    <a href="/" className="brand-group">
-      <img src="/assets/logo-64.png" alt="The Norns Logo" className="brand-logo-img" width="32" height="32" />
-      <div className="brand-title-row">
-        <span className="brand-name">THE NORNS</span>
-        <span className="brand-katakana">ノルン</span>
-      </div>
-    </a>
-
-    <div className="nav-links">
-      <a href="#overview" className="active" data-section="overview">Overview</a>
-      <a href="#capabilities" data-section="capabilities">Doctrine</a>
-      <a href="#pipeline" data-section="pipeline">Compliance</a>
-      <a href="source.html">Source & Build</a>
-      <a href="roadmap.html">Roadmap</a>
-      <a href="eula.txt">EULA</a>
-      <a href="https://github.com/MadisonCatfish/the-norns" target="_blank" rel="noopener">GitHub</a>
-      <a href={installerUrl} className="nav-cta">Download {versionTag}</a>
-    </div>
-
-    <button type="button" className="nav-toggle" id="drawer-open" aria-label="Menu" aria-expanded="false" aria-controls="mobile-drawer">
-      <svg aria-hidden="true" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
-        <line x1="3" y1="6" x2="21" y2="6"></line>
-        <line x1="3" y1="12" x2="21" y2="12"></line>
-        <line x1="3" y1="18" x2="21" y2="18"></line>
-      </svg>
-    </button>
-  </nav>
-
-  {/*  Mobile Navigation Drawer  */}
-  <div className="Drawer" id="mobile-drawer" popover="manual">
-    <div className="Drawer-scroller">
-      <nav className="Drawer-sheet" tabIndex={-1} aria-label="Mobile Navigation">
-        <div className="Drawer-header">
-          <a href="/" className="brand-group">
-            <img src="/assets/logo-64.png" alt="The Norns Logo" className="brand-logo-img" width="32" height="32" />
-            <div className="brand-title-row">
-              <span className="brand-name">THE NORNS</span>
-              <span className="brand-katakana">ノルン</span>
-            </div>
-          </a>
-          <button type="button" className="Drawer-close" id="drawer-close" aria-label="Close menu">
-            <svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
-              <line x1="18" y1="6" x2="6" y2="18"></line>
-              <line x1="6" y1="6" x2="18" y2="18"></line>
-            </svg>
-          </button>
-        </div>
-        <ul className="Drawer-links">
-          <li><a href="#overview" className="active" data-section="overview">Overview</a></li>
-          <li><a href="#capabilities" data-section="capabilities">Doctrine</a></li>
-          <li><a href="#pipeline" data-section="pipeline">Compliance</a></li>
-          <li><a href="#faq" data-section="faq">FAQ</a></li>
-          <li><a href="source.html">Source &amp; Build</a></li>
-          <li><a href="roadmap.html">Roadmap</a></li>
-          <li><a href="eula.txt">EULA</a></li>
-          <li><a href="https://github.com/MadisonCatfish/the-norns" target="_blank" rel="noopener">GitHub</a></li>
-        </ul>
-        <div className="Drawer-footer">
-          <a href={installerUrl} className="btn btn-primary">Download v1.4.0 (.exe)</a>
-          <a href={portableUrl} className="btn btn-secondary">Portable (.zip)</a>
-        </div>
-      </nav>
-    </div>
-  </div>
+      <Navigation
+        data={headerData}
+        activePage="overview"
+        installerUrl={installerUrl}
+        portableUrl={portableUrl}
+        versionTag={versionTag}
+      />
 
   {/*  Container  */}
   <main className="container">

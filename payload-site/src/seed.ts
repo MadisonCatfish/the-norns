@@ -305,6 +305,30 @@ async function seed() {
     }
   }
 
+  // 10. Seed Global Header
+  await payload.updateGlobal({
+    slug: 'header',
+    data: {
+      brandName: 'THE NORNS',
+      brandKatakana: 'ノルン',
+      logoUrl: '/assets/logo-64.png',
+      links: [
+        { label: 'Overview', url: '/#overview', sectionId: 'overview', newTab: false },
+        { label: 'Doctrine', url: '/#capabilities', sectionId: 'capabilities', newTab: false },
+        { label: 'Compliance', url: '/#pipeline', sectionId: 'pipeline', newTab: false },
+        { label: 'Source & Build', url: '/source', sectionId: '', newTab: false },
+        { label: 'Roadmap', url: '/roadmap', sectionId: '', newTab: false },
+        { label: 'EULA', url: '/eula.txt', sectionId: '', newTab: false },
+        { label: 'GitHub', url: 'https://github.com/MadisonCatfish/the-norns', sectionId: '', newTab: true },
+      ],
+      showCta: true,
+      ctaLabel: '',
+      ctaUrl: '',
+      _status: 'published',
+    } as any,
+  })
+  console.log('✓ Global Header seeded (published)')
+
   console.log('--- Seeding Complete! ---')
   process.exit(0)
 }
