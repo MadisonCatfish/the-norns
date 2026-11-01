@@ -274,8 +274,8 @@
 
     h1.hero-title span.accent-text {
       display: inline-block;
-      padding: 0.14em 0.08em 0.26em 0.04em;
-      margin: -0.14em -0.08em -0.26em -0.04em;
+      padding: 0.14em 0 0.26em 0;
+      margin: -0.14em 0 -0.26em 0;
       background: linear-gradient(135deg, #ffffff 30%, var(--accent) 100%);
       -webkit-background-clip: text;
       -webkit-text-fill-color: transparent;
@@ -285,7 +285,7 @@
     .hero-title-prefix {
       display: inline-block;
       padding: 0.14em 0 0.26em 0;
-      margin: -0.14em 0.34em -0.26em 0;
+      margin: -0.14em 0 -0.26em 0;
       overflow: visible;
     }
 

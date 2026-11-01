@@ -176,8 +176,6 @@ export function HeroPinnedSection({
             overflow: 'visible',
             paddingTop: '0.14em',
             paddingBottom: '0.28em',
-            paddingLeft: '0.04em',
-            paddingRight: '0.08em',
             marginTop: '-0.14em',
             marginBottom: '-0.28em',
             willChange: 'filter, opacity, transform',
