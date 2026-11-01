@@ -11,3 +11,5 @@ export const AdminIcon: React.FC = () => {
     />
   )
 }
+
+export default AdminIcon

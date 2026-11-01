@@ -1518,3 +1518,436 @@
       }
     }
     .faq-list a { color: var(--accent); }
+
+/* ==========================================================================
+   SOURCE & BUILD PAGE STYLES (Restored from source.html)
+   ========================================================================== */
+
+/* Security Bento Grid */
+    .security-grid {
+      width: 100%;
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 20px;
+    }
+
+    .security-card {
+      background: var(--card-bg);
+      border-radius: 12px;
+      corner-shape: squircle;
+      padding: 30px;
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+      transition: all 0.2s ease;
+      position: relative;
+    }
+
+    .security-card:hover {
+      border-color: #38414e;
+      background: #020408;
+      transform: translateY(-2px);
+      box-shadow:
+        0 20px 48px -8px rgba(0, 0, 0, 0.9),
+        inset 0 1px 0 rgba(255, 255, 255, 0.20),
+        inset 0 0 0 2px #181a1e,
+        inset 0 6px 12px -1px rgba(0, 0, 0, 0.98),
+        inset 0 2px 4px rgba(0, 0, 0, 0.9),
+        inset 0 0 28px rgba(0, 0, 0, 0.85),
+        inset 0 -1px 0 rgba(255, 255, 255, 0.18);
+    }
+
+    .card-top {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .badge-pill {
+      font-family: var(--font-mono);
+      font-size: 10.5px;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      padding: 3px 8px;
+      border-radius: 5px;
+      corner-shape: squircle;
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid var(--border);
+      color: var(--fg-subtle);
+    }
+
+    .status-check {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      font-family: var(--font-mono);
+      font-size: 11.5px;
+      font-weight: 600;
+      color: var(--green);
+    }
+
+    .card-heading {
+      font-size: 18px;
+      font-weight: 700;
+      letter-spacing: -0.02em;
+      color: #ffffff;
+    }
+
+    .card-desc {
+      font-size: 13.5px;
+      color: var(--fg-muted);
+      line-height: 1.6;
+    }
+
+    .card-code-callout {
+      margin-top: 4px;
+      background: #020408;
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      corner-shape: squircle;
+      padding: 10px 14px;
+      font-family: var(--font-mono);
+      font-size: 11.5px;
+      color: #cbd5e1;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .code-dot {
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: var(--accent);
+    }
+
+    /* Software Frame / Master Window */
+    .master-frame {
+      width: 100%;
+      background: var(--card-bg);
+      border-radius: 14px;
+      corner-shape: squircle;
+      overflow: hidden;
+      position: relative;
+    }
+
+    .frame-bar {
+      height: 40px;
+      background: rgba(255, 255, 255, 0.02);
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 18px;
+    }
+
+    .frame-controls {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .frame-controls span {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      background: rgba(255, 255, 255, 0.12);
+    }
+
+    .frame-controls {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      flex-shrink: 0;
+    }
+
+    .frame-title {
+      font-family: var(--font-mono);
+      font-size: 11px;
+      color: var(--fg-subtle);
+      letter-spacing: 0.04em;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      margin: 0 12px;
+      min-width: 0;
+      flex: 1;
+    }
+
+    .frame-badge {
+      font-family: var(--font-mono);
+      font-size: 10.5px;
+      color: var(--accent);
+      background: rgba(247, 255, 20, 0.08);
+      border: 1px solid rgba(247, 255, 20, 0.2);
+      padding: 2px 7px;
+      border-radius: 5px;
+      corner-shape: squircle;
+      white-space: nowrap;
+      flex-shrink: 0;
+    }
+
+    .master-frame > img {
+      width: 100%;
+      display: block;
+      background: #000;
+    }
+
+    /* Architecture Table */
+    table.arch-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 13.5px;
+    }
+
+    table.arch-table th {
+      text-align: left;
+      font-family: var(--font-mono);
+      font-size: 11px;
+      font-weight: 600;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--fg-subtle);
+      padding: 14px 24px;
+      background: rgba(255, 255, 255, 0.015);
+      border-bottom: 1px solid var(--border);
+    }
+
+    table.arch-table td {
+      padding: 18px 24px;
+      border-bottom: 1px solid var(--border);
+      color: var(--fg-muted);
+      vertical-align: middle;
+    }
+
+    table.arch-table tr:last-child td {
+      border-bottom: none;
+    }
+
+    table.arch-table tr:hover td {
+      background: rgba(255, 255, 255, 0.015);
+    }
+
+    .module-tag {
+      display: inline-block;
+      font-weight: 600;
+      color: #ffffff;
+      font-size: 13.5px;
+    }
+
+    .file-chip {
+      font-family: var(--font-mono);
+      font-size: 12px;
+      color: var(--accent);
+      background: rgba(247, 255, 20, 0.06);
+      border: 1px solid rgba(247, 255, 20, 0.15);
+      padding: 3px 8px;
+      border-radius: 5px;
+      corner-shape: squircle;
+      white-space: nowrap;
+    }
+
+    /* Terminal & Code Blocks */
+    .terminal-body {
+      padding: 26px 28px;
+      background: #020408;
+      font-family: var(--font-mono);
+      font-size: 13px;
+      line-height: 1.65;
+      color: #cbd5e1;
+      overflow-x: auto;
+    }
+
+    .terminal-body .cmd {
+      color: var(--accent);
+    }
+
+    .terminal-body .comment {
+      color: var(--fg-subtle);
+    }
+
+    .terminal-body .flag {
+      color: #38bdf8;
+    }
+
+    .terminal-body .block {
+      margin-bottom: 20px;
+    }
+
+    .terminal-body .block:last-child {
+      margin-bottom: 0;
+    }
+
+    /* License Box */
+    .license-card {
+      background: var(--card-bg);
+      border-radius: 12px;
+      corner-shape: squircle;
+      padding: 32px;
+      display: flex;
+      flex-direction: column;
+      gap: 18px;
+    }
+
+    .license-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      border-bottom: 1px solid var(--border);
+      padding-bottom: 16px;
+    }
+
+    .license-stamp {
+      font-family: var(--font-mono);
+      font-size: 11.5px;
+      color: var(--green);
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .license-text {
+      font-family: var(--font-sans);
+      font-size: 13.5px;
+      line-height: 1.65;
+      color: var(--fg-muted);
+      background: #020408;
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      corner-shape: squircle;
+      padding: 20px 24px;
+    }
+
+@media (max-width: 900px) {
+      .metric-grid { grid-template-columns: repeat(2, 1fr); }
+      .metric-cell:nth-child(2) { border-right: none; }
+      .metric-cell:nth-child(1),
+      .metric-cell:nth-child(2) { border-bottom: 1px solid var(--border); }
+      .security-grid { grid-template-columns: 1fr; }
+    }
+
+@media (max-width: 640px) {
+      main.container {
+        padding: 28px 16px 64px;
+        gap: 48px;
+      }
+      .live-status-pill {
+        font-size: 9.5px;
+        padding: 5px 10px;
+        margin-bottom: 18px;
+        max-width: 100%;
+        text-align: center;
+      }
+      h1.hero-title {
+        font-size: clamp(26px, 7.2vw, 34px);
+        margin-bottom: 14px;
+      }
+      p.hero-subtitle {
+        font-size: 15px;
+        margin-bottom: 24px;
+      }
+      .cta-group {
+        flex-direction: column;
+        width: 100%;
+        gap: 10px;
+      }
+      .cta-group .btn {
+        width: 100%;
+        justify-content: center;
+        padding: 13px 18px;
+      }
+      .metric-grid {
+        grid-template-columns: repeat(2, 1fr);
+      }
+      .metric-cell {
+        padding: 18px 14px;
+        min-width: 0;
+      }
+      .metric-header {
+        font-size: 10px;
+      }
+      .metric-val {
+        font-size: 22px;
+      }
+      .metric-desc {
+        font-size: 11.5px;
+      }
+      .section-wrap {
+        gap: 20px;
+      }
+      .section-desc {
+        font-size: 14.5px;
+      }
+      .security-card {
+        padding: 20px 16px;
+      }
+      .card-top {
+        flex-wrap: wrap;
+        gap: 8px;
+      }
+      .card-code-callout {
+        font-size: 11px;
+        padding: 10px 12px;
+        overflow-x: auto;
+      }
+      .frame-bar {
+        padding: 0 12px;
+      }
+      .frame-badge {
+        font-size: 9.5px;
+        padding: 2px 6px;
+      }
+      table.arch-table thead {
+        display: none;
+      }
+      table.arch-table,
+      table.arch-table tbody,
+      table.arch-table tr,
+      table.arch-table td {
+        display: block;
+        width: 100%;
+      }
+      table.arch-table tr {
+        padding: 14px 16px;
+        border-bottom: 1px solid var(--border);
+      }
+      table.arch-table tr:last-child {
+        border-bottom: none;
+      }
+      table.arch-table td {
+        padding: 4px 0;
+        border-bottom: none;
+      }
+      .terminal-body {
+        padding: 18px 16px;
+        font-size: 11.5px;
+      }
+      .license-card {
+        padding: 20px 16px;
+      }
+      .license-header {
+        flex-wrap: wrap;
+        gap: 8px;
+      }
+      .license-text {
+        padding: 14px 16px;
+        font-size: 12.5px;
+      }
+      footer.site-footer {
+        padding: 40px 16px 0;
+      }
+      .footer-top {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 28px;
+      }
+      .footer-nav-columns {
+        gap: 24px 32px;
+        width: 100%;
+      }
+      .footer-meta {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 8px;
+      }
+    }

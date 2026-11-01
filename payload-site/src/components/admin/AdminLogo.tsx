@@ -21,3 +21,5 @@ export const AdminLogo: React.FC = () => {
     </div>
   )
 }
+
+export default AdminLogo
