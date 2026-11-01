@@ -2,7 +2,7 @@ import React from 'react'
 import { getPayload } from 'payload'
 import config from '@payload-config'
 import { Footer } from '@/components/Footer'
-import { HeroDynamicTitle } from '@/components/HeroDynamicTitle'
+import { HeroPinnedSection } from '@/components/HeroPinnedSection'
 
 export const dynamic = 'force-dynamic'
 export const revalidate = 0
@@ -146,53 +146,17 @@ export default async function HomePage() {
 
   {/*  Container  */}
   <main className="container">
-    {/*  Hero  */}
-    <section className="hero" id="overview">
-      <a href={latestRelease?.githubReleaseUrl || siteSettings?.githubUrl || "https://github.com/MadisonCatfish/the-norns/releases"} className="live-status-pill" target="_blank" rel="noopener">
-        <span className="indicator-dot"></span>
-        <span>{siteSettings?.heroBadge || `THE NORNS ${versionTag}`}</span>
-        <span>→</span>
-      </a>
-
-      <HeroDynamicTitle
-        prefix={siteSettings?.heroTitlePrefix}
-        phrases={siteSettings?.heroTitlePhrases}
-        fallbackTitle={siteSettings?.heroTitle}
-      />
-
-      <p className="hero-subtitle">
-        {siteSettings?.heroSubtitle || "Real-time Vorton telemetry and a warp-to-warp anomaly timer. Passive: it reads the game's logs, sends no input and does no memory injection."}
-      </p>
-
-      <div className="cta-group">
-        <a href={installerUrl} className="btn btn-primary">
-          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
-          Download Standalone (.exe)
-        </a>
-        <a href={portableUrl} className="btn btn-secondary">
-          Portable (.zip)
-        </a>
-        <a href="/source" className="btn btn-secondary">
-          Audit Source & Build →
-        </a>
-      </div>
-
-      {/*  Asynchronous Levitating Hero Showcase  */}
-      <div className="hero-showcase">
-        <div className="hero-card hero-card-1">
-          <img src="/assets/norns-client-1.png" alt="The Norns Vorton Projector HUD" loading="eager" />
-        </div>
-        <div className="hero-card hero-card-2">
-          <img src="/assets/norns-client-2.png" alt="The Norns Competition Mode Runner Lead" loading="eager" />
-        </div>
-        <div className="hero-card hero-card-3">
-          <img src="/assets/norns-client-3.png" alt="The Norns Tactical Settings" loading="eager" />
-        </div>
-        <div className="hero-card hero-card-4">
-          <img src="/assets/norns-client-4.png" alt="The Norns Dual Doctrine Smartbomb & Bounty Grid" loading="eager" />
-        </div>
-      </div>
-    </section>
+    {/* Pinned Sticky Hero Section */}
+    <HeroPinnedSection
+      prefix={siteSettings?.heroTitlePrefix}
+      phrases={siteSettings?.heroTitlePhrases}
+      badgeText={siteSettings?.heroBadge}
+      badgeUrl={latestRelease?.githubReleaseUrl || siteSettings?.githubUrl}
+      subtitle={siteSettings?.heroSubtitle}
+      installerUrl={installerUrl}
+      portableUrl={portableUrl}
+      versionTag={versionTag}
+    />
 
     {/*  Attio Structural Metric Tiles  */}
     <div className="metric-grid">
