@@ -98,5 +98,31 @@ export const SiteSettings: GlobalConfig = {
         hidden: true,
       },
     },
+    {
+      name: 'deployAction',
+      type: 'ui',
+      admin: {
+        components: {
+          Field: './components/admin/DeployButton#DeployButton',
+        },
+      },
+    },
+    {
+      name: 'cloudflareDeployHook',
+      type: 'text',
+      label: 'Cloudflare Pages Deploy Hook URL',
+      admin: {
+        description: 'URL from Cloudflare Pages (Project Settings -> Builds & deployments -> Deploy hooks). Payload sends a POST request here to rebuild the static site.',
+      },
+    },
+    {
+      name: 'autoDeployOnSave',
+      type: 'checkbox',
+      label: 'Auto-Deploy to Cloudflare Pages on Content Publish',
+      defaultValue: false,
+      admin: {
+        description: 'When enabled, publishing changes in any section will automatically ping Cloudflare to rebuild the site.',
+      },
+    },
   ],
 }

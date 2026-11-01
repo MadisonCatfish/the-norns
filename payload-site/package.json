@@ -7,6 +7,7 @@
   "scripts": {
     "build": "cross-env NODE_OPTIONS=\"--no-deprecation\" next build",
     "dev": "cross-env NODE_OPTIONS=\"--no-deprecation\" next dev",
+    "export:static": "npx tsx src/scripts/exportStatic.ts",
     "generate:importmap": "cross-env NODE_OPTIONS=\"--no-deprecation\" payload generate:importmap",
     "generate:types": "cross-env NODE_OPTIONS=\"--no-deprecation\" payload generate:types",
     "payload": "cross-env NODE_OPTIONS=\"--no-deprecation\" payload",

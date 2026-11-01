@@ -616,6 +616,14 @@ export interface SiteSetting {
   githubUrl?: string | null;
   discordUrl?: string | null;
   copyrightNotice?: string | null;
+  /**
+   * URL from Cloudflare Pages (Project Settings -> Builds & deployments -> Deploy hooks). Payload sends a POST request here to rebuild the static site.
+   */
+  cloudflareDeployHook?: string | null;
+  /**
+   * When enabled, publishing changes in any section will automatically ping Cloudflare to rebuild the site.
+   */
+  autoDeployOnSave?: boolean | null;
   _status?: ('draft' | 'published') | null;
   updatedAt?: string | null;
   createdAt?: string | null;
@@ -750,6 +758,8 @@ export interface SiteSettingsSelect<T extends boolean = true> {
   githubUrl?: T;
   discordUrl?: T;
   copyrightNotice?: T;
+  cloudflareDeployHook?: T;
+  autoDeployOnSave?: T;
   _status?: T;
   updatedAt?: T;
   createdAt?: T;
