@@ -211,27 +211,6 @@
       gap: 90px;
     }
 
-    /* Hero Sticky Scroll Pinning */
-    .hero-scroll-track {
-      width: 100%;
-      position: relative;
-      padding-bottom: 260px;
-      margin-bottom: -180px;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-    }
-
-    .hero-sticky-container {
-      position: sticky;
-      top: 76px;
-      width: 100%;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      z-index: 10;
-    }
-
     /* Hero Section */
     section.hero {
       width: 100%;
