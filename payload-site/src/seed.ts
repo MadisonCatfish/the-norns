@@ -329,6 +329,124 @@ async function seed() {
   })
   console.log('✓ Global Header seeded (published)')
 
+  // 11. Seed Global SourcePage
+  await payload.updateGlobal({
+    slug: 'source-page',
+    data: {
+      heroBadge: 'OPEN SOURCE · MIT LICENSE · STRICT ZERO-INJECTION',
+      heroTitle: 'Audit the source. Fly safe in nullsec.',
+      heroSubtitle: 'Full architectural transparency for fleet commanders and capsuleers. Verify that The Norns runs strictly read-only, never touches exefile.exe memory, and compiles into byte-for-byte verifiable binaries directly from GitHub.',
+      githubRepoUrl: 'https://github.com/MadisonCatfish/the-norns',
+      securityTag: '[ 01 / CCP FAIR PLAY COMPLIANCE ]',
+      securityTitle: 'Architected to stay out of the game client.',
+      securityDesc: 'Every architectural boundary in The Norns is designed to ensure zero interference with the game client, zero network leakage, and absolute peace of mind for multi-billion ISK setups.',
+      securityCards: [
+        {
+          pill: '[ I/O ISOLATION ]',
+          status: '✓ READ-ONLY',
+          title: 'Read-Only Gamelog Streaming',
+          description: 'The Norns reads solely from standard plain-text logs written by EVE Online in Documents\\EVE\\logs\\Gamelogs and OS window titles using non-locking FileShare.ReadWrite handles.',
+          codeCallout: 'new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.ReadWrite)',
+        },
+        {
+          pill: '[ PROCESS BARRIER ]',
+          status: '✓ ZERO INJECTION',
+          title: 'Zero Memory or Process Hooks',
+          description: 'The Norns never calls OpenProcess with VM access, never inspects or alters exefile.exe virtual memory, and injects zero DLLs. It is completely isolated in its own userland process.',
+          codeCallout: 'VirtualAllocEx / WriteProcessMemory / CreateRemoteThread: NOT LINKED',
+        },
+        {
+          pill: '[ INPUT INTEGRITY ]',
+          status: '✓ PASSIVE TELEMETRY',
+          title: 'Zero Input Broadcasting',
+          description: "No simulated keystrokes, no clicks, and no input broadcasting. The optional Carousel module (off by default) can activate a client window. The telemetry display is passive; the design follows CCP's 1-action-1-input guideline.",
+          codeCallout: 'SendInput / keybd_event / mouse_event: NOT PRESENT',
+        },
+        {
+          pill: '[ PRIVACY GUARANTEE ]',
+          status: '✓ LOCAL FIRST',
+          title: 'No Silent Telemetry or Beacons',
+          description: 'No accounts, no user analytics, no tracking beacons. The only outbound network call is the transparent, toggleable startup check against GitHub Releases API for software updates.',
+          codeCallout: 'api.github.com/repos/MadisonCatfish/the-norns/releases/latest (Toggleable)',
+        },
+      ],
+      archTag: '[ 02 / CODEBASE ARCHITECTURE ]',
+      archTitle: 'Clean, zero-dependency C# codebase.',
+      archDesc: 'No heavy web wrappers, no Electron bloat, no third-party package dependencies. Pure C# targeting native Windows graphics and non-blocking file streaming.',
+      archFrameTitle: 'the-norns / native / source-tree',
+      archBadge: 'C# 7.3 · .NET 4.8',
+      modules: [
+        {
+          moduleName: 'Log Ingestion',
+          sourceFile: 'native/DpsGraph.cs',
+          functionality: 'Tails game logs non-destructively; parses damage hits, bounties, and fleet warp events (GameLogTail, GameLogParser).',
+        },
+        {
+          moduleName: 'Terminal Chassis',
+          sourceFile: 'native/Body.cs',
+          functionality: 'Industrial OLED hardware chassis, double-buffered GDI+ rendering, mode switching, carousel window switcher.',
+        },
+        {
+          moduleName: 'Fleet Physics',
+          sourceFile: 'native/Formula.cs',
+          functionality: 'Calculates Vorton bounce decay, frigate runner impedance, and interactive damped-spring hull ECG physics.',
+        },
+        {
+          moduleName: 'Localization & Config',
+          sourceFile: 'native/Settings.cs',
+          functionality: '6 native languages, profile serialization in %LOCALAPPDATA%, update check management.',
+        },
+        {
+          moduleName: 'Setup Installer',
+          sourceFile: 'native/setup/Setup.cs',
+          functionality: 'Lightweight standalone installer with privacy switches and automated desktop/start menu integration.',
+        },
+        {
+          moduleName: 'Build Orchestration',
+          sourceFile: 'native/build.ps1',
+          functionality: '70-line native PowerShell build orchestrator invoking csc.exe with zero third-party packages.',
+        },
+      ],
+      buildTag: '[ 03 / REPRODUCIBLE BUILDS ]',
+      buildTitle: 'Build your own binary.',
+      buildDesc: 'The Norns compiles using native Windows developer tools (.NET Framework 4.8 via Roslyn). No Node.js, Python, or external package managers required for compilation.',
+      buildTerminalTitle: 'Windows PowerShell · C:\\The Norns>',
+      buildBadge: 'POWERSHELL 5.1+',
+      buildSteps: [
+        {
+          comment: '# 1. Clone the repository',
+          command: 'git clone https://github.com/MadisonCatfish/the-norns.git\ncd the-norns',
+        },
+        {
+          comment: '# 2. Build the application binary (TheNorns.exe)',
+          command: 'powershell -ExecutionPolicy Bypass -File native\\build.ps1 -Out bin',
+        },
+        {
+          comment: '# 3. Package the setup installer and portable zip',
+          command: 'powershell -ExecutionPolicy Bypass -File native\\build.ps1 -Out release -Setup',
+        },
+        {
+          comment: '# 4. Run automated self-tests',
+          command: 'bin\\TheNorns.exe --selftest-dps selftest_output',
+        },
+      ],
+      licenseTag: '[ 04 / OPEN SOURCE LICENSE ]',
+      licenseTitle: 'Perpetual open-source freedom.',
+      licenseDesc: 'Released under the permissive MIT License. You are free to inspect, modify, fork, and distribute.',
+      licenseName: 'MIT License',
+      licenseStamp: '✓ VERIFIED PERMISSIVE',
+      licenseText: `Copyright (c) 2026 The Norns contributors
+
+Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.`,
+      _status: 'published',
+    } as any,
+  })
+  console.log('✓ Global SourcePage seeded (published)')
+
   console.log('--- Seeding Complete! ---')
   process.exit(0)
 }

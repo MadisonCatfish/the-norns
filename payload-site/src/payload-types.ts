@@ -103,11 +103,13 @@ export interface Config {
     header: Header;
     'site-settings': SiteSetting;
     footer: Footer;
+    'source-page': SourcePage;
   };
   globalsSelect: {
     header: HeaderSelect<false> | HeaderSelect<true>;
     'site-settings': SiteSettingsSelect<false> | SiteSettingsSelect<true>;
     footer: FooterSelect<false> | FooterSelect<true>;
+    'source-page': SourcePageSelect<false> | SourcePageSelect<true>;
   };
   locale: null;
   widgets: {
@@ -649,6 +651,64 @@ export interface Footer {
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "source-page".
+ */
+export interface SourcePage {
+  id: number;
+  heroBadge?: string | null;
+  heroTitle?: string | null;
+  heroSubtitle?: string | null;
+  githubRepoUrl?: string | null;
+  securityTag?: string | null;
+  securityTitle?: string | null;
+  securityDesc?: string | null;
+  securityCards?:
+    | {
+        pill: string;
+        status: string;
+        title: string;
+        description: string;
+        codeCallout?: string | null;
+        id?: string | null;
+      }[]
+    | null;
+  archTag?: string | null;
+  archTitle?: string | null;
+  archDesc?: string | null;
+  archFrameTitle?: string | null;
+  archBadge?: string | null;
+  modules?:
+    | {
+        moduleName: string;
+        sourceFile: string;
+        functionality: string;
+        id?: string | null;
+      }[]
+    | null;
+  buildTag?: string | null;
+  buildTitle?: string | null;
+  buildDesc?: string | null;
+  buildTerminalTitle?: string | null;
+  buildBadge?: string | null;
+  buildSteps?:
+    | {
+        comment: string;
+        command: string;
+        id?: string | null;
+      }[]
+    | null;
+  licenseTag?: string | null;
+  licenseTitle?: string | null;
+  licenseDesc?: string | null;
+  licenseName?: string | null;
+  licenseStamp?: string | null;
+  licenseText?: string | null;
+  _status?: ('draft' | 'published') | null;
+  updatedAt?: string | null;
+  createdAt?: string | null;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "header_select".
  */
 export interface HeaderSelect<T extends boolean = true> {
@@ -719,6 +779,64 @@ export interface FooterSelect<T extends boolean = true> {
       };
   copyrightNotice?: T;
   ccpDisclaimer?: T;
+  _status?: T;
+  updatedAt?: T;
+  createdAt?: T;
+  globalType?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "source-page_select".
+ */
+export interface SourcePageSelect<T extends boolean = true> {
+  heroBadge?: T;
+  heroTitle?: T;
+  heroSubtitle?: T;
+  githubRepoUrl?: T;
+  securityTag?: T;
+  securityTitle?: T;
+  securityDesc?: T;
+  securityCards?:
+    | T
+    | {
+        pill?: T;
+        status?: T;
+        title?: T;
+        description?: T;
+        codeCallout?: T;
+        id?: T;
+      };
+  archTag?: T;
+  archTitle?: T;
+  archDesc?: T;
+  archFrameTitle?: T;
+  archBadge?: T;
+  modules?:
+    | T
+    | {
+        moduleName?: T;
+        sourceFile?: T;
+        functionality?: T;
+        id?: T;
+      };
+  buildTag?: T;
+  buildTitle?: T;
+  buildDesc?: T;
+  buildTerminalTitle?: T;
+  buildBadge?: T;
+  buildSteps?:
+    | T
+    | {
+        comment?: T;
+        command?: T;
+        id?: T;
+      };
+  licenseTag?: T;
+  licenseTitle?: T;
+  licenseDesc?: T;
+  licenseName?: T;
+  licenseStamp?: T;
+  licenseText?: T;
   _status?: T;
   updatedAt?: T;
   createdAt?: T;
