@@ -17,6 +17,10 @@ const nextConfig: NextConfig = {
         source: '/source.html',
         destination: '/source',
       },
+      {
+        source: '/roadmap.html',
+        destination: '/roadmap',
+      },
     ]
   },
   images: {

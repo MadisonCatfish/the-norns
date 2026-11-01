@@ -74,6 +74,7 @@ export interface Config {
     compliance: Compliance;
     features: Feature;
     metrics: Metric;
+    roadmap: Roadmap;
     'payload-kv': PayloadKv;
     'payload-locked-documents': PayloadLockedDocument;
     'payload-preferences': PayloadPreference;
@@ -88,6 +89,7 @@ export interface Config {
     compliance: ComplianceSelect<false> | ComplianceSelect<true>;
     features: FeaturesSelect<false> | FeaturesSelect<true>;
     metrics: MetricsSelect<false> | MetricsSelect<true>;
+    roadmap: RoadmapSelect<false> | RoadmapSelect<true>;
     'payload-kv': PayloadKvSelect<false> | PayloadKvSelect<true>;
     'payload-locked-documents': PayloadLockedDocumentsSelect<false> | PayloadLockedDocumentsSelect<true>;
     'payload-preferences': PayloadPreferencesSelect<false> | PayloadPreferencesSelect<true>;
@@ -260,6 +262,29 @@ export interface Metric {
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "roadmap".
+ */
+export interface Roadmap {
+  id: number;
+  order: number;
+  title: string;
+  status: 'done' | 'wip' | 'todo' | 'need' | 'cancelled';
+  statusLabel?: string | null;
+  description: string;
+  checklist?:
+    | {
+        text: string;
+        note?: string | null;
+        completed?: boolean | null;
+        id?: string | null;
+      }[]
+    | null;
+  updatedAt: string;
+  createdAt: string;
+  _status?: ('draft' | 'published') | null;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "payload-kv".
  */
 export interface PayloadKv {
@@ -309,6 +334,10 @@ export interface PayloadLockedDocument {
     | ({
         relationTo: 'metrics';
         value: number | Metric;
+      } | null)
+    | ({
+        relationTo: 'roadmap';
+        value: number | Roadmap;
       } | null);
   globalSlug?: string | null;
   user: {
@@ -464,6 +493,28 @@ export interface MetricsSelect<T extends boolean = true> {
   value?: T;
   description?: T;
   order?: T;
+  updatedAt?: T;
+  createdAt?: T;
+  _status?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "roadmap_select".
+ */
+export interface RoadmapSelect<T extends boolean = true> {
+  order?: T;
+  title?: T;
+  status?: T;
+  statusLabel?: T;
+  description?: T;
+  checklist?:
+    | T
+    | {
+        text?: T;
+        note?: T;
+        completed?: T;
+        id?: T;
+      };
   updatedAt?: T;
   createdAt?: T;
   _status?: T;

@@ -1,5 +1,7 @@
 import { getPayload } from 'payload'
 import config from './payload.config'
+import fs from 'fs'
+import path from 'path'
 
 async function seed() {
   const payload = await getPayload({ config })
@@ -282,6 +284,26 @@ async function seed() {
     } as any,
   })
   console.log('✓ Global Footer seeded (published)')
+
+  // 9. Seed Roadmap Items
+  const existingRoadmap = await payload.find({
+    collection: 'roadmap',
+    limit: 1,
+  })
+
+  if (existingRoadmap.totalDocs === 0) {
+    const seedPath = path.resolve(process.cwd(), 'src/roadmap_seed.json')
+    if (fs.existsSync(seedPath)) {
+      const roadmapItems = JSON.parse(fs.readFileSync(seedPath, 'utf-8'))
+      for (const item of roadmapItems) {
+        await payload.create({
+          collection: 'roadmap',
+          data: item as any,
+        })
+      }
+      console.log(`✓ ${roadmapItems.length} Roadmap items seeded (published)`)
+    }
+  }
 
   console.log('--- Seeding Complete! ---')
   process.exit(0)

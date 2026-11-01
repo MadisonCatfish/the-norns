@@ -11,6 +11,7 @@ import { FAQ } from './collections/FAQ'
 import { Compliance } from './collections/Compliance'
 import { Features } from './collections/Features'
 import { Metrics } from './collections/Metrics'
+import { Roadmap } from './collections/Roadmap'
 import { SiteSettings } from './globals/SiteSettings'
 import { Footer } from './globals/Footer'
 
@@ -35,7 +36,7 @@ export default buildConfig({
       icons: [{ url: '/assets/favicon.ico' }],
     },
   },
-  collections: [Users, Media, Releases, FAQ, Compliance, Features, Metrics],
+  collections: [Users, Media, Releases, FAQ, Compliance, Features, Metrics, Roadmap],
   globals: [SiteSettings, Footer],
   editor: lexicalEditor(),
   secret: process.env.PAYLOAD_SECRET || 'the-norns-telemetry-payload-secret-key-super-secure-2026',
