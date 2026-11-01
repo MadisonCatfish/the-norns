@@ -94,7 +94,7 @@ export default async function HomePage() {
       <a href="roadmap.html">Roadmap</a>
       <a href="eula.txt">EULA</a>
       <a href="https://github.com/MadisonCatfish/the-norns" target="_blank" rel="noopener">GitHub</a>
-      <a href="https://github.com/MadisonCatfish/the-norns/releases/download/v1.4.0/TheNorns-Setup-1.4.0.exe" className="nav-cta">Download v1.4.0</a>
+      <a href={installerUrl} className="nav-cta">Download {versionTag}</a>
     </div>
 
     <button type="button" className="nav-toggle" id="drawer-open" aria-label="Menu" aria-expanded="false" aria-controls="mobile-drawer">
@@ -136,8 +136,8 @@ export default async function HomePage() {
           <li><a href="https://github.com/MadisonCatfish/the-norns" target="_blank" rel="noopener">GitHub</a></li>
         </ul>
         <div className="Drawer-footer">
-          <a href="https://github.com/MadisonCatfish/the-norns/releases/download/v1.4.0/TheNorns-Setup-1.4.0.exe" className="btn btn-primary">Download v1.4.0 (.exe)</a>
-          <a href="https://github.com/MadisonCatfish/the-norns/releases/download/v1.4.0/TheNorns-1.4.0-portable.zip" className="btn btn-secondary">Portable (.zip)</a>
+          <a href={installerUrl} className="btn btn-primary">Download v1.4.0 (.exe)</a>
+          <a href={portableUrl} className="btn btn-secondary">Portable (.zip)</a>
         </div>
       </nav>
     </div>
@@ -147,29 +147,32 @@ export default async function HomePage() {
   <main className="container">
     {/*  Hero  */}
     <section className="hero" id="overview">
-      <a href="https://github.com/MadisonCatfish/the-norns/releases/tag/v1.4.0" className="live-status-pill" target="_blank" rel="noopener">
+      <a href={latestRelease?.githubReleaseUrl || siteSettings?.githubUrl || "https://github.com/MadisonCatfish/the-norns/releases"} className="live-status-pill" target="_blank" rel="noopener">
         <span className="indicator-dot"></span>
-        <span>THE NORNS 1.4.0</span>
+        <span>{siteSettings?.heroBadge || `THE NORNS ${versionTag}`}</span>
         <span>→</span>
       </a>
 
-      <h1 className="hero-title">
-        Fleet HUD for <span className="accent-text">EDENCOM krabbing</span>.
-      </h1>
+      <h1
+        className="hero-title"
+        dangerouslySetInnerHTML={{
+          __html: siteSettings?.heroTitle || 'Fleet HUD for <span class="accent-text">EDENCOM krabbing</span>.',
+        }}
+      />
 
       <p className="hero-subtitle">
-        Real-time Vorton telemetry and a warp-to-warp anomaly timer. Passive: it reads the game's logs, sends no input and does no memory injection.
+        {siteSettings?.heroSubtitle || "Real-time Vorton telemetry and a warp-to-warp anomaly timer. Passive: it reads the game's logs, sends no input and does no memory injection."}
       </p>
 
       <div className="cta-group">
-        <a href="https://github.com/MadisonCatfish/the-norns/releases/download/v1.4.0/TheNorns-Setup-1.4.0.exe" className="btn btn-primary">
+        <a href={installerUrl} className="btn btn-primary">
           <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
           Download Standalone (.exe)
         </a>
-        <a href="https://github.com/MadisonCatfish/the-norns/releases/download/v1.4.0/TheNorns-1.4.0-portable.zip" className="btn btn-secondary">
+        <a href={portableUrl} className="btn btn-secondary">
           Portable (.zip)
         </a>
-        <a href="source.html" className="btn btn-secondary">
+        <a href="/source" className="btn btn-secondary">
           Audit Source & Build →
         </a>
       </div>
@@ -385,14 +388,14 @@ export default async function HomePage() {
       </p>
 
       <div className="cta-group" style={{'marginBottom': '0'}}>
-        <a href="https://github.com/MadisonCatfish/the-norns/releases/download/v1.4.0/TheNorns-Setup-1.4.0.exe" className="btn btn-primary">
+        <a href={installerUrl} className="btn btn-primary">
           <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
           Download Installer (.exe)
         </a>
-        <a href="https://github.com/MadisonCatfish/the-norns/releases/download/v1.4.0/TheNorns-1.4.0-portable.zip" className="btn btn-secondary">
+        <a href={portableUrl} className="btn btn-secondary">
           Portable (.zip)
         </a>
-        <a href="source.html" className="btn btn-secondary">
+        <a href="/source" className="btn btn-secondary">
           Audit Source Code & Build →
         </a>
       </div>

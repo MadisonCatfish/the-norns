@@ -219,12 +219,11 @@ async function seed() {
   await payload.updateGlobal({
     slug: 'site-settings',
     data: {
-      heroBadge: 'EVE HAVOC / EQUINOX COMPATIBLE · ZERO MEMORY INJECTION',
-      heroTitle: 'Dedicated Telemetry Companion for EVE Online Fleets',
-      heroSubtitle: 'Engineered specifically for Stormbringer, Thunderchild, and Smartbombing superkrabbing fleets. Passive log tailing, multi-client DPS telemetry, and audible dread/titan early warnings.',
-      githubUrl: 'https://github.com/the-norns/the-norns',
+      heroBadge: 'THE NORNS 1.5.0',
+      heroTitle: 'Fleet HUD for <span class="accent-text">EDENCOM krabbing</span>.',
+      heroSubtitle: "Real-time Vorton telemetry and a warp-to-warp anomaly timer. Passive: it reads the game's logs, sends no input and does no memory injection.",
+      githubUrl: 'https://github.com/MadisonCatfish/the-norns',
       discordUrl: 'https://discord.gg',
-      copyrightNotice: '© 2026 The Norns (ノルン). Independent open-source companion under the MIT License.',
       _status: 'published',
     } as any,
   })

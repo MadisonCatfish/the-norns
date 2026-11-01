@@ -17,38 +17,47 @@ export const SiteSettings: GlobalConfig = {
     {
       name: 'heroBadge',
       type: 'text',
-      label: 'Hero Badge',
-      defaultValue: 'EVE HAVOC / EQUINOX COMPATIBLE · ZERO MEMORY INJECTION',
+      label: 'Hero Status Pill Text',
+      defaultValue: 'THE NORNS 1.5.0',
     },
     {
       name: 'heroTitle',
       type: 'text',
       label: 'Hero Title',
-      defaultValue: 'Dedicated Telemetry Companion for EVE Online Fleets',
+      defaultValue: 'Fleet HUD for <span class="accent-text">EDENCOM krabbing</span>.',
     },
     {
       name: 'heroSubtitle',
       type: 'textarea',
       label: 'Hero Subtitle',
-      defaultValue: 'Engineered specifically for Stormbringer, Thunderchild, and Smartbombing superkrabbing fleets. Passive log tailing, multi-client DPS telemetry, and audible dread/titan early warnings.',
+      defaultValue: "Real-time Vorton telemetry and a warp-to-warp anomaly timer. Passive: it reads the game's logs, sends no input and does no memory injection.",
     },
     {
-      name: 'githubUrl',
-      type: 'text',
-      label: 'GitHub Repository URL',
-      defaultValue: 'https://github.com/the-norns/the-norns',
-    },
-    {
-      name: 'discordUrl',
-      type: 'text',
-      label: 'Discord Community URL',
-      defaultValue: 'https://discord.gg',
+      type: 'row',
+      fields: [
+        {
+          name: 'githubUrl',
+          type: 'text',
+          label: 'GitHub Repository URL',
+          defaultValue: 'https://github.com/MadisonCatfish/the-norns',
+          admin: { width: '50%' },
+        },
+        {
+          name: 'discordUrl',
+          type: 'text',
+          label: 'Discord Community URL',
+          defaultValue: 'https://discord.gg',
+          admin: { width: '50%' },
+        },
+      ],
     },
     {
       name: 'copyrightNotice',
       type: 'text',
-      label: 'Footer Copyright Notice',
-      defaultValue: '© 2026 The Norns (ノルン). Independent open-source companion under the MIT License.',
+      label: 'Footer Copyright Notice (Legacy)',
+      admin: {
+        hidden: true,
+      },
     },
   ],
 }
