@@ -220,6 +220,12 @@ async function seed() {
     slug: 'site-settings',
     data: {
       heroBadge: 'THE NORNS 1.5.0',
+      heroTitlePrefix: 'Fleet HUD for',
+      heroTitlePhrases: [
+        { text: 'EDENCOM krabbing.' },
+        { text: 'Stormbringer fleets.' },
+        { text: 'Superkrabbing DPS telemetry.' },
+      ],
       heroTitle: 'Fleet HUD for <span class="accent-text">EDENCOM krabbing</span>.',
       heroSubtitle: "Real-time Vorton telemetry and a warp-to-warp anomaly timer. Passive: it reads the game's logs, sends no input and does no memory injection.",
       githubUrl: 'https://github.com/MadisonCatfish/the-norns',

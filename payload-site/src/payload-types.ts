@@ -515,6 +515,22 @@ export interface PayloadMigrationsSelect<T extends boolean = true> {
 export interface SiteSetting {
   id: number;
   heroBadge?: string | null;
+  /**
+   * First part of the hero title that remains static (e.g. "Fleet HUD for")
+   */
+  heroTitlePrefix?: string | null;
+  /**
+   * Dynamic phrases that smoothly morph and blur when the user scrolls down
+   */
+  heroTitlePhrases?:
+    | {
+        text: string;
+        id?: string | null;
+      }[]
+    | null;
+  /**
+   * Used if dynamic phrases are empty
+   */
   heroTitle?: string | null;
   heroSubtitle?: string | null;
   githubUrl?: string | null;
@@ -559,6 +575,13 @@ export interface Footer {
  */
 export interface SiteSettingsSelect<T extends boolean = true> {
   heroBadge?: T;
+  heroTitlePrefix?: T;
+  heroTitlePhrases?:
+    | T
+    | {
+        text?: T;
+        id?: T;
+      };
   heroTitle?: T;
   heroSubtitle?: T;
   githubUrl?: T;

@@ -2,6 +2,7 @@ import React from 'react'
 import { getPayload } from 'payload'
 import config from '@payload-config'
 import { Footer } from '@/components/Footer'
+import { HeroDynamicTitle } from '@/components/HeroDynamicTitle'
 
 export const dynamic = 'force-dynamic'
 export const revalidate = 0
@@ -153,11 +154,10 @@ export default async function HomePage() {
         <span>→</span>
       </a>
 
-      <h1
-        className="hero-title"
-        dangerouslySetInnerHTML={{
-          __html: siteSettings?.heroTitle || 'Fleet HUD for <span class="accent-text">EDENCOM krabbing</span>.',
-        }}
+      <HeroDynamicTitle
+        prefix={siteSettings?.heroTitlePrefix}
+        phrases={siteSettings?.heroTitlePhrases}
+        fallbackTitle={siteSettings?.heroTitle}
       />
 
       <p className="hero-subtitle">

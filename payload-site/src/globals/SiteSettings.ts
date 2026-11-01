@@ -21,10 +21,49 @@ export const SiteSettings: GlobalConfig = {
       defaultValue: 'THE NORNS 1.5.0',
     },
     {
+      name: 'heroTitlePrefix',
+      type: 'text',
+      label: 'Hero Title Prefix (Static)',
+      defaultValue: 'Fleet HUD for',
+      admin: {
+        description: 'First part of the hero title that remains static (e.g. "Fleet HUD for")',
+      },
+    },
+    {
+      name: 'heroTitlePhrases',
+      type: 'array',
+      label: 'Hero Title Rotating Phrases (Changes on scroll with blur/fade)',
+      labels: {
+        singular: 'Phrase',
+        plural: 'Phrases',
+      },
+      minRows: 1,
+      maxRows: 6,
+      admin: {
+        description: 'Dynamic phrases that smoothly morph and blur when the user scrolls down',
+      },
+      fields: [
+        {
+          name: 'text',
+          type: 'text',
+          label: 'Phrase Text',
+          required: true,
+        },
+      ],
+      defaultValue: [
+        { text: 'EDENCOM krabbing.' },
+        { text: 'Stormbringer fleets.' },
+        { text: 'Superkrabbing DPS telemetry.' },
+      ],
+    },
+    {
       name: 'heroTitle',
       type: 'text',
-      label: 'Hero Title',
+      label: 'Hero Title (Legacy Fallback)',
       defaultValue: 'Fleet HUD for <span class="accent-text">EDENCOM krabbing</span>.',
+      admin: {
+        description: 'Used if dynamic phrases are empty',
+      },
     },
     {
       name: 'heroSubtitle',
