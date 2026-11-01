@@ -173,6 +173,13 @@ export function HeroPinnedSection({
           className={`accent-text hero-dynamic-phrase phrase-${phase}`}
           style={{
             display: 'inline-block',
+            overflow: 'visible',
+            paddingTop: '0.14em',
+            paddingBottom: '0.28em',
+            paddingLeft: '0.04em',
+            paddingRight: '0.08em',
+            marginTop: '-0.14em',
+            marginBottom: '-0.28em',
             willChange: 'filter, opacity, transform',
             transition:
               'filter 0.2s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.2s cubic-bezier(0.16, 1, 0.3, 1), transform 0.2s cubic-bezier(0.16, 1, 0.3, 1)',

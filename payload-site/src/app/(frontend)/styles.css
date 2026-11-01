@@ -261,21 +261,36 @@
     }
 
     h1.hero-title {
-      font-size: clamp( 28px, 4.4vw, 46px);
+      font-size: clamp(28px, 4.4vw, 46px);
       font-family: var(--font-display);
-      letter-spacing: -0.01em;
       font-weight: 800;
-      line-height: 1.06;
-      letter-spacing: -0.04em;
+      line-height: 1.25;
+      letter-spacing: -0.02em;
       color: #ffffff;
       margin-bottom: 22px;
       text-wrap: balance;
+      overflow: visible;
     }
 
     h1.hero-title span.accent-text {
+      display: inline-block;
+      padding: 0.14em 0.08em 0.26em 0.04em;
+      margin: -0.14em -0.08em -0.26em -0.04em;
       background: linear-gradient(135deg, #ffffff 30%, var(--accent) 100%);
       -webkit-background-clip: text;
       -webkit-text-fill-color: transparent;
+      overflow: visible;
+    }
+
+    .hero-title-prefix {
+      display: inline-block;
+      padding: 0.14em 0.04em 0.26em 0;
+      margin: -0.14em -0.04em -0.26em 0;
+      overflow: visible;
+    }
+
+    .hero-dynamic-phrase {
+      overflow: visible;
     }
 
     p.hero-subtitle {
