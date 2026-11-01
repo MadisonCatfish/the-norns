@@ -49,11 +49,13 @@ export function HeroPinnedSection({
     const handleScroll = () => {
       if (!trackRef.current) return
       const rect = trackRef.current.getBoundingClientRect()
-      const totalScroll = trackRef.current.offsetHeight - window.innerHeight
-      if (totalScroll <= 0) return
+      const stickyTop = 70
+      
+      // Calculate responsive scroll progress through the compact pinning runway (280px)
+      const scrolledDist = Math.max(0, stickyTop - rect.top)
+      const pinDistance = 280
 
-      // Progress through the locked sticky track: 0.0 at top, 1.0 at exit
-      const progress = Math.min(Math.max(0, -rect.top / totalScroll), 0.999)
+      const progress = Math.min(Math.max(0, scrolledDist / pinDistance), 0.999)
       const count = items.length
       const segment = 1 / count
       const newIdx = Math.min(Math.floor(progress / segment), count - 1)
@@ -69,7 +71,7 @@ export function HeroPinnedSection({
     return () => window.removeEventListener('scroll', handleScroll)
   }, [items.length])
 
-  // Trigger smooth blur and fade transition on index switch
+  // Responsive, snappy blur and fade transition
   useEffect(() => {
     if (activeIdx === displayedIdx) return
 
@@ -79,20 +81,12 @@ export function HeroPinnedSection({
       setPhase('in')
       const timer2 = setTimeout(() => {
         setPhase('idle')
-      }, 40)
+      }, 30)
       return () => clearTimeout(timer2)
-    }, 200)
+    }, 140)
 
     return () => clearTimeout(timer1)
   }, [activeIdx, displayedIdx])
-
-  const scrollToPhrase = (targetIdx: number) => {
-    if (!trackRef.current) return
-    const totalScroll = trackRef.current.offsetHeight - window.innerHeight
-    const targetProgress = (targetIdx + 0.5) / items.length
-    const targetY = trackRef.current.offsetTop + targetProgress * totalScroll
-    window.scrollTo({ top: targetY, behavior: 'smooth' })
-  }
 
   const currentPhrase = items[displayedIdx]?.text || items[0]?.text || ''
 
@@ -119,32 +113,17 @@ export function HeroPinnedSection({
                 display: 'inline-block',
                 willChange: 'filter, opacity, transform',
                 transition:
-                  'filter 0.28s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.28s cubic-bezier(0.16, 1, 0.3, 1), transform 0.28s cubic-bezier(0.16, 1, 0.3, 1)',
+                  'filter 0.22s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.22s cubic-bezier(0.16, 1, 0.3, 1), transform 0.22s cubic-bezier(0.16, 1, 0.3, 1)',
                 ...(phase === 'out'
-                  ? { filter: 'blur(16px)', opacity: 0, transform: 'translateY(-10px) scale(0.96)' }
+                  ? { filter: 'blur(14px)', opacity: 0, transform: 'translateY(-8px) scale(0.97)' }
                   : phase === 'in'
-                  ? { filter: 'blur(16px)', opacity: 0, transform: 'translateY(10px) scale(0.96)' }
+                  ? { filter: 'blur(14px)', opacity: 0, transform: 'translateY(8px) scale(0.97)' }
                   : { filter: 'blur(0px)', opacity: 1, transform: 'translateY(0) scale(1)' }),
               }}
             >
               {currentPhrase}
             </span>
           </h1>
-
-          {/* Tactical HUD Phrase Indicator Dots */}
-          {items.length > 1 && (
-            <div className="hero-phrase-indicators" aria-label="Hero phrase indicators">
-              {items.map((_, i) => (
-                <button
-                  type="button"
-                  key={i}
-                  className={`hero-phrase-dot ${i === displayedIdx ? 'active' : ''}`}
-                  onClick={() => scrollToPhrase(i)}
-                  aria-label={`Scroll to phrase ${i + 1}`}
-                />
-              ))}
-            </div>
-          )}
 
           <p className="hero-subtitle">
             {subtitle ||
