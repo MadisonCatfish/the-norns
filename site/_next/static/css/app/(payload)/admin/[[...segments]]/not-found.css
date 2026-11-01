@@ -1,0 +1,909 @@
+/*!**********************************************************************************************************************************************************************************************************************************************************************************************!*\
+  !*** css ./node_modules/next/dist/build/webpack/loaders/css-loader/src/index.js??ruleSet[1].rules[13].oneOf[10].use[2]!./node_modules/next/dist/build/webpack/loaders/postcss-loader/src/index.js??ruleSet[1].rules[13].oneOf[10].use[3]!./node_modules/react-image-crop/dist/ReactCrop.css ***!
+  \**********************************************************************************************************************************************************************************************************************************************************************************************/
+.ReactCrop{position:relative;display:inline-block;cursor:crosshair;overflow:hidden;max-width:100%}.ReactCrop *,.ReactCrop *:before,.ReactCrop *:after{box-sizing:border-box}.ReactCrop--disabled,.ReactCrop--locked{cursor:inherit}.ReactCrop__child-wrapper{max-height:inherit}.ReactCrop__child-wrapper>img,.ReactCrop__child-wrapper>video{display:block;max-width:100%;max-height:inherit}.ReactCrop:not(.ReactCrop--disabled) .ReactCrop__child-wrapper>img,.ReactCrop:not(.ReactCrop--disabled) .ReactCrop__child-wrapper>video{touch-action:none}.ReactCrop:not(.ReactCrop--disabled) .ReactCrop__crop-selection{touch-action:none}.ReactCrop__crop-selection{position:absolute;top:0;left:0;transform:translateZ(0);cursor:move;box-shadow:0 0 0 9999em #00000080}.ReactCrop--disabled .ReactCrop__crop-selection{cursor:inherit}.ReactCrop--circular-crop .ReactCrop__crop-selection{border-radius:50%}.ReactCrop--no-animate .ReactCrop__crop-selection{outline:1px dashed white}.ReactCrop__crop-selection:not(.ReactCrop--no-animate .ReactCrop__crop-selection){animation:marching-ants 1s;background-image:linear-gradient(to right,#fff 50%,#444 50%),linear-gradient(to right,#fff 50%,#444 50%),linear-gradient(to bottom,#fff 50%,#444 50%),linear-gradient(to bottom,#fff 50%,#444 50%);background-size:10px 1px,10px 1px,1px 10px,1px 10px;background-position:0 0,0 100%,0 0,100% 0;background-repeat:repeat-x,repeat-x,repeat-y,repeat-y;color:#fff;animation-play-state:running;animation-timing-function:linear;animation-iteration-count:infinite}@keyframes marching-ants{0%{background-position:0 0,0 100%,0 0,100% 0}to{background-position:20px 0,-20px 100%,0 -20px,100% 20px}}.ReactCrop__crop-selection:focus{outline:none;border-color:#00f;border-style:solid}.ReactCrop--invisible-crop .ReactCrop__crop-selection{display:none}.ReactCrop__rule-of-thirds-vt:before,.ReactCrop__rule-of-thirds-vt:after,.ReactCrop__rule-of-thirds-hz:before,.ReactCrop__rule-of-thirds-hz:after{content:"";display:block;position:absolute;background-color:#fff6}.ReactCrop__rule-of-thirds-vt:before,.ReactCrop__rule-of-thirds-vt:after{width:1px;height:100%}.ReactCrop__rule-of-thirds-vt:before{left:33.3333333333%}.ReactCrop__rule-of-thirds-vt:after{left:66.6666666667%}.ReactCrop__rule-of-thirds-hz:before,.ReactCrop__rule-of-thirds-hz:after{width:100%;height:1px}.ReactCrop__rule-of-thirds-hz:before{top:33.3333333333%}.ReactCrop__rule-of-thirds-hz:after{top:66.6666666667%}.ReactCrop__drag-handle{position:absolute}.ReactCrop__drag-handle:after{position:absolute;content:"";display:block;width:10px;height:10px;background-color:#0003;border:1px solid rgba(255,255,255,.7);outline:1px solid transparent}.ReactCrop__drag-handle:focus:after{border-color:#00f;background:#2dbfff}.ReactCrop .ord-nw{top:0;left:0;margin-top:-5px;margin-left:-5px;cursor:nw-resize}.ReactCrop .ord-nw:after{top:0;left:0}.ReactCrop .ord-n{top:0;left:50%;margin-top:-5px;margin-left:-5px;cursor:n-resize}.ReactCrop .ord-n:after{top:0}.ReactCrop .ord-ne{top:0;right:0;margin-top:-5px;margin-right:-5px;cursor:ne-resize}.ReactCrop .ord-ne:after{top:0;right:0}.ReactCrop .ord-e{top:50%;right:0;margin-top:-5px;margin-right:-5px;cursor:e-resize}.ReactCrop .ord-e:after{right:0}.ReactCrop .ord-se{bottom:0;right:0;margin-bottom:-5px;margin-right:-5px;cursor:se-resize}.ReactCrop .ord-se:after{bottom:0;right:0}.ReactCrop .ord-s{bottom:0;left:50%;margin-bottom:-5px;margin-left:-5px;cursor:s-resize}.ReactCrop .ord-s:after{bottom:0}.ReactCrop .ord-sw{bottom:0;left:0;margin-bottom:-5px;margin-left:-5px;cursor:sw-resize}.ReactCrop .ord-sw:after{bottom:0;left:0}.ReactCrop .ord-w{top:50%;left:0;margin-top:-5px;margin-left:-5px;cursor:w-resize}.ReactCrop .ord-w:after{left:0}.ReactCrop__disabled .ReactCrop__drag-handle{cursor:inherit}.ReactCrop__drag-bar{position:absolute}.ReactCrop__drag-bar.ord-n{top:0;left:0;width:100%;height:6px;margin-top:-3px}.ReactCrop__drag-bar.ord-e{right:0;top:0;width:6px;height:100%;margin-right:-3px}.ReactCrop__drag-bar.ord-s{bottom:0;left:0;width:100%;height:6px;margin-bottom:-3px}.ReactCrop__drag-bar.ord-w{top:0;left:0;width:6px;height:100%;margin-left:-3px}.ReactCrop--new-crop .ReactCrop__drag-bar,.ReactCrop--new-crop .ReactCrop__drag-handle,.ReactCrop--fixed-aspect .ReactCrop__drag-bar,.ReactCrop--fixed-aspect .ReactCrop__drag-handle.ord-n,.ReactCrop--fixed-aspect .ReactCrop__drag-handle.ord-e,.ReactCrop--fixed-aspect .ReactCrop__drag-handle.ord-s,.ReactCrop--fixed-aspect .ReactCrop__drag-handle.ord-w{display:none}@media (pointer: coarse){.ReactCrop .ord-n,.ReactCrop .ord-e,.ReactCrop .ord-s,.ReactCrop .ord-w{display:none}.ReactCrop__drag-handle{width:24px;height:24px}}
+
+/*!***********************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************!*\
+  !*** css ./node_modules/next/dist/build/webpack/loaders/css-loader/src/index.js??ruleSet[1].rules[13].oneOf[11].use[2]!./node_modules/next/dist/build/webpack/loaders/postcss-loader/src/index.js??ruleSet[1].rules[13].oneOf[11].use[3]!./node_modules/next/dist/build/webpack/loaders/resolve-url-loader/index.js??ruleSet[1].rules[13].oneOf[11].use[4]!./node_modules/next/dist/compiled/sass-loader/cjs.js??ruleSet[1].rules[13].oneOf[11].use[5]!./node_modules/@payloadcms/ui/dist/elements/Banner/index.scss ***!
+  \***********************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************/
+@layer payload-default {}
+@layer payload-default {}
+@layer payload-default {
+  .banner {
+    font-size: 1rem;
+    line-height: 20px;
+    border: 0;
+    vertical-align: middle;
+    background: var(--theme-elevation-100);
+    color: var(--theme-elevation-800);
+    border-radius: 4px;
+    padding: 10px;
+    margin-bottom: 1.5384615385rem;
+  }
+  .banner--has-action {
+    cursor: pointer;
+    text-decoration: none;
+  }
+  .banner--has-icon {
+    display: flex;
+  }
+  .banner--has-icon svg {
+    display: block;
+  }
+  .banner--type-default.banner--has-action:active, .banner--type-default.banner--has-action:hover {
+    color: var(--theme-elevation-0);
+  }
+  .banner--type-default.banner--has-action:hover {
+    background: var(--theme-elevation-900);
+  }
+  .banner--type-default.banner--has-action:active {
+    background: var(--theme-elevation-950);
+  }
+  .banner--type-error {
+    background: var(--theme-error-100);
+    color: var(--theme-error-600);
+  }
+  .banner--type-error svg .stroke {
+    stroke: var(--theme-error-600);
+    fill: none;
+  }
+  .banner--type-error svg .fill {
+    fill: var(--theme-error-600);
+  }
+  .banner--type-error.banner--has-action:active, .banner--type-error.banner--has-action:hover {
+    color: var(--theme-error-800);
+  }
+  .banner--type-error.banner--has-action:active svg .stroke, .banner--type-error.banner--has-action:hover svg .stroke {
+    stroke: var(--theme-error-800);
+    fill: none;
+  }
+  .banner--type-error.banner--has-action:active svg .fill, .banner--type-error.banner--has-action:hover svg .fill {
+    fill: var(--theme-error-800);
+  }
+  .banner--type-error.banner--has-action:hover {
+    background: var(--theme-error-200);
+  }
+  .banner--type-error.banner--has-action:active {
+    background: var(--theme-error-300);
+  }
+  .banner--type-success {
+    background: var(--theme-success-100);
+    color: var(--theme-success-600);
+  }
+  .banner--type-success.banner--has-action:active, .banner--type-success.banner--has-action:hover {
+    color: var(--theme-success-800);
+  }
+  .banner--type-success.banner--has-action:hover {
+    background: var(--theme-success-200);
+  }
+  .banner--type-success.banner--has-action:active {
+    background: var(--theme-success-200);
+  }
+  .banner--type-warning {
+    background: var(--theme-warning-150);
+    color: var(--theme-warning-650);
+  }
+  .banner--type-warning svg .stroke {
+    stroke: var(--theme-warning-650);
+    fill: none;
+  }
+  .banner--type-warning svg .fill {
+    fill: var(--theme-warning-650);
+  }
+  .banner--type-warning.banner--has-action:active, .banner--type-warning.banner--has-action:hover {
+    color: var(--theme-warning-800);
+  }
+  .banner--type-warning.banner--has-action:active svg .stroke, .banner--type-warning.banner--has-action:hover svg .stroke {
+    stroke: var(--theme-warning-800);
+    fill: none;
+  }
+  .banner--type-warning.banner--has-action:active svg .fill, .banner--type-warning.banner--has-action:hover svg .fill {
+    fill: var(--theme-warning-800);
+  }
+  .banner--type-warning.banner--has-action:hover {
+    background: var(--theme-warning-250);
+  }
+  .banner--type-warning.banner--has-action:active {
+    background: var(--theme-warning-300);
+  }
+}
+/*!*********************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************!*\
+  !*** css ./node_modules/next/dist/build/webpack/loaders/css-loader/src/index.js??ruleSet[1].rules[13].oneOf[11].use[2]!./node_modules/next/dist/build/webpack/loaders/postcss-loader/src/index.js??ruleSet[1].rules[13].oneOf[11].use[3]!./node_modules/next/dist/build/webpack/loaders/resolve-url-loader/index.js??ruleSet[1].rules[13].oneOf[11].use[4]!./node_modules/next/dist/compiled/sass-loader/cjs.js??ruleSet[1].rules[13].oneOf[11].use[5]!./node_modules/@payloadcms/ui/dist/icons/Chevron/index.scss ***!
+  \*********************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************/
+@layer payload-default {}
+@layer payload-default {}
+@layer payload-default {
+  .icon--chevron {
+    height: var(--base);
+    width: var(--base);
+  }
+  .icon--chevron .stroke {
+    fill: none;
+    stroke: currentColor;
+    stroke-width: 1px;
+    vector-effect: non-scaling-stroke;
+  }
+  .icon--chevron.icon--size-large {
+    height: var(--base);
+    width: var(--base);
+  }
+  .icon--chevron.icon--size-small {
+    height: 12px;
+    width: 12px;
+  }
+}
+/*!******************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************!*\
+  !*** css ./node_modules/next/dist/build/webpack/loaders/css-loader/src/index.js??ruleSet[1].rules[13].oneOf[11].use[2]!./node_modules/next/dist/build/webpack/loaders/postcss-loader/src/index.js??ruleSet[1].rules[13].oneOf[11].use[3]!./node_modules/next/dist/build/webpack/loaders/resolve-url-loader/index.js??ruleSet[1].rules[13].oneOf[11].use[4]!./node_modules/next/dist/compiled/sass-loader/cjs.js??ruleSet[1].rules[13].oneOf[11].use[5]!./node_modules/@payloadcms/ui/dist/icons/Edit/index.scss ***!
+  \******************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************/
+@layer payload-default {}
+@layer payload-default {}
+@layer payload-default {
+  .icon--edit {
+    height: 1.5384615385rem;
+    width: 1.5384615385rem;
+    shape-rendering: auto;
+  }
+  .icon--edit .stroke {
+    fill: none;
+    stroke: currentColor;
+  }
+}
+/*!******************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************!*\
+  !*** css ./node_modules/next/dist/build/webpack/loaders/css-loader/src/index.js??ruleSet[1].rules[13].oneOf[11].use[2]!./node_modules/next/dist/build/webpack/loaders/postcss-loader/src/index.js??ruleSet[1].rules[13].oneOf[11].use[3]!./node_modules/next/dist/build/webpack/loaders/resolve-url-loader/index.js??ruleSet[1].rules[13].oneOf[11].use[4]!./node_modules/next/dist/compiled/sass-loader/cjs.js??ruleSet[1].rules[13].oneOf[11].use[5]!./node_modules/@payloadcms/ui/dist/icons/Link/index.scss ***!
+  \******************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************/
+@layer payload-default {}
+@layer payload-default {}
+@layer payload-default {
+  .icon--link {
+    width: 1.5384615385rem;
+    height: 1.5384615385rem;
+  }
+  .icon--link .stroke {
+    stroke: currentColor;
+    stroke-width: 1px;
+  }
+}
+/*!******************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************!*\
+  !*** css ./node_modules/next/dist/build/webpack/loaders/css-loader/src/index.js??ruleSet[1].rules[13].oneOf[11].use[2]!./node_modules/next/dist/build/webpack/loaders/postcss-loader/src/index.js??ruleSet[1].rules[13].oneOf[11].use[3]!./node_modules/next/dist/build/webpack/loaders/resolve-url-loader/index.js??ruleSet[1].rules[13].oneOf[11].use[4]!./node_modules/next/dist/compiled/sass-loader/cjs.js??ruleSet[1].rules[13].oneOf[11].use[5]!./node_modules/@payloadcms/ui/dist/icons/Plus/index.scss ***!
+  \******************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************/
+@layer payload-default {}
+@layer payload-default {}
+@layer payload-default {
+  .icon--plus .stroke {
+    stroke: currentColor;
+    stroke-width: 1px;
+  }
+}
+/*!******************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************!*\
+  !*** css ./node_modules/next/dist/build/webpack/loaders/css-loader/src/index.js??ruleSet[1].rules[13].oneOf[11].use[2]!./node_modules/next/dist/build/webpack/loaders/postcss-loader/src/index.js??ruleSet[1].rules[13].oneOf[11].use[3]!./node_modules/next/dist/build/webpack/loaders/resolve-url-loader/index.js??ruleSet[1].rules[13].oneOf[11].use[4]!./node_modules/next/dist/compiled/sass-loader/cjs.js??ruleSet[1].rules[13].oneOf[11].use[5]!./node_modules/@payloadcms/ui/dist/icons/Swap/index.scss ***!
+  \******************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************/
+@layer payload-default {}
+@layer payload-default {}
+@layer payload-default {
+  .icon--swap {
+    height: 1.5384615385rem;
+    width: 1.5384615385rem;
+  }
+  .icon--swap .stroke {
+    fill: none;
+    stroke: currentColor;
+    stroke-width: 1px;
+  }
+}
+/*!***************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************!*\
+  !*** css ./node_modules/next/dist/build/webpack/loaders/css-loader/src/index.js??ruleSet[1].rules[13].oneOf[11].use[2]!./node_modules/next/dist/build/webpack/loaders/postcss-loader/src/index.js??ruleSet[1].rules[13].oneOf[11].use[3]!./node_modules/next/dist/build/webpack/loaders/resolve-url-loader/index.js??ruleSet[1].rules[13].oneOf[11].use[4]!./node_modules/next/dist/compiled/sass-loader/cjs.js??ruleSet[1].rules[13].oneOf[11].use[5]!./node_modules/@payloadcms/ui/dist/icons/X/index.scss ***!
+  \***************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************/
+@layer payload-default {}
+@layer payload-default {}
+@layer payload-default {
+  .icon--x .stroke {
+    stroke: currentColor;
+    stroke-width: 1px;
+  }
+}
+/*!**************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************!*\
+  !*** css ./node_modules/next/dist/build/webpack/loaders/css-loader/src/index.js??ruleSet[1].rules[13].oneOf[11].use[2]!./node_modules/next/dist/build/webpack/loaders/postcss-loader/src/index.js??ruleSet[1].rules[13].oneOf[11].use[3]!./node_modules/next/dist/build/webpack/loaders/resolve-url-loader/index.js??ruleSet[1].rules[13].oneOf[11].use[4]!./node_modules/next/dist/compiled/sass-loader/cjs.js??ruleSet[1].rules[13].oneOf[11].use[5]!./node_modules/@payloadcms/ui/dist/elements/Popup/PopupButtonList/index.scss ***!
+  \**************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************/
+@layer payload-default {}
+@layer payload-default {
+  .popup-button-list__button button, .popup-button-list__button {
+    border: 0;
+    background: none;
+    box-shadow: none;
+    border-radius: 0;
+    padding: 0;
+    color: currentColor;
+    font-family: var(--font-body);
+  }
+}
+@layer payload-default {
+  .popup-button-list {
+    --list-button-padding: calc(var(--base) * 0.5);
+    --popup-button-list-gap: 3px;
+    display: flex;
+    flex-direction: column;
+    text-align: left;
+  }
+  [dir=rtl] .popup-button-list__text-align--left {
+    text-align: right;
+  }
+  .popup-button-list__text-align--left {
+    text-align: left;
+  }
+  .popup-button-list__text-align--center {
+    text-align: center;
+  }
+  [dir=rtl] .popup-button-list__text-align--right {
+    text-align: left;
+  }
+  .popup-button-list__text-align--right {
+    text-align: right;
+  }
+  .popup-button-list__button {
+    padding-left: var(--list-button-padding);
+    padding-right: var(--list-button-padding);
+    padding-top: calc(2px + var(--popup-button-list-gap) / 2);
+    padding-bottom: calc(2px + var(--popup-button-list-gap) / 2);
+    cursor: pointer;
+    text-align: inherit;
+    line-height: var(--base);
+    text-decoration: none;
+    border-radius: 3px;
+    width: 100%;
+  }
+  .popup-button-list__button button:focus-visible {
+    outline: none;
+  }
+  .popup-button-list__button:hover, .popup-button-list__button:focus-visible, .popup-button-list__button:focus-within {
+    outline: none;
+    background-color: var(--popup-button-highlight);
+  }
+  .popup-button-list__button--selected {
+    background-color: var(--theme-elevation-150);
+  }
+  .popup-button-list__disabled {
+    cursor: not-allowed;
+    --popup-button-highlight: transparent;
+    background-color: var(--popup-button-highlight);
+    color: var(--theme-elevation-350);
+  }
+  .popup-button-list__disabled:hover {
+    --popup-button-highlight: var(--theme-elevation-50);
+  }
+}
+/*!***********************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************!*\
+  !*** css ./node_modules/next/dist/build/webpack/loaders/css-loader/src/index.js??ruleSet[1].rules[13].oneOf[11].use[2]!./node_modules/next/dist/build/webpack/loaders/postcss-loader/src/index.js??ruleSet[1].rules[13].oneOf[11].use[3]!./node_modules/next/dist/build/webpack/loaders/resolve-url-loader/index.js??ruleSet[1].rules[13].oneOf[11].use[4]!./node_modules/next/dist/compiled/sass-loader/cjs.js??ruleSet[1].rules[13].oneOf[11].use[5]!./node_modules/@payloadcms/ui/dist/elements/Popup/PopupDivider/index.scss ***!
+  \***********************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************/
+@layer payload-default {}
+@layer payload-default {}
+@layer payload-default {
+  .popup-divider {
+    width: 100%;
+    height: 1px;
+    background-color: var(--theme-elevation-150);
+    border: none;
+    margin: calc(var(--base) * 0.75) 0;
+  }
+}
+/*!**************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************!*\
+  !*** css ./node_modules/next/dist/build/webpack/loaders/css-loader/src/index.js??ruleSet[1].rules[13].oneOf[11].use[2]!./node_modules/next/dist/build/webpack/loaders/postcss-loader/src/index.js??ruleSet[1].rules[13].oneOf[11].use[3]!./node_modules/next/dist/build/webpack/loaders/resolve-url-loader/index.js??ruleSet[1].rules[13].oneOf[11].use[4]!./node_modules/next/dist/compiled/sass-loader/cjs.js??ruleSet[1].rules[13].oneOf[11].use[5]!./node_modules/@payloadcms/ui/dist/elements/Popup/PopupGroupLabel/index.scss ***!
+  \**************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************/
+@layer payload-default {}
+@layer payload-default {}
+@layer payload-default {
+  .popup-list-group-label {
+    color: var(--theme-elevation-500);
+    font-weight: 500;
+    line-height: 1;
+    margin-top: calc(var(--base) * 0.25);
+    margin-bottom: calc(var(--base) * 0.5);
+  }
+}
+/*!**********************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************!*\
+  !*** css ./node_modules/next/dist/build/webpack/loaders/css-loader/src/index.js??ruleSet[1].rules[13].oneOf[11].use[2]!./node_modules/next/dist/build/webpack/loaders/postcss-loader/src/index.js??ruleSet[1].rules[13].oneOf[11].use[3]!./node_modules/next/dist/build/webpack/loaders/resolve-url-loader/index.js??ruleSet[1].rules[13].oneOf[11].use[4]!./node_modules/next/dist/compiled/sass-loader/cjs.js??ruleSet[1].rules[13].oneOf[11].use[5]!./node_modules/@payloadcms/ui/dist/elements/Popup/index.scss ***!
+  \**********************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************/
+@layer payload-default {}
+@layer payload-default {}
+@layer payload-default {
+  .popup {
+    position: relative;
+  }
+  .popup__trigger-wrap {
+    display: flex;
+    align-items: stretch;
+    height: 100%;
+    cursor: pointer;
+  }
+  .popup__on-hover-watch {
+    display: contents;
+  }
+  .popup__hidden-content {
+    display: none;
+  }
+  .popup__content {
+    --popup-caret-size: 8px;
+    --popup-button-highlight: var(--theme-elevation-150);
+    position: absolute;
+    z-index: var(--z-popup);
+    background: var(--theme-input-bg);
+    color: var(--theme-text);
+    border-radius: 4px;
+    padding: calc(var(--base) * 0.5);
+    min-width: 150px;
+    max-width: calc(100vw - var(--base));
+    box-shadow: 0 -2px 16px -2px rgba(0, 0, 0, 0.2);
+  }
+  .popup__content.popup--size-xsmall {
+    min-width: 80px;
+  }
+  .popup__content.popup--size-small {
+    min-width: 100px;
+  }
+  .popup__content.popup--size-large {
+    min-width: 200px;
+  }
+  .popup__content.popup--size-fit-content {
+    min-width: -moz-fit-content;
+    min-width: fit-content;
+  }
+  .popup__scroll-container {
+    overflow-y: auto;
+    max-height: calc(var(--base) * 10);
+  }
+  .popup__scroll-container:not(.popup__scroll-container--show-scrollbar) {
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+  }
+  .popup__scroll-container:not(.popup__scroll-container--show-scrollbar)::-webkit-scrollbar {
+    display: none;
+  }
+  .popup__caret {
+    position: absolute;
+    width: 0;
+    height: 0;
+    border: var(--popup-caret-size) solid transparent;
+    left: var(--caret-left, 16px);
+    transform: translateX(-50%);
+  }
+  .popup--v-bottom .popup__caret {
+    top: calc(var(--popup-caret-size) * -2);
+    border-bottom-color: var(--theme-input-bg);
+  }
+  .popup--v-top .popup__caret {
+    bottom: calc(var(--popup-caret-size) * -2);
+    border-top-color: var(--theme-input-bg);
+  }
+}
+/*!***********************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************!*\
+  !*** css ./node_modules/next/dist/build/webpack/loaders/css-loader/src/index.js??ruleSet[1].rules[13].oneOf[11].use[2]!./node_modules/next/dist/build/webpack/loaders/postcss-loader/src/index.js??ruleSet[1].rules[13].oneOf[11].use[3]!./node_modules/next/dist/build/webpack/loaders/resolve-url-loader/index.js??ruleSet[1].rules[13].oneOf[11].use[4]!./node_modules/next/dist/compiled/sass-loader/cjs.js??ruleSet[1].rules[13].oneOf[11].use[5]!./node_modules/@payloadcms/ui/dist/elements/Popup/PopupTrigger/index.scss ***!
+  \***********************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************/
+@layer payload-default {}
+@layer payload-default {}
+@layer payload-default {
+  .popup-button {
+    height: 100%;
+    color: currentColor;
+    padding: 0;
+    font-size: inherit;
+    line-height: inherit;
+    font-family: inherit;
+    border: 0;
+    cursor: pointer;
+    display: inline-flex;
+  }
+  .popup-button--background {
+    background: transparent;
+  }
+  .popup-button--size-xsmall {
+    padding: 2px;
+  }
+  .popup-button--size-small {
+    padding: 4px;
+  }
+  .popup-button--size-medium {
+    padding: 6px;
+  }
+  .popup-button--size-large {
+    padding: 8px;
+  }
+  .popup-button--disabled {
+    cursor: not-allowed;
+  }
+}
+/*!***********************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************!*\
+  !*** css ./node_modules/next/dist/build/webpack/loaders/css-loader/src/index.js??ruleSet[1].rules[13].oneOf[11].use[2]!./node_modules/next/dist/build/webpack/loaders/postcss-loader/src/index.js??ruleSet[1].rules[13].oneOf[11].use[3]!./node_modules/next/dist/build/webpack/loaders/resolve-url-loader/index.js??ruleSet[1].rules[13].oneOf[11].use[4]!./node_modules/next/dist/compiled/sass-loader/cjs.js??ruleSet[1].rules[13].oneOf[11].use[5]!./node_modules/@payloadcms/ui/dist/elements/Button/index.scss ***!
+  \***********************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************/
+@layer payload-default {}
+@layer payload-default {}
+@layer payload-default {
+  a.btn {
+    display: inline-block;
+  }
+  .btn--withPopup {
+    margin-block: 4px;
+  }
+  .btn--withPopup .btn {
+    margin: 0;
+  }
+  .btn {
+    --btn-font-weight: normal;
+  }
+  .btn * {
+    pointer-events: none;
+  }
+  .btn--style-primary {
+    --color: var(--theme-elevation-0);
+    --bg-color: var(--theme-elevation-800);
+    --hover-bg: var(--theme-elevation-600);
+    --hover-color: var(--color);
+  }
+  .btn--style-primary.btn--disabled {
+    --bg-color: var(--theme-elevation-200);
+    --color: var(--theme-elevation-800);
+    --hover-bg: var(--bg-color);
+    --hover-color: var(--color);
+  }
+  .btn--style-secondary {
+    --color: var(--theme-text);
+    --bg-color: transparent;
+    --btn-border: 1px solid var(--theme-elevation-800);
+    --hover-color: var(--theme-elevation-600);
+    --hover-btn-border: 1px solid var(--theme-elevation-400);
+  }
+  .btn--style-secondary.btn--disabled {
+    --color: var(--theme-elevation-200);
+    --btn-border: 1px solid var(--theme-elevation-200);
+    --hover-btn-border: 1px solid var(--theme-elevation-200);
+    --hover-color: var(--color);
+  }
+  .btn--style-dashed {
+    --color: var(--theme-elevation-500);
+    --bg-color: transparent;
+    --hover-color: var(--theme-text);
+    --btn-border: 1px dashed var(--theme-elevation-200);
+    --hover-btn-border: 1px dashed var(--theme-elevation-400);
+  }
+  .btn--style-dashed.btn--disabled {
+    --color: var(--theme-elevation-250);
+    --hover-color: var(--color);
+    --hover-bg: transparent;
+    --btn-border: 1px dashed var(--theme-elevation-200);
+    --hover-btn-border: var(--btn-border);
+  }
+  .btn--style-pill {
+    --bg-color: var(--theme-elevation-150);
+    --color: var(--theme-elevation-800);
+    --hover-color: var(--theme-elevation-800);
+    --hover-bg: var(--theme-elevation-100);
+  }
+  .btn--style-pill.btn--disabled {
+    --color: var(--theme-elevation-600);
+    --hover-bg: var(--bg-color);
+    --hover-color: var(--color);
+  }
+  .btn--style-icon-label, .btn--style-icon-label.btn--icon-position-left, .btn--style-icon-label.btn--icon-position-right {
+    padding: 0;
+    font-weight: 600;
+    --color: var(--theme-text);
+    --bg-color: transparent;
+    --hover-color: var(--theme-elevation-600);
+  }
+  .btn--style-icon-label.btn--disabled, .btn--style-icon-label.btn--icon-position-left.btn--disabled, .btn--style-icon-label.btn--icon-position-right.btn--disabled {
+    --color: var(--theme-elevation-200);
+    --hover-color: var(--color);
+  }
+  .btn--style-icon-label .btn__content, .btn--style-icon-label.btn--icon-position-left .btn__content, .btn--style-icon-label.btn--icon-position-right .btn__content {
+    --btn-icon-content-gap: calc(var(--base) * 0.4);
+  }
+  .btn--style-subtle {
+    --color: var(--theme-text);
+    --bg-color: var(--theme-elevation-100);
+    --hover-bg: var(--theme-elevation-150);
+    --btn-border: 1px solid var(--theme-elevation-200);
+    --hover-btn-border: 1px solid var(--theme-elevation-250);
+  }
+  .btn--style-subtle.btn--disabled {
+    --color: var(--theme-elevation-450);
+    --hover-btn-border: var(--btn-border);
+    --hover-bg: var(--bg-color);
+    --hover-color: var(--color);
+  }
+  .btn--style-tab {
+    --bg-color: transparent;
+    --hover-bg: var(--theme-elevation-50);
+    --color: var(--theme-text);
+    --btn-font-weight: 500;
+  }
+  .btn--style-tab.btn--disabled {
+    --btn-font-weight: 600;
+    --bg-color: var(--theme-elevation-100);
+    --hover-bg: var(--bg-color);
+    --hover-color: var(--color);
+  }
+  .popup--active .btn {
+    background-color: var(--hover-bg);
+  }
+  .btn--withPopup .popup-button {
+    color: var(--color, inherit);
+    background-color: var(--bg-color);
+    border: var(--btn-border, 1px solid transparent);
+    border-radius: 4px;
+    align-items: center;
+  }
+  html:not([dir=RTL]) .btn--withPopup .popup-button {
+    border-left: 1px solid var(--theme-bg);
+    border-top-left-radius: 0;
+    border-bottom-left-radius: 0;
+  }
+  html[dir=RTL] .btn--withPopup .popup-button {
+    border-right: 1px solid var(--theme-bg);
+    border-top-right-radius: 0;
+    border-bottom-right-radius: 0;
+  }
+  .btn--withPopup .popup-button:hover, .btn--withPopup .popup-button:focus-visible, .btn--withPopup .popup-button:focus, .btn--withPopup .popup-button:active {
+    background-color: var(--hover-bg);
+    color: var(--hover-color);
+    border: var(--hover-btn-border, 1px solid transparent);
+  }
+  .btn--withPopup .popup-button:hover .btn__icon .stroke, .btn--withPopup .popup-button:focus-visible .btn__icon .stroke, .btn--withPopup .popup-button:focus .btn__icon .stroke, .btn--withPopup .popup-button:active .btn__icon .stroke {
+    stroke: var(--hover-color, currentColor);
+  }
+  .btn--withPopup .popup-button:hover .btn__icon .fill, .btn--withPopup .popup-button:focus-visible .btn__icon .fill, .btn--withPopup .popup-button:focus .btn__icon .fill, .btn--withPopup .popup-button:active .btn__icon .fill {
+    fill: var(--hover-color, currentColor);
+  }
+  .btn:hover, .btn:focus-visible, .btn:focus, .btn:active,
+  .btn--withPopup .btn:hover,
+  .btn--withPopup .btn:focus-visible,
+  .btn--withPopup .btn:focus,
+  .btn--withPopup .btn:active {
+    color: var(--hover-color);
+    background-color: var(--hover-bg);
+    border: var(--hover-btn-border, var(--btn-border, 1px solid transparent));
+  }
+  .btn--disabled,
+  .btn--disabled .btn {
+    cursor: not-allowed;
+  }
+  .btn {
+    --btn-padding-block-start: 0;
+    --btn-padding-inline-end: 0;
+    --btn-padding-block-end: 0;
+    --btn-padding-inline-start: 0;
+    --btn-icon-size: calc(var(--base) * 1.2);
+    --btn-icon-border-color: currentColor;
+    --btn-icon-padding: 0px;
+    --btn-icon-content-gap: calc(var(--base) * 0.4);
+    --margin-block: calc(var(--base) * 1.2);
+    --btn-line-height: calc(var(--base) * 1.1);
+    --btn-base-transition: 100ms cubic-bezier(0, 0.2, 0.2, 1);
+    border-radius: var(--style-radius-s);
+    font-size: var(--base-body-size);
+    font-family: var(--font-body);
+    font-weight: var(--btn-font-weight, normal);
+    margin-block: var(--margin-block);
+    line-height: var(--btn-line-height);
+    border: var(--btn-border, 1px solid transparent);
+    cursor: pointer;
+    text-decoration: none;
+    transition: border, color, background, var(--btn-base-transition);
+    padding: var(--btn-padding-block-start) var(--btn-padding-inline-end) var(--btn-padding-block-end) var(--btn-padding-inline-start);
+    color: var(--color, inherit);
+    background-color: var(--bg-color, transparent);
+  }
+  .btn__icon {
+    width: 100%;
+    height: 100%;
+  }
+  .btn__icon .stroke {
+    stroke: var(--color, currentColor);
+    fill: none;
+  }
+  .btn__icon .fill {
+    fill: var(--color, currentColor);
+  }
+  .btn__content {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .btn__icon {
+    width: var(--btn-icon-size);
+    height: var(--btn-icon-size);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border: 1px solid var(--btn-icon-border-color);
+    border-radius: 100%;
+    padding: var(--btn-icon-padding);
+    color: inherit;
+  }
+  .btn__icon svg {
+    width: 100%;
+    height: 100%;
+  }
+  .btn__icon.btn--size-small {
+    padding: calc(var(--base) * 0.2);
+  }
+  .btn--withPopup {
+    display: flex;
+  }
+  .btn--has-tooltip {
+    position: relative;
+  }
+  .btn--icon .btn__content {
+    gap: var(--btn-icon-content-gap);
+  }
+  .btn--icon-style-without-border, .btn--icon-style-none {
+    --btn-icon-border-color: transparent;
+  }
+  .btn--icon-position-left .btn__content {
+    flex-direction: row-reverse;
+  }
+  .btn--size-small {
+    --btn-icon-size: calc(var(--base) * 0.9);
+    --btn-icon-content-gap: calc(var(--base) * 0.2);
+    --btn-padding-block-start: 0;
+    --btn-padding-inline-end: calc(var(--base) * 0.4);
+    --btn-padding-inline-start: calc(var(--base) * 0.4);
+    --btn-padding-block-end: 0;
+  }
+  .btn--size-small:not(.btn--icon-only).btn--icon-position-left {
+    --btn-padding-inline-start: calc(var(--base) * 0.3);
+  }
+  .btn--size-small:not(.btn--icon-only).btn--icon-position-right {
+    --btn-padding-inline-end: calc(var(--base) * 0.3);
+  }
+  .btn--size-xsmall {
+    --btn-icon-size: calc(var(--base) * 0.8);
+    --btn-icon-content-gap: calc(var(--base) * 0.2);
+    --btn-padding-block-start: 0;
+    --btn-padding-inline-end: calc(var(--base) * 0.3);
+    --btn-padding-inline-start: calc(var(--base) * 0.3);
+    --btn-padding-block-end: 0;
+  }
+  .btn--size-xsmall:not(.btn--icon-only).btn--icon-position-left {
+    --btn-padding-inline-start: calc(var(--base) * 0.2);
+  }
+  .btn--size-xsmall:not(.btn--icon-only).btn--icon-position-right {
+    --btn-padding-inline-end: calc(var(--base) * 0.2);
+  }
+  .btn--size-medium {
+    --btn-icon-size: calc(var(--base) * 1.1);
+    --btn-icon-content-gap: calc(var(--base) * 0.2);
+    --btn-padding-block-start: calc(var(--base) * 0.2);
+    --btn-padding-inline-end: calc(var(--base) * 0.6);
+    --btn-padding-block-end: calc(var(--base) * 0.2);
+    --btn-padding-inline-start: calc(var(--base) * 0.6);
+  }
+  .btn--size-medium:not(.btn--icon-only).btn--icon-position-left {
+    --btn-padding-inline-start: calc(var(--base) * 0.4);
+  }
+  .btn--size-medium:not(.btn--icon-only).btn--icon-position-right {
+    --btn-padding-inline-end: calc(var(--base) * 0.4);
+  }
+  .btn--size-large {
+    --btn-icon-size: calc(var(--base) * 1.2);
+    --btn-icon-content-gap: calc(var(--base) * 0.4);
+    --btn-padding-block-start: calc(var(--base) * 0.4);
+    --btn-padding-inline-end: calc(var(--base) * 0.8);
+    --btn-padding-inline-start: calc(var(--base) * 0.8);
+    --btn-padding-block-end: calc(var(--base) * 0.4);
+  }
+  .btn--size-large:not(.btn--icon-only).btn--icon-position-left {
+    --btn-padding-inline-start: calc(var(--base) * 0.6);
+  }
+  .btn--size-large:not(.btn--icon-only).btn--icon-position-right {
+    --btn-padding-inline-end: calc(var(--base) * 0.6);
+  }
+  html:not([dir=RTL]) .btn--withPopup .btn {
+    border-top-right-radius: 0;
+    border-bottom-right-radius: 0;
+  }
+  html[dir=RTL] .btn--withPopup .btn {
+    border-top-left-radius: 0;
+    border-bottom-left-radius: 0;
+  }
+  .btn:focus-visible {
+    outline: var(--accessibility-outline);
+    outline-offset: var(--accessibility-outline-offset);
+  }
+  .btn.btn--disabled {
+    cursor: not-allowed;
+  }
+  .btn--style-none {
+    padding: 0;
+  }
+  .btn--no-margin {
+    --margin-block: 0;
+  }
+}
+/*!************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************!*\
+  !*** css ./node_modules/next/dist/build/webpack/loaders/css-loader/src/index.js??ruleSet[1].rules[13].oneOf[11].use[2]!./node_modules/next/dist/build/webpack/loaders/postcss-loader/src/index.js??ruleSet[1].rules[13].oneOf[11].use[3]!./node_modules/next/dist/build/webpack/loaders/resolve-url-loader/index.js??ruleSet[1].rules[13].oneOf[11].use[4]!./node_modules/next/dist/compiled/sass-loader/cjs.js??ruleSet[1].rules[13].oneOf[11].use[5]!./node_modules/@payloadcms/ui/dist/elements/Tooltip/index.scss ***!
+  \************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************/
+@layer payload-default {}
+@layer payload-default {}
+@layer payload-default {
+  .tooltip {
+    --caret-size: 6px;
+    opacity: 0;
+    background-color: var(--theme-elevation-800);
+    position: absolute;
+    z-index: 3;
+    left: 50%;
+    padding: 4px 8px;
+    color: var(--theme-elevation-0);
+    line-height: 15px;
+    font-weight: normal;
+    white-space: nowrap;
+    border-radius: 2px;
+    visibility: hidden;
+  }
+  .tooltip::after {
+    content: " ";
+    display: block;
+    position: absolute;
+    transform: translate3d(-50%, 100%, 0);
+    width: 0;
+    height: 0;
+    border-left: var(--caret-size) solid transparent;
+    border-right: var(--caret-size) solid transparent;
+  }
+  .tooltip--show {
+    visibility: visible;
+    opacity: 1;
+    transition: opacity 0.2s ease-in-out;
+    cursor: default;
+  }
+  .tooltip--caret-center::after {
+    left: 50%;
+  }
+  .tooltip--caret-left::after {
+    left: calc(var(--base) * 0.5);
+  }
+  .tooltip--caret-right::after {
+    right: calc(var(--base) * 0.5);
+  }
+  .tooltip--position-top {
+    top: calc(var(--base) * -1.25);
+    transform: translate3d(-50%, calc(var(--caret-size) * -1), 0);
+  }
+  .tooltip--position-top::after {
+    bottom: 1px;
+    border-top: var(--caret-size) solid var(--theme-elevation-800);
+  }
+  .tooltip--position-bottom {
+    bottom: calc(var(--base) * -1.25);
+    transform: translate3d(-50%, var(--caret-size), 0);
+  }
+  .tooltip--position-bottom::after {
+    bottom: calc(100% + var(--caret-size) - 1px);
+    border-bottom: var(--caret-size) solid var(--theme-elevation-800);
+  }
+  .tooltip .tooltip-content {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    width: 100%;
+  }
+  @media (max-width: 1024px) {
+    .tooltip {
+      display: none;
+    }
+  }
+  html[data-theme=light] .tooltip:not(.field-error) {
+    background-color: var(--theme-elevation-100);
+    color: var(--theme-elevation-1000);
+  }
+  html[data-theme=light] .tooltip--position-top:not(.field-error):after {
+    border-top-color: var(--theme-elevation-100);
+  }
+  html[data-theme=light] .tooltip--position-bottom:not(.field-error):after {
+    border-bottom-color: var(--theme-elevation-100);
+  }
+}
+/*!*********************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************!*\
+  !*** css ./node_modules/next/dist/build/webpack/loaders/css-loader/src/index.js??ruleSet[1].rules[13].oneOf[11].use[2]!./node_modules/next/dist/build/webpack/loaders/postcss-loader/src/index.js??ruleSet[1].rules[13].oneOf[11].use[3]!./node_modules/next/dist/build/webpack/loaders/resolve-url-loader/index.js??ruleSet[1].rules[13].oneOf[11].use[4]!./node_modules/next/dist/compiled/sass-loader/cjs.js??ruleSet[1].rules[13].oneOf[11].use[5]!./node_modules/@payloadcms/ui/dist/elements/Card/index.scss ***!
+  \*********************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************/
+@layer payload-default {
+  .card__title {
+    font-family: var(--font-body);
+    font-weight: 500;
+  }
+  .card__title {
+    margin: 0;
+    font-size: 13px;
+    line-height: 16px;
+  }
+}
+@layer payload-default {}
+@layer payload-default {
+  .card {
+    background: var(--theme-elevation-50);
+    padding: 16px;
+    width: 100%;
+    min-height: 80px;
+    position: relative;
+    border-radius: var(--style-radius-m);
+    border: 1px solid var(--theme-border-color);
+    transition-property: border, box-shadow, background;
+    transition-duration: 100ms;
+    transition-timing-function: cubic-bezier(0, 0.2, 0.2, 1);
+    display: flex;
+    justify-content: space-between;
+    align-self: start;
+    gap: 16px;
+  }
+  .card__title {
+    letter-spacing: 0;
+    font-weight: 600;
+    line-height: 16px;
+    width: 100%;
+    margin: 2px 0;
+  }
+  .card__actions {
+    position: relative;
+    z-index: 2;
+    display: inline-flex;
+  }
+  .card__actions .btn {
+    margin: 0;
+    flex-shrink: 0;
+  }
+  .card__actions .btn__icon {
+    border: 1px solid var(--theme-border-color);
+    transition-property: border, box-shadow, color, background;
+    transition-duration: 100ms;
+    transition-timing-function: cubic-bezier(0, 0.2, 0.2, 1);
+  }
+  .card__actions .btn__icon:hover {
+    border: 1px solid var(--theme-elevation-500);
+    background-color: var(--theme-elevation-0);
+    color: currentColor;
+    box-shadow: 0 2px 2px -1px rgba(0, 0, 0, 0.1);
+  }
+  .card--has-onclick {
+    cursor: pointer;
+  }
+  .card--has-onclick:hover {
+    background: var(--theme-elevation-50);
+    border: 1px solid var(--theme-elevation-250);
+    box-shadow: 0 4px 8px -2px rgba(0, 0, 0, 0.05);
+  }
+  .card__click {
+    z-index: 1;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    position: absolute;
+    margin: 0;
+  }
+}
+/*!******************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************!*\
+  !*** css ./node_modules/next/dist/build/webpack/loaders/css-loader/src/index.js??ruleSet[1].rules[13].oneOf[11].use[2]!./node_modules/next/dist/build/webpack/loaders/postcss-loader/src/index.js??ruleSet[1].rules[13].oneOf[11].use[3]!./node_modules/next/dist/build/webpack/loaders/resolve-url-loader/index.js??ruleSet[1].rules[13].oneOf[11].use[4]!./node_modules/next/dist/compiled/sass-loader/cjs.js??ruleSet[1].rules[13].oneOf[11].use[5]!./node_modules/@payloadcms/ui/dist/icons/Lock/index.scss ***!
+  \******************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************/
+@layer payload-default {}
+@layer payload-default {}
+@layer payload-default {
+  .icon--lock .stroke {
+    stroke: currentColor;
+    stroke-width: 1px;
+  }
+}
+/*!***********************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************!*\
+  !*** css ./node_modules/next/dist/build/webpack/loaders/css-loader/src/index.js??ruleSet[1].rules[13].oneOf[11].use[2]!./node_modules/next/dist/build/webpack/loaders/postcss-loader/src/index.js??ruleSet[1].rules[13].oneOf[11].use[3]!./node_modules/next/dist/build/webpack/loaders/resolve-url-loader/index.js??ruleSet[1].rules[13].oneOf[11].use[4]!./node_modules/next/dist/compiled/sass-loader/cjs.js??ruleSet[1].rules[13].oneOf[11].use[5]!./node_modules/@payloadcms/ui/dist/elements/Locked/index.scss ***!
+  \***********************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************/
+@layer payload-default {}
+@layer payload-default {}
+@layer payload-default {
+  .locked {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    pointer-events: all;
+  }
+  .locked__tooltip {
+    left: 0;
+    transform: translate3d(0%, calc(var(--caret-size) * -1), 0);
+  }
+}
