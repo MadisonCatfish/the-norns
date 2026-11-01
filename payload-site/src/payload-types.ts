@@ -272,7 +272,7 @@ export interface Roadmap {
   id: number;
   order: number;
   title: string;
-  status: 'done' | 'wip' | 'todo' | 'need' | 'cancelled';
+  itemStatus: 'done' | 'wip' | 'todo' | 'need' | 'cancelled';
   statusLabel?: string | null;
   description: string;
   checklist?:
@@ -508,7 +508,7 @@ export interface MetricsSelect<T extends boolean = true> {
 export interface RoadmapSelect<T extends boolean = true> {
   order?: T;
   title?: T;
-  status?: T;
+  itemStatus?: T;
   statusLabel?: T;
   description?: T;
   checklist?:

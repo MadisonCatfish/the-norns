@@ -13,7 +13,8 @@ export interface RoadmapItem {
   id: string | number
   order: number
   title: string
-  status: 'done' | 'wip' | 'todo' | 'need' | 'cancelled'
+  itemStatus?: 'done' | 'wip' | 'todo' | 'need' | 'cancelled' | null
+  status?: 'done' | 'wip' | 'todo' | 'need' | 'cancelled' | null
   statusLabel?: string | null
   description: string
   checklist?: RoadmapChecklistItem[] | null
@@ -26,12 +27,15 @@ interface RoadmapViewProps {
 export function RoadmapView({ items }: RoadmapViewProps) {
   const [activeFilter, setActiveFilter] = useState<'all' | 'done' | 'wip' | 'todo' | 'cancelled'>('all')
 
+  const getItemStatus = (i: RoadmapItem) => i.itemStatus || i.status || 'todo'
+
   // Calculate overall steps completed vs total steps
   const { totalSteps, completedSteps, progressPct } = useMemo(() => {
     let total = 0
     let completed = 0
 
     items.forEach((item) => {
+      const st = getItemStatus(item)
       if (item.checklist && item.checklist.length > 0) {
         item.checklist.forEach((step) => {
           total++
@@ -39,7 +43,7 @@ export function RoadmapView({ items }: RoadmapViewProps) {
         })
       } else {
         total++
-        if (item.status === 'done') completed++
+        if (st === 'done') completed++
       }
     })
 
@@ -50,10 +54,10 @@ export function RoadmapView({ items }: RoadmapViewProps) {
   // Filter items
   const filteredItems = useMemo(() => {
     if (activeFilter === 'all') return items
-    if (activeFilter === 'done') return items.filter((i) => i.status === 'done')
-    if (activeFilter === 'wip') return items.filter((i) => i.status === 'wip')
-    if (activeFilter === 'todo') return items.filter((i) => i.status === 'todo' || i.status === 'need')
-    if (activeFilter === 'cancelled') return items.filter((i) => i.status === 'cancelled')
+    if (activeFilter === 'done') return items.filter((i) => getItemStatus(i) === 'done')
+    if (activeFilter === 'wip') return items.filter((i) => getItemStatus(i) === 'wip')
+    if (activeFilter === 'todo') return items.filter((i) => getItemStatus(i) === 'todo' || getItemStatus(i) === 'need')
+    if (activeFilter === 'cancelled') return items.filter((i) => getItemStatus(i) === 'cancelled')
     return items
   }, [items, activeFilter])
 
@@ -61,10 +65,10 @@ export function RoadmapView({ items }: RoadmapViewProps) {
   const counts = useMemo(() => {
     return {
       all: items.length,
-      done: items.filter((i) => i.status === 'done').length,
-      wip: items.filter((i) => i.status === 'wip').length,
-      todo: items.filter((i) => i.status === 'todo' || i.status === 'need').length,
-      cancelled: items.filter((i) => i.status === 'cancelled').length,
+      done: items.filter((i) => getItemStatus(i) === 'done').length,
+      wip: items.filter((i) => getItemStatus(i) === 'wip').length,
+      todo: items.filter((i) => getItemStatus(i) === 'todo' || getItemStatus(i) === 'need').length,
+      cancelled: items.filter((i) => getItemStatus(i) === 'cancelled').length,
     }
   }, [items])
 
@@ -127,8 +131,9 @@ export function RoadmapView({ items }: RoadmapViewProps) {
       {/* Roadmap Items List */}
       <div style={{ display: 'grid', gap: '14px' }}>
         {filteredItems.map((item) => {
-          const chipClass = `chip ${item.status}`
-          const chipLabel = item.statusLabel || item.status.toUpperCase()
+          const st = getItemStatus(item)
+          const chipClass = `chip ${st}`
+          const chipLabel = item.statusLabel || st.toUpperCase()
 
           return (
             <article key={item.id} className="roadmap-card">

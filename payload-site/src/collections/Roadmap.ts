@@ -9,7 +9,7 @@ export const Roadmap: CollectionConfig = {
   admin: {
     group: 'Site & Navigation',
     useAsTitle: 'title',
-    defaultColumns: ['order', 'title', 'status', 'statusLabel', '_status'],
+    defaultColumns: ['order', 'title', 'itemStatus', 'statusLabel', '_status'],
   },
   access: {
     read: () => true,
@@ -41,7 +41,7 @@ export const Roadmap: CollectionConfig = {
       type: 'row',
       fields: [
         {
-          name: 'status',
+          name: 'itemStatus',
           type: 'select',
           required: true,
           label: 'Status',

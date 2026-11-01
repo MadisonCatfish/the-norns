@@ -298,7 +298,10 @@ async function seed() {
       for (const item of roadmapItems) {
         await payload.create({
           collection: 'roadmap',
-          data: item as any,
+          data: {
+            ...item,
+            itemStatus: item.itemStatus || item.status,
+          } as any,
         })
       }
       console.log(`✓ ${roadmapItems.length} Roadmap items seeded (published)`)
