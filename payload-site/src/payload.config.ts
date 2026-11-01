@@ -9,6 +9,8 @@ import { Media } from './collections/Media'
 import { Releases } from './collections/Releases'
 import { FAQ } from './collections/FAQ'
 import { Compliance } from './collections/Compliance'
+import { Features } from './collections/Features'
+import { Metrics } from './collections/Metrics'
 import { SiteSettings } from './globals/SiteSettings'
 
 const filename = fileURLToPath(import.meta.url)
@@ -32,7 +34,7 @@ export default buildConfig({
       icons: [{ url: '/assets/favicon.ico' }],
     },
   },
-  collections: [Users, Media, Releases, FAQ, Compliance],
+  collections: [Users, Media, Releases, FAQ, Compliance, Features, Metrics],
   globals: [SiteSettings],
   editor: lexicalEditor(),
   secret: process.env.PAYLOAD_SECRET || 'the-norns-telemetry-payload-secret-key-super-secure-2026',

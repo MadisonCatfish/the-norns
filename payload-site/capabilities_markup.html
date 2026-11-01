@@ -1,0 +1,102 @@
+id="capabilities">
+      <div className="section-header">
+        <div className="section-tag">[ FLEET DOCTRINE TELEMETRY ]</div>
+        <h2 className="section-title">Engineered for nullsec krabbing & Havens.</h2>
+        <p className="section-desc">
+          Replace guesswork with real-time mathematical telemetry. Track individual gunboat efficiency, instant capital alarms, and wallet bounties in the heat of combat.
+        </p>
+      </div>
+
+      <div className="attio-bento">
+        {/*  Tile 1: Competition Mode with Animated GIF  */}
+        <div className="bento-box col-7">
+          <div className="bento-content">
+            <div style={{'display': 'flex', 'justifyContent': 'space-between', 'alignItems': 'center'}}>
+              <span className="bento-pill">01 · COMPETITION & DPS RACE</span>
+              <span className="live-anim-badge"><span className="dot"></span>LIVE ANIMATION</span>
+            </div>
+            <h3 className="bento-title">Frigate Runner & Lightning Rod Live ECG</h3>
+            <p className="bento-desc">
+              In Competition mode the Thunderchilds shoot a frigate runner, and their Vorton shots arc on to the NPCs.
+              The Lightning rod graph shows the damage the runner takes per second against its repair, and the Vorton panel shows each ship's throughput.
+            </p>
+          </div>
+          <div className="bento-image-frame">
+            <video className="competition-video" autoPlay muted loop playsInline preload="metadata" poster="/assets/the-norns-competition-poster.jpg" role="img" aria-label="Competition Mode with Live Animated Waves"><source src="/assets/the-norns-competition.webm" type="video/webm" /><source src="/assets/the-norns-competition.mp4" type="video/mp4" /></video>
+          </div>
+        </div>
+
+        {/*  Tile 2: Threat Detection  */}
+        <div className="bento-box col-5">
+          <div className="bento-content">
+            <span className="bento-pill">02 · CAPITAL GRID ALARM</span>
+            <h3 className="bento-title">Molten Hull Heating & Audio Sirens</h3>
+            <p className="bento-desc">
+              The second an NPC Dreadnought (Guristas, Blood, Sansha, Serpentis, Domination) lands on grid, the hull glows in amber. An NPC Titan turns the hull crimson. The three-pulse sound is off by default; turn it on in Settings → General.
+            </p>
+          </div>
+          <div className="bento-image-frame">
+            <img loading="lazy" decoding="async" width="538" height="617" src="/assets/dps_dread_hot.png" alt="Dreadnought Hull Heating Alert" />
+          </div>
+        </div>
+
+        {/*  Tile 3: Dual Doctrine (Vorton + Smartbomb Module Cycles)  */}
+        <div className="bento-box col-6">
+          <div className="bento-content">
+            <span className="bento-pill">03 · DUAL DOCTRINE METERS</span>
+            <h3 className="bento-title">Vorton Projector & Smartbomb Cycle Progress</h3>
+            <p className="bento-desc">
+              Vorton damage per ship on one panel, and smartbomb cycle progress on the other. With the Thundpack filter on, hits on your anchor battleship (Nestor) are left out, so the numbers count damage to NPCs.
+            </p>
+          </div>
+          <div className="bento-image-frame">
+            <img loading="lazy" decoding="async" width="538" height="617" src="/assets/dps_active_vorton_sb.png" alt="Active Vorton and Smartbomb Cycle Telemetry" />
+          </div>
+        </div>
+
+        {/*  Tile 4: Session History & Calendar Ledger  */}
+        <div className="bento-box col-6">
+          <div className="bento-content">
+            <span className="bento-pill">04 · SESSION HISTORY & CALENDAR</span>
+            <h3 className="bento-title">Session History & Interactive Calendar Ledger</h3>
+            <p className="bento-desc">
+              Every session is saved on your PC in %LOCALAPPDATA%\The Norns, and updates keep it. The list shows each site's ISK and anomaly count, faction commanders (★), titans and pirate dreadnoughts. The calendar card switches between Today, Quarter, Year and All sessions.
+            </p>
+          </div>
+          <div className="bento-image-frame">
+            <img loading="lazy" decoding="async" width="538" height="617" src="/assets/dps_settings_stats.png" alt="Session History and Calendar Statistics Window" />
+          </div>
+        </div>
+
+        {/*  Tile 5: Compact & Potato Profiles  */}
+        <div className="bento-box col-6">
+          <div className="bento-content">
+            <span className="bento-pill">05 · COMPACT OVERLAY</span>
+            <h3 className="bento-title">Compact Mode for Single Screens</h3>
+            <p className="bento-desc">
+              Compact mode, set in Settings: no power display or printed band, a narrow damage display and a shorter Close key. The bounty grid stays as one row of column averages.
+            </p>
+          </div>
+          <div className="bento-image-frame">
+            <img loading="lazy" decoding="async" width="538" height="436" src="/assets/dps_compact.png" alt="Compact Mode Layout" />
+          </div>
+        </div>
+
+        {/*  Tile 6: Ultra-Low Overhead  */}
+        <div className="bento-box col-6">
+          <div className="bento-content">
+            <span className="bento-pill">06 · POTATO GRAPHICS</span>
+            <h3 className="bento-title">Potato Mode for Large Client Counts</h3>
+            <p className="bento-desc">
+              Off by default; turn it on in Settings. Renders at 5 FPS with no glow, glass light or animation. Measured at ~3.5% of one CPU core on the owner's rig, against 28.5% without it.
+            </p>
+          </div>
+          <div className="bento-image-frame">
+            <img loading="lazy" decoding="async" width="538" height="617" src="/assets/dps_potato.png" alt="Potato Mode Layout" />
+          </div>
+        </div>
+      </div>
+    </section>
+
+    {/*  Architecture & Compliance (Attio Style)  */}
+    <section className="section-wrap" 

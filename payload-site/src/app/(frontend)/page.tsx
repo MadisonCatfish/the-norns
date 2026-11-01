@@ -11,6 +11,8 @@ export default async function HomePage() {
   let faqItems: any[] = []
   let complianceCards: any[] = []
   let siteSettings: any = null
+  let featuresList: any[] = []
+  let metricsList: any[] = []
 
   try {
     const payload = await getPayload({ config })
@@ -38,6 +40,22 @@ export default async function HomePage() {
       limit: 10,
     })
     complianceCards = complianceRes.docs || []
+
+    // Fetch Features
+    const featuresRes = await payload.find({
+      collection: 'features',
+      sort: 'order',
+      limit: 20,
+    })
+    featuresList = featuresRes.docs || []
+
+    // Fetch Metrics
+    const metricsRes = await payload.find({
+      collection: 'metrics',
+      sort: 'order',
+      limit: 10,
+    })
+    metricsList = metricsRes.docs || []
 
     // Fetch Site Settings
     siteSettings = await payload.findGlobal({
@@ -169,37 +187,40 @@ export default async function HomePage() {
 
     {/*  Attio Structural Metric Tiles  */}
     <div className="metric-grid">
-      <div className="metric-cell">
-        <div className="metric-header">
-          <span>[ 01 ]</span> INPUT INTEGRITY
-        </div>
-        <div className="metric-val">0 inputs</div>
-        <div className="metric-desc">Zero macros, clicks, or input broadcasting.</div>
-      </div>
-
-      <div className="metric-cell">
-        <div className="metric-header">
-          <span>[ 02 ]</span> MEMORY SCRAPING
-        </div>
-        <div className="metric-val">0 DLLs</div>
-        <div className="metric-desc">Zero game memory reading or DLL injection.</div>
-      </div>
-
-      <div className="metric-cell">
-        <div className="metric-header">
-          <span>[ 03 ]</span> POTATO MODE CPU
-        </div>
-        <div className="metric-val">~3.5%</div>
-        <div className="metric-desc">Of one CPU core, measured on the owner's rig in Potato mode.</div>
-      </div>
-
-      <div className="metric-cell">
-        <div className="metric-header">
-          <span>[ 04 ]</span> CLIENT DOCK
-        </div>
-        <div className="metric-val">8</div>
-        <div className="metric-desc">Most clients the Carousel dock shows at once.</div>
-      </div>
+      {metricsList && metricsList.length > 0 ? (
+        metricsList.map((m: any) => (
+          <div key={m.id} className="metric-cell">
+            <div className="metric-header">
+              <span>{m.indexTag}</span> {m.label}
+            </div>
+            <div className="metric-val">{m.value}</div>
+            <div className="metric-desc">{m.description}</div>
+          </div>
+        ))
+      ) : (
+        <>
+          <div className="metric-cell">
+            <div className="metric-header"><span>[ 01 ]</span> INPUT INTEGRITY</div>
+            <div className="metric-val">0 inputs</div>
+            <div className="metric-desc">Zero macros, clicks, or input broadcasting.</div>
+          </div>
+          <div className="metric-cell">
+            <div className="metric-header"><span>[ 02 ]</span> MEMORY SCRAPING</div>
+            <div className="metric-val">0 DLLs</div>
+            <div className="metric-desc">Zero game memory reading or DLL injection.</div>
+          </div>
+          <div className="metric-cell">
+            <div className="metric-header"><span>[ 03 ]</span> POTATO MODE CPU</div>
+            <div className="metric-val">~3.5%</div>
+            <div className="metric-desc">Of one CPU core, measured on the owner's rig in Potato mode.</div>
+          </div>
+          <div className="metric-cell">
+            <div className="metric-header"><span>[ 04 ]</span> CLIENT DOCK</div>
+            <div className="metric-val">8</div>
+            <div className="metric-desc">Most clients the Carousel dock shows at once.</div>
+          </div>
+        </>
+      )}
     </div>
 
     {/*  Capabilities Bento (Attio Style with Real Release Shots & Animated GIF)  */}
@@ -213,93 +234,58 @@ export default async function HomePage() {
       </div>
 
       <div className="attio-bento">
-        {/*  Tile 1: Competition Mode with Animated GIF  */}
-        <div className="bento-box col-7">
-          <div className="bento-content">
-            <div style={{'display': 'flex', 'justifyContent': 'space-between', 'alignItems': 'center'}}>
-              <span className="bento-pill">01 · COMPETITION & DPS RACE</span>
-              <span className="live-anim-badge"><span className="dot"></span>LIVE ANIMATION</span>
-            </div>
-            <h3 className="bento-title">Frigate Runner & Lightning Rod Live ECG</h3>
-            <p className="bento-desc">
-              In Competition mode the Thunderchilds shoot a frigate runner, and their Vorton shots arc on to the NPCs.
-              The Lightning rod graph shows the damage the runner takes per second against its repair, and the Vorton panel shows each ship's throughput.
-            </p>
-          </div>
-          <div className="bento-image-frame">
-            <video className="competition-video" autoPlay muted loop playsInline preload="metadata" poster="/assets/the-norns-competition-poster.jpg" role="img" aria-label="Competition Mode with Live Animated Waves"><source src="/assets/the-norns-competition.webm" type="video/webm" /><source src="/assets/the-norns-competition.mp4" type="video/mp4" /></video>
-          </div>
-        </div>
+        {featuresList && featuresList.length > 0 ? (
+          featuresList.map((f: any) => {
+            const imgSrc = (f.mediaImage && typeof f.mediaImage === 'object' && f.mediaImage.url)
+              ? f.mediaImage.url
+              : (f.imageUrl || '/assets/dps_compact.png')
 
-        {/*  Tile 2: Threat Detection  */}
-        <div className="bento-box col-5">
-          <div className="bento-content">
-            <span className="bento-pill">02 · CAPITAL GRID ALARM</span>
-            <h3 className="bento-title">Molten Hull Heating & Audio Sirens</h3>
-            <p className="bento-desc">
-              The second an NPC Dreadnought (Guristas, Blood, Sansha, Serpentis, Domination) lands on grid, the hull glows in amber. An NPC Titan turns the hull crimson. The three-pulse sound is off by default; turn it on in Settings → General.
-            </p>
-          </div>
-          <div className="bento-image-frame">
-            <img loading="lazy" decoding="async" width="538" height="617" src="/assets/dps_dread_hot.png" alt="Dreadnought Hull Heating Alert" />
-          </div>
-        </div>
-
-        {/*  Tile 3: Dual Doctrine (Vorton + Smartbomb Module Cycles)  */}
-        <div className="bento-box col-6">
-          <div className="bento-content">
-            <span className="bento-pill">03 · DUAL DOCTRINE METERS</span>
-            <h3 className="bento-title">Vorton Projector & Smartbomb Cycle Progress</h3>
-            <p className="bento-desc">
-              Vorton damage per ship on one panel, and smartbomb cycle progress on the other. With the Thundpack filter on, hits on your anchor battleship (Nestor) are left out, so the numbers count damage to NPCs.
-            </p>
-          </div>
-          <div className="bento-image-frame">
-            <img loading="lazy" decoding="async" width="538" height="617" src="/assets/dps_active_vorton_sb.png" alt="Active Vorton and Smartbomb Cycle Telemetry" />
-          </div>
-        </div>
-
-        {/*  Tile 4: Session History & Calendar Ledger  */}
-        <div className="bento-box col-6">
-          <div className="bento-content">
-            <span className="bento-pill">04 · SESSION HISTORY & CALENDAR</span>
-            <h3 className="bento-title">Session History & Interactive Calendar Ledger</h3>
-            <p className="bento-desc">
-              Every session is saved on your PC in %LOCALAPPDATA%\The Norns, and updates keep it. The list shows each site's ISK and anomaly count, faction commanders (★), titans and pirate dreadnoughts. The calendar card switches between Today, Quarter, Year and All sessions.
-            </p>
-          </div>
-          <div className="bento-image-frame">
-            <img loading="lazy" decoding="async" width="538" height="617" src="/assets/dps_settings_stats.png" alt="Session History and Calendar Statistics Window" />
-          </div>
-        </div>
-
-        {/*  Tile 5: Compact & Potato Profiles  */}
-        <div className="bento-box col-6">
-          <div className="bento-content">
-            <span className="bento-pill">05 · COMPACT OVERLAY</span>
-            <h3 className="bento-title">Compact Mode for Single Screens</h3>
-            <p className="bento-desc">
-              Compact mode, set in Settings: no power display or printed band, a narrow damage display and a shorter Close key. The bounty grid stays as one row of column averages.
-            </p>
-          </div>
-          <div className="bento-image-frame">
-            <img loading="lazy" decoding="async" width="538" height="436" src="/assets/dps_compact.png" alt="Compact Mode Layout" />
-          </div>
-        </div>
-
-        {/*  Tile 6: Ultra-Low Overhead  */}
-        <div className="bento-box col-6">
-          <div className="bento-content">
-            <span className="bento-pill">06 · POTATO GRAPHICS</span>
-            <h3 className="bento-title">Potato Mode for Large Client Counts</h3>
-            <p className="bento-desc">
-              Off by default; turn it on in Settings. Renders at 5 FPS with no glow, glass light or animation. Measured at ~3.5% of one CPU core on the owner's rig, against 28.5% without it.
-            </p>
-          </div>
-          <div className="bento-image-frame">
-            <img loading="lazy" decoding="async" width="538" height="617" src="/assets/dps_potato.png" alt="Potato Mode Layout" />
-          </div>
-        </div>
+            return (
+              <div key={f.id} className={`bento-box ${f.colSpan || 'col-6'}`}>
+                <div className="bento-content">
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <span className="bento-pill">{f.pill}</span>
+                    {f.hasLiveBadge && (
+                      <span className="live-anim-badge">
+                        <span className="dot"></span>LIVE ANIMATION
+                      </span>
+                    )}
+                  </div>
+                  <h3 className="bento-title">{f.title}</h3>
+                  <p className="bento-desc">{f.description}</p>
+                </div>
+                <div className="bento-image-frame">
+                  {f.isVideo ? (
+                    <video
+                      className="competition-video"
+                      autoPlay
+                      muted
+                      loop
+                      playsInline
+                      preload="metadata"
+                      poster={f.videoPoster || '/assets/the-norns-competition-poster.jpg'}
+                      role="img"
+                      aria-label={f.title}
+                    >
+                      <source src={f.videoUrl || '/assets/the-norns-competition.mp4'} type="video/mp4" />
+                    </video>
+                  ) : (
+                    <img
+                      loading="lazy"
+                      decoding="async"
+                      width={538}
+                      height={617}
+                      src={imgSrc}
+                      alt={f.title}
+                    />
+                  )}
+                </div>
+              </div>
+            )
+          })
+        ) : (
+          <div>Loading capabilities...</div>
+        )}
       </div>
     </section>
 

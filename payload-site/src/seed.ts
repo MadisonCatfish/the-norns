@@ -4,7 +4,7 @@ import config from './payload.config'
 async function seed() {
   const payload = await getPayload({ config })
 
-  console.log('--- Seeding Payload SQLite Database with Drafts & Versions ---')
+  console.log('--- Seeding Payload SQLite Database with Features & Metrics ---')
 
   // 1. Seed Admin User
   const existingUsers = await payload.find({
@@ -116,7 +116,106 @@ async function seed() {
     console.log('✓ 11 FAQ Items seeded (published)')
   }
 
-  // 5. Seed Site Settings
+  // 5. Seed Hero Metrics
+  const existingMetrics = await payload.find({
+    collection: 'metrics',
+    limit: 1,
+  })
+
+  if (existingMetrics.totalDocs === 0) {
+    const metricsData = [
+      { indexTag: '[ 01 ]', label: 'INPUT INTEGRITY', value: '0 inputs', description: 'Zero macros, clicks, or input broadcasting.', order: 1, _status: 'published' },
+      { indexTag: '[ 02 ]', label: 'MEMORY SCRAPING', value: '0 DLLs', description: 'Zero game memory reading or DLL injection.', order: 2, _status: 'published' },
+      { indexTag: '[ 03 ]', label: 'POTATO MODE CPU', value: '~3.5%', description: "Of one CPU core, measured on the owner's rig in Potato mode.", order: 3, _status: 'published' },
+      { indexTag: '[ 04 ]', label: 'CLIENT DOCK', value: '8', description: 'Most clients the Carousel dock shows at once.', order: 4, _status: 'published' },
+    ]
+
+    for (const m of metricsData) {
+      await payload.create({
+        collection: 'metrics',
+        data: m as any,
+      })
+    }
+    console.log('✓ 4 Hero Metrics seeded (published)')
+  }
+
+  // 6. Seed Bento Features
+  const existingFeatures = await payload.find({
+    collection: 'features',
+    limit: 1,
+  })
+
+  if (existingFeatures.totalDocs === 0) {
+    const featuresData = [
+      {
+        pill: '01 · COMPETITION & DPS RACE',
+        title: 'Frigate Runner & Lightning Rod Live ECG',
+        description: "In Competition mode the Thunderchilds shoot a frigate runner, and their Vorton shots arc on to the NPCs. The Lightning rod graph shows the damage the runner takes per second against its repair, and the Vorton panel shows each ship's throughput.",
+        colSpan: 'col-7',
+        hasLiveBadge: true,
+        isVideo: true,
+        videoPoster: '/assets/the-norns-competition-poster.jpg',
+        videoUrl: '/assets/the-norns-competition.mp4',
+        order: 1,
+        _status: 'published',
+      },
+      {
+        pill: '02 · CAPITAL GRID ALARM',
+        title: 'Molten Hull Heating & Audio Sirens',
+        description: 'The second an NPC Dreadnought (Guristas, Blood, Sansha, Serpentis, Domination) lands on grid, the hull glows in amber. An NPC Titan turns the hull crimson. The three-pulse sound is off by default; turn it on in Settings → General.',
+        colSpan: 'col-5',
+        imageUrl: '/assets/dps_dread_hot.png',
+        order: 2,
+        _status: 'published',
+      },
+      {
+        pill: '03 · DUAL DOCTRINE METERS',
+        title: 'Vorton Projector & Smartbomb Cycle Progress',
+        description: 'Vorton damage per ship on one panel, and smartbomb cycle progress on the other. With the Thundpack filter on, hits on your anchor battleship (Nestor) are left out, so the numbers count damage to NPCs.',
+        colSpan: 'col-6',
+        imageUrl: '/assets/dps_active_vorton_sb.png',
+        order: 3,
+        _status: 'published',
+      },
+      {
+        pill: '04 · SESSION HISTORY & CALENDAR',
+        title: 'Session History & Interactive Calendar Ledger',
+        description: "Every session is saved on your PC in %LOCALAPPDATA%\\The Norns, and updates keep it. The list shows each site's ISK and anomaly count, faction commanders (★), titans and pirate dreadnoughts. The calendar card switches between Today, Quarter, Year and All sessions.",
+        colSpan: 'col-6',
+        imageUrl: '/assets/dps_settings_stats.png',
+        order: 4,
+        _status: 'published',
+      },
+      {
+        pill: '05 · COMPACT OVERLAY',
+        title: 'Compact Mode for Single Screens',
+        description: 'Compact mode, set in Settings: no power display or printed band, a narrow damage display and a shorter Close key. The bounty grid stays as one row of column averages.',
+        colSpan: 'col-6',
+        imageUrl: '/assets/dps_compact.png',
+        order: 5,
+        _status: 'published',
+      },
+      {
+        pill: '06 · POTATO GRAPHICS',
+        title: 'Potato Mode for Large Client Counts',
+        description: "Off by default; turn it on in Settings. Renders at 5 FPS with no glow, glass light or animation. Measured at ~3.5% of one CPU core on the owner's rig, against 28.5% without it.",
+        colSpan: 'col-6',
+        imageUrl: '/assets/dps_potato.png',
+        order: 6,
+        _status: 'published',
+      },
+    ]
+
+    for (const f of featuresData) {
+      await payload.create({
+        collection: 'features',
+        data: f as any,
+      })
+    }
+    console.log('✓ 6 Bento Features seeded (published)')
+  }
+
+  // 7. Seed Site Settings
   await payload.updateGlobal({
     slug: 'site-settings',
     data: {

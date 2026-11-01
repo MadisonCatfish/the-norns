@@ -72,6 +72,8 @@ export interface Config {
     releases: Release;
     faq: Faq;
     compliance: Compliance;
+    features: Feature;
+    metrics: Metric;
     'payload-kv': PayloadKv;
     'payload-locked-documents': PayloadLockedDocument;
     'payload-preferences': PayloadPreference;
@@ -84,6 +86,8 @@ export interface Config {
     releases: ReleasesSelect<false> | ReleasesSelect<true>;
     faq: FaqSelect<false> | FaqSelect<true>;
     compliance: ComplianceSelect<false> | ComplianceSelect<true>;
+    features: FeaturesSelect<false> | FeaturesSelect<true>;
+    metrics: MetricsSelect<false> | MetricsSelect<true>;
     'payload-kv': PayloadKvSelect<false> | PayloadKvSelect<true>;
     'payload-locked-documents': PayloadLockedDocumentsSelect<false> | PayloadLockedDocumentsSelect<true>;
     'payload-preferences': PayloadPreferencesSelect<false> | PayloadPreferencesSelect<true>;
@@ -218,6 +222,42 @@ export interface Compliance {
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "features".
+ */
+export interface Feature {
+  id: number;
+  pill: string;
+  title: string;
+  description: string;
+  colSpan?: ('col-6' | 'col-7' | 'col-5') | null;
+  hasLiveBadge?: boolean | null;
+  mediaImage?: (number | null) | Media;
+  imageUrl?: string | null;
+  isVideo?: boolean | null;
+  videoPoster?: string | null;
+  videoUrl?: string | null;
+  order?: number | null;
+  updatedAt: string;
+  createdAt: string;
+  _status?: ('draft' | 'published') | null;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "metrics".
+ */
+export interface Metric {
+  id: number;
+  indexTag: string;
+  label: string;
+  value: string;
+  description: string;
+  order?: number | null;
+  updatedAt: string;
+  createdAt: string;
+  _status?: ('draft' | 'published') | null;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "payload-kv".
  */
 export interface PayloadKv {
@@ -259,6 +299,14 @@ export interface PayloadLockedDocument {
     | ({
         relationTo: 'compliance';
         value: number | Compliance;
+      } | null)
+    | ({
+        relationTo: 'features';
+        value: number | Feature;
+      } | null)
+    | ({
+        relationTo: 'metrics';
+        value: number | Metric;
       } | null);
   globalSlug?: string | null;
   user: {
@@ -378,6 +426,40 @@ export interface FaqSelect<T extends boolean = true> {
 export interface ComplianceSelect<T extends boolean = true> {
   indexTag?: T;
   title?: T;
+  description?: T;
+  order?: T;
+  updatedAt?: T;
+  createdAt?: T;
+  _status?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "features_select".
+ */
+export interface FeaturesSelect<T extends boolean = true> {
+  pill?: T;
+  title?: T;
+  description?: T;
+  colSpan?: T;
+  hasLiveBadge?: T;
+  mediaImage?: T;
+  imageUrl?: T;
+  isVideo?: T;
+  videoPoster?: T;
+  videoUrl?: T;
+  order?: T;
+  updatedAt?: T;
+  createdAt?: T;
+  _status?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "metrics_select".
+ */
+export interface MetricsSelect<T extends boolean = true> {
+  indexTag?: T;
+  label?: T;
+  value?: T;
   description?: T;
   order?: T;
   updatedAt?: T;
