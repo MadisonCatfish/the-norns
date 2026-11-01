@@ -2,6 +2,7 @@ import React from 'react'
 import type { Metadata } from 'next'
 import './styles.css'
 import { MobileNavScript } from '@/components/MobileNavScript'
+import { InteractiveGlassScript } from '@/components/InteractiveGlassScript'
 
 export const metadata: Metadata = {
   metadataBase: new URL('https://the-norns.pages.dev'),
@@ -53,6 +54,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       <body>
         <div className="bg-canvas" aria-hidden="true" />
         <MobileNavScript />
+        <InteractiveGlassScript />
         {children}
       </body>
     </html>

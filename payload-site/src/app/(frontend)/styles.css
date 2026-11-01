@@ -529,7 +529,9 @@
 
     .metric-grid::before,
     .bento-box::before,
-    .download-card::before {
+    .download-card::before,
+    .hero-card::before,
+    .master-frame::before {
       content: '';
       position: absolute;
       inset: 0;
@@ -537,18 +539,20 @@
       background-size: 512px 512px;
       background-repeat: repeat;
       pointer-events: none;
-      opacity: 0;
-      z-index: 0;
+      opacity: 0.05;
+      z-index: 1;
       mix-blend-mode: screen;
-      mask-image: radial-gradient(circle 200px at var(--mouse-x, -999px) var(--mouse-y, -999px), rgba(0, 0, 0, 0.7) 0%, rgba(0, 0, 0, 0.15) 55%, transparent 100%);
-      -webkit-mask-image: radial-gradient(circle 200px at var(--mouse-x, -999px) var(--mouse-y, -999px), rgba(0, 0, 0, 0.7) 0%, rgba(0, 0, 0, 0.15) 55%, transparent 100%);
+      mask-image: radial-gradient(circle 260px at var(--mouse-x, 50%) var(--mouse-y, 50%), rgba(0, 0, 0, 0.95) 0%, rgba(0, 0, 0, 0.25) 55%, transparent 100%);
+      -webkit-mask-image: radial-gradient(circle 260px at var(--mouse-x, 50%) var(--mouse-y, 50%), rgba(0, 0, 0, 0.95) 0%, rgba(0, 0, 0, 0.25) 55%, transparent 100%);
       transition: opacity 0.25s ease;
     }
 
     .metric-grid:hover::before,
     .bento-box:hover::before,
-    .download-card:hover::before {
-      opacity: 0.14;
+    .download-card:hover::before,
+    .hero-card:hover::before,
+    .master-frame:hover::before {
+      opacity: 0.22;
     }
 
     /* Images, buttons and interactive controls strictly stay above the glass scratch layer */
