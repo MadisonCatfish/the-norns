@@ -99,9 +99,11 @@ export interface Config {
   fallbackLocale: null;
   globals: {
     'site-settings': SiteSetting;
+    footer: Footer;
   };
   globalsSelect: {
     'site-settings': SiteSettingsSelect<false> | SiteSettingsSelect<true>;
+    footer: FooterSelect<false> | FooterSelect<true>;
   };
   locale: null;
   widgets: {
@@ -524,6 +526,35 @@ export interface SiteSetting {
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "footer".
+ */
+export interface Footer {
+  id: number;
+  tagline?: string | null;
+  githubUrl?: string | null;
+  releasesUrl?: string | null;
+  columns?:
+    | {
+        title: string;
+        links?:
+          | {
+              label: string;
+              url: string;
+              newTab?: boolean | null;
+              id?: string | null;
+            }[]
+          | null;
+        id?: string | null;
+      }[]
+    | null;
+  copyrightNotice?: string | null;
+  ccpDisclaimer?: string | null;
+  _status?: ('draft' | 'published') | null;
+  updatedAt?: string | null;
+  createdAt?: string | null;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "site-settings_select".
  */
 export interface SiteSettingsSelect<T extends boolean = true> {
@@ -533,6 +564,35 @@ export interface SiteSettingsSelect<T extends boolean = true> {
   githubUrl?: T;
   discordUrl?: T;
   copyrightNotice?: T;
+  _status?: T;
+  updatedAt?: T;
+  createdAt?: T;
+  globalType?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "footer_select".
+ */
+export interface FooterSelect<T extends boolean = true> {
+  tagline?: T;
+  githubUrl?: T;
+  releasesUrl?: T;
+  columns?:
+    | T
+    | {
+        title?: T;
+        links?:
+          | T
+          | {
+              label?: T;
+              url?: T;
+              newTab?: T;
+              id?: T;
+            };
+        id?: T;
+      };
+  copyrightNotice?: T;
+  ccpDisclaimer?: T;
   _status?: T;
   updatedAt?: T;
   createdAt?: T;

@@ -12,6 +12,7 @@ import { Compliance } from './collections/Compliance'
 import { Features } from './collections/Features'
 import { Metrics } from './collections/Metrics'
 import { SiteSettings } from './globals/SiteSettings'
+import { Footer } from './globals/Footer'
 
 const filename = fileURLToPath(import.meta.url)
 const dirname = path.dirname(filename)
@@ -35,7 +36,7 @@ export default buildConfig({
     },
   },
   collections: [Users, Media, Releases, FAQ, Compliance, Features, Metrics],
-  globals: [SiteSettings],
+  globals: [SiteSettings, Footer],
   editor: lexicalEditor(),
   secret: process.env.PAYLOAD_SECRET || 'the-norns-telemetry-payload-secret-key-super-secure-2026',
   typescript: {

@@ -230,6 +230,54 @@ async function seed() {
   })
   console.log('✓ Global Site Settings seeded (published)')
 
+  // 8. Seed Footer
+  await payload.updateGlobal({
+    slug: 'footer',
+    data: {
+      tagline: 'Dedicated telemetry companion for EVE Online EDENCOM & Smartbomb ratting fleets. Passive, read-only, zero injection.',
+      githubUrl: 'https://github.com/MadisonCatfish/the-norns',
+      releasesUrl: 'https://github.com/MadisonCatfish/the-norns/releases',
+      columns: [
+        {
+          title: 'Telemetry',
+          links: [
+            { label: 'Overview', url: '/#overview', newTab: false },
+            { label: 'Doctrine', url: '/#capabilities', newTab: false },
+            { label: 'Compliance', url: '/#pipeline', newTab: false },
+            { label: 'FAQ', url: '/#faq', newTab: false },
+          ],
+        },
+        {
+          title: 'Engineering',
+          links: [
+            { label: 'Source & Build', url: '/source', newTab: false },
+            { label: 'Roadmap', url: 'roadmap.html', newTab: false },
+            { label: 'Changelog', url: 'https://github.com/MadisonCatfish/the-norns/releases', newTab: true },
+          ],
+        },
+        {
+          title: 'Distribution',
+          links: [
+            { label: 'Installer (.exe)', url: 'https://github.com/MadisonCatfish/the-norns/releases/download/v1.4.0/TheNorns-Setup-1.4.0.exe', newTab: false },
+            { label: 'Portable (.zip)', url: 'https://github.com/MadisonCatfish/the-norns/releases/download/v1.4.0/TheNorns-1.4.0-portable.zip', newTab: false },
+            { label: 'GitHub', url: 'https://github.com/MadisonCatfish/the-norns', newTab: true },
+          ],
+        },
+        {
+          title: 'Legal',
+          links: [
+            { label: 'EULA', url: 'eula.txt', newTab: false },
+            { label: 'MIT License', url: '/source', newTab: false },
+          ],
+        },
+      ],
+      copyrightNotice: '© 2026 The Norns (ノルン). Independent open-source companion under the MIT License.',
+      ccpDisclaimer: 'EVE Online® & CCP® © 2014 CCP hf. Not affiliated with or endorsed by CCP hf.',
+      _status: 'published',
+    } as any,
+  })
+  console.log('✓ Global Footer seeded (published)')
+
   console.log('--- Seeding Complete! ---')
   process.exit(0)
 }
