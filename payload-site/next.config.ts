@@ -13,6 +13,10 @@ const nextConfig: NextConfig = {
         source: '/index.html',
         destination: '/',
       },
+      {
+        source: '/source.html',
+        destination: '/source',
+      },
     ]
   },
   images: {

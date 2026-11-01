@@ -21,6 +21,16 @@ export default buildConfig({
     importMap: {
       baseDir: path.resolve(dirname),
     },
+    components: {
+      graphics: {
+        Logo: './components/admin/AdminLogo#AdminLogo',
+        Icon: './components/admin/AdminIcon#AdminIcon',
+      },
+    },
+    meta: {
+      titleSuffix: '· The Norns Admin',
+      icons: [{ url: '/assets/favicon.ico' }],
+    },
   },
   collections: [Users, Media, Releases, FAQ, Compliance],
   globals: [SiteSettings],

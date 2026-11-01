@@ -1,0 +1,17 @@
+/* Custom The Norns Tactical Dark Theme for Payload Admin */
+.btn--style-primary {
+  background-color: #f7ff14 !important;
+  color: #07090e !important;
+  font-weight: 700 !important;
+  border-radius: 6px !important;
+  transition: all 0.2s ease !important;
+}
+
+.btn--style-primary:hover {
+  background-color: #e2eb0c !important;
+  box-shadow: 0 0 12px rgba(247, 255, 20, 0.35) !important;
+}
+
+.app-header__brand {
+  text-decoration: none !important;
+}
