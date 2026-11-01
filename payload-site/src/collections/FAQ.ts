@@ -7,6 +7,7 @@ export const FAQ: CollectionConfig = {
     plural: 'FAQ Items',
   },
   admin: {
+    group: 'Landing Page Blocks',
     useAsTitle: 'question',
     defaultColumns: ['order', 'question', '_status'],
   },

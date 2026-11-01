@@ -7,6 +7,7 @@ export const Releases: CollectionConfig = {
     plural: 'Releases',
   },
   admin: {
+    group: 'Releases & Media',
     useAsTitle: 'version',
     defaultColumns: ['version', 'isLatest', '_status', 'publishedAt'],
   },

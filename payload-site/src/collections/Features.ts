@@ -7,6 +7,7 @@ export const Features: CollectionConfig = {
     plural: 'Feature Cards (Bento)',
   },
   admin: {
+    group: 'Landing Page Blocks',
     useAsTitle: 'title',
     defaultColumns: ['order', 'pill', 'title', '_status'],
   },

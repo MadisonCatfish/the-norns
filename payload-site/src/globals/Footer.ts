@@ -3,6 +3,9 @@ import type { GlobalConfig } from 'payload'
 export const Footer: GlobalConfig = {
   slug: 'footer',
   label: 'Footer Navigation',
+  admin: {
+    group: 'Site & Navigation',
+  },
   access: {
     read: () => true,
   },

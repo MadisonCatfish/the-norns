@@ -7,6 +7,7 @@ export const Metrics: CollectionConfig = {
     plural: 'Hero Metrics',
   },
   admin: {
+    group: 'Landing Page Blocks',
     useAsTitle: 'label',
     defaultColumns: ['order', 'indexTag', 'label', 'value', '_status'],
   },

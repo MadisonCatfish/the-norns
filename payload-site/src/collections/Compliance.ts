@@ -7,6 +7,7 @@ export const Compliance: CollectionConfig = {
     plural: 'Compliance Cards',
   },
   admin: {
+    group: 'Landing Page Blocks',
     useAsTitle: 'title',
     defaultColumns: ['order', 'indexTag', 'title', '_status'],
   },
