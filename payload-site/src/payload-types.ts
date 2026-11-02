@@ -613,6 +613,15 @@ export interface SiteSetting {
    */
   heroTitle?: string | null;
   heroSubtitle?: string | null;
+  heroPrimaryShow?: boolean | null;
+  heroPrimaryLabel?: string | null;
+  heroPrimaryUrl?: string | null;
+  heroSecondaryShow?: boolean | null;
+  heroSecondaryLabel?: string | null;
+  heroSecondaryUrl?: string | null;
+  heroTertiaryShow?: boolean | null;
+  heroTertiaryLabel?: string | null;
+  heroTertiaryUrl?: string | null;
   githubUrl?: string | null;
   discordUrl?: string | null;
   copyrightNotice?: string | null;
@@ -755,6 +764,15 @@ export interface SiteSettingsSelect<T extends boolean = true> {
       };
   heroTitle?: T;
   heroSubtitle?: T;
+  heroPrimaryShow?: T;
+  heroPrimaryLabel?: T;
+  heroPrimaryUrl?: T;
+  heroSecondaryShow?: T;
+  heroSecondaryLabel?: T;
+  heroSecondaryUrl?: T;
+  heroTertiaryShow?: T;
+  heroTertiaryLabel?: T;
+  heroTertiaryUrl?: T;
   githubUrl?: T;
   discordUrl?: T;
   copyrightNotice?: T;
