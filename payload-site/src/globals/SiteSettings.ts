@@ -71,6 +71,95 @@ export const SiteSettings: GlobalConfig = {
       label: 'Hero Subtitle',
       defaultValue: "Real-time Vorton telemetry and a warp-to-warp anomaly timer. Passive: it reads the game's logs, sends no input and does no memory injection.",
     },
+    // Hero CTA Buttons Management
+    {
+      type: 'collapsible',
+      label: 'Hero CTA Buttons (Call to Action)',
+      admin: {
+        initCollapsed: false,
+      },
+      fields: [
+        // Button 1: Primary (Installer)
+        {
+          type: 'row',
+          fields: [
+            {
+              name: 'heroPrimaryShow',
+              type: 'checkbox',
+              label: 'Show Button 1 (Standalone / Installer)',
+              defaultValue: true,
+              admin: { width: '25%' },
+            },
+            {
+              name: 'heroPrimaryLabel',
+              type: 'text',
+              label: 'Button 1 Text',
+              defaultValue: 'Download Standalone (.exe)',
+              admin: { width: '35%' },
+            },
+            {
+              name: 'heroPrimaryUrl',
+              type: 'text',
+              label: 'Button 1 Custom URL (leave empty for auto latest .exe release)',
+              admin: { width: '40%' },
+            },
+          ],
+        },
+        // Button 2: Secondary (Portable)
+        {
+          type: 'row',
+          fields: [
+            {
+              name: 'heroSecondaryShow',
+              type: 'checkbox',
+              label: 'Show Button 2 (Portable)',
+              defaultValue: true,
+              admin: { width: '25%' },
+            },
+            {
+              name: 'heroSecondaryLabel',
+              type: 'text',
+              label: 'Button 2 Text',
+              defaultValue: 'Portable (.zip)',
+              admin: { width: '35%' },
+            },
+            {
+              name: 'heroSecondaryUrl',
+              type: 'text',
+              label: 'Button 2 Custom URL (leave empty for auto latest .zip release)',
+              admin: { width: '40%' },
+            },
+          ],
+        },
+        // Button 3: Tertiary (Source / Audit)
+        {
+          type: 'row',
+          fields: [
+            {
+              name: 'heroTertiaryShow',
+              type: 'checkbox',
+              label: 'Show Button 3 (Audit / Source)',
+              defaultValue: true,
+              admin: { width: '25%' },
+            },
+            {
+              name: 'heroTertiaryLabel',
+              type: 'text',
+              label: 'Button 3 Text',
+              defaultValue: 'Audit Source & Build →',
+              admin: { width: '35%' },
+            },
+            {
+              name: 'heroTertiaryUrl',
+              type: 'text',
+              label: 'Button 3 URL',
+              defaultValue: '/source',
+              admin: { width: '40%' },
+            },
+          ],
+        },
+      ],
+    },
     {
       type: 'row',
       fields: [

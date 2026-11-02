@@ -105,6 +105,15 @@ export default async function HomePage() {
       installerUrl={installerUrl}
       portableUrl={portableUrl}
       versionTag={versionTag}
+      primaryShow={siteSettings?.heroPrimaryShow}
+      primaryLabel={siteSettings?.heroPrimaryLabel}
+      primaryUrl={siteSettings?.heroPrimaryUrl}
+      secondaryShow={siteSettings?.heroSecondaryShow}
+      secondaryLabel={siteSettings?.heroSecondaryLabel}
+      secondaryUrl={siteSettings?.heroSecondaryUrl}
+      tertiaryShow={siteSettings?.heroTertiaryShow}
+      tertiaryLabel={siteSettings?.heroTertiaryLabel}
+      tertiaryUrl={siteSettings?.heroTertiaryUrl}
     />
 
     {/*  Attio Structural Metric Tiles  */}

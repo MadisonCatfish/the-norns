@@ -16,6 +16,15 @@ interface HeroPinnedSectionProps {
   installerUrl: string
   portableUrl: string
   versionTag: string
+  primaryShow?: boolean | null
+  primaryLabel?: string | null
+  primaryUrl?: string | null
+  secondaryShow?: boolean | null
+  secondaryLabel?: string | null
+  secondaryUrl?: string | null
+  tertiaryShow?: boolean | null
+  tertiaryLabel?: string | null
+  tertiaryUrl?: string | null
 }
 
 export function HeroPinnedSection({
@@ -27,7 +36,28 @@ export function HeroPinnedSection({
   installerUrl,
   portableUrl,
   versionTag,
+  primaryShow,
+  primaryLabel,
+  primaryUrl,
+  secondaryShow,
+  secondaryLabel,
+  secondaryUrl,
+  tertiaryShow,
+  tertiaryLabel,
+  tertiaryUrl,
 }: HeroPinnedSectionProps) {
+  const showBtn1 = primaryShow ?? true
+  const labelBtn1 = primaryLabel?.trim() ? primaryLabel : 'Download Standalone (.exe)'
+  const urlBtn1 = primaryUrl?.trim() ? primaryUrl : installerUrl
+
+  const showBtn2 = secondaryShow ?? true
+  const labelBtn2 = secondaryLabel?.trim() ? secondaryLabel : 'Portable (.zip)'
+  const urlBtn2 = secondaryUrl?.trim() ? secondaryUrl : portableUrl
+
+  const showBtn3 = tertiaryShow ?? true
+  const labelBtn3 = tertiaryLabel?.trim() ? tertiaryLabel : 'Audit Source & Build →'
+  const urlBtn3 = tertiaryUrl?.trim() ? tertiaryUrl : '/source'
+
   const defaultPhrases: PhraseItem[] = [
     { text: 'EDENCOM krabbing.' },
     { text: 'Stormbringer fleets.' },
@@ -207,20 +237,26 @@ export function HeroPinnedSection({
       </p>
 
       <div className="cta-group">
-        <a href={installerUrl} className="btn btn-primary">
-          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
-            <polyline points="7 10 12 15 17 10" />
-            <line x1="12" y1="15" x2="12" y2="3" />
-          </svg>
-          Download Standalone (.exe)
-        </a>
-        <a href={portableUrl} className="btn btn-secondary">
-          Portable (.zip)
-        </a>
-        <a href="/source" className="btn btn-secondary">
-          Audit Source &amp; Build →
-        </a>
+        {showBtn1 && (
+          <a href={urlBtn1} className="btn btn-primary">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+              <polyline points="7 10 12 15 17 10" />
+              <line x1="12" y1="15" x2="12" y2="3" />
+            </svg>
+            {labelBtn1}
+          </a>
+        )}
+        {showBtn2 && (
+          <a href={urlBtn2} className="btn btn-secondary">
+            {labelBtn2}
+          </a>
+        )}
+        {showBtn3 && (
+          <a href={urlBtn3} className="btn btn-secondary">
+            {labelBtn3}
+          </a>
+        )}
       </div>
 
       {/* Asynchronous Levitating Hero Showcase */}
