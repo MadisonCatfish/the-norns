@@ -1,6 +1,6 @@
 # Changelog
 
-## 1.5.0 — 2026-10-31
+## 1.5.0 — 2026-11-02
 
 - Carousel (Settings → Carousel, off by default): the active EVE window's live picture on the power display with its character's name, next / previous hotkeys (set by pressing them; a key the EVE client already uses gets a warning with its action), the wheel over the power display, and client squares beside the body (left, top or right) to click. The clients' order is set by dragging rows in a table; the window left behind can be minimized, and a pin keeps one open. It brings windows to the front as Windows itself does and sends nothing into the game.
 - Settings in five tabs (General, Display, Modes, Carousel, Data); Statistics and About are keys in the header, with tips. The version is no longer printed in the settings — it is on the plate on the body, now in the accent colour, glowing in it when a newer version is out.
