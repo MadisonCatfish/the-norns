@@ -1,0 +1,3 @@
+Title: Compact Mode for Small Screens
+Feature: Smaller body with the key numbers
+Description: A smaller body for a corner of the screen or a second monitor. It keeps the Vorton damage, the smartbombs, the star count and the ISK total, and drops the power display and the printed band.

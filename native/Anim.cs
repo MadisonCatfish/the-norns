@@ -19,7 +19,7 @@ namespace TheNorns
     {
         const int AnimFps = 25;   // the live timer's rate: the easing steps are per frame at 25 fps
 
-        static readonly string[] AnimScenes = { "live", "glass", "spawns", "timer", "competition", "settings", "language", "stats", "formula", "update", "noclient" };
+        static readonly string[] AnimScenes = { "live", "glass", "spawns", "timer", "competition", "settings", "language", "stats", "formula", "update", "noclient", "compact" };
 
         public static void Anim(string dir, string only)
         {
@@ -36,7 +36,7 @@ namespace TheNorns
                 L.Init("en");
                 var rec = new AnimRec(sd);
                 try { Scene(s, rec); }
-                finally { rec.Dispose(); FormulaWindow.DemoOpen = null; }
+                finally { rec.Dispose(); FormulaWindow.DemoOpen = null; Compact = false; }
                 Console.WriteLine(s + ": " + rec.N + " frames");
             }
         }
@@ -146,6 +146,14 @@ namespace TheNorns
                     r.Wait(2.2);
                     r.MoveTo(r.MainAt(f.updateMark, 0.5f, 0.5f), 0.9); r.Wait(0.5); r.Click(); r.Wait(0.8);
                     r.MoveToSpot("update", 0.7); r.Wait(1.8);
+                    break;
+                case "compact":
+                    // Compact mode: the smaller body keeps the key numbers (no power display, narrow damage display)
+                    Compact = true; f.Size = new Size(f.DesiredWidth, f.DesiredHeight);
+                    if (f.shell != null) { f.shell.Dispose(); f.shell = null; }
+                    r.Site(Five, 16, 40, 16);
+                    r.Spawn(3.5, "Shadow Serpentis Vice Admiral", 3);
+                    r.Wait(9);
                     break;
                 case "noclient":
                     // no EVE client: the lamp and the power display fail now and then

@@ -52,3 +52,8 @@ Description: When a newer release is out, the version plate on the hull glows in
 Title: No Client, No Guessing
 Feature: No-client warning
 Description: When no EVE client is running, the lamp and the power display flicker like a short circuit, so an idle meter never looks like a quiet site.
+
+[compact]  compact.mp4 / compact.webm / compact.webp / compact-poster.jpg
+Title: Compact Mode for Small Screens
+Feature: Smaller body with the key numbers
+Description: A smaller body for a corner of the screen or a second monitor. It keeps the Vorton damage, the smartbombs, the star count and the ISK total, and drops the power display and the printed band.
