@@ -10,6 +10,14 @@ A passive DPS meter, real-time ISK tracker, and anomaly companion for EVE Online
   <img src="https://github.com/user-attachments/assets/875f0ab9-9c12-46df-bc68-f7239340d2f8" width="269" alt="The Norns — Session Statistics" />
 </p>
 
+<p align="center">
+  <a href="https://the-norns.pages.dev/"><b>Website</b></a> &nbsp;•&nbsp;
+  <a href="https://the-norns.pages.dev/source.html"><b>Source &amp; Build</b></a> &nbsp;•&nbsp;
+  <a href="https://the-norns.pages.dev/eula.txt"><b>EULA</b></a> &nbsp;•&nbsp;
+  <a href="https://the-norns.pages.dev/roadmap.html"><b>Roadmap</b></a> &nbsp;•&nbsp;
+  <a href="https://github.com/MadisonCatfish/the-norns/releases"><b>Releases</b></a>
+</p>
+
 It runs 100% locally on your PC: no cloud, no account, no telemetry. It only **reads** the combat logs that the EVE client writes to `Documents\EVE\logs\Gamelogs` and the titles of open `EVE - <character>` windows.
 
 - It never sends anything to the game: no key presses, no clicks, no screen capture / OCR.
