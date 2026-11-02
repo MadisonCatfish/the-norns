@@ -25,64 +25,63 @@ export function DeployButton() {
       }
     } catch (err: any) {
       setStatus('error')
-      setMessage(err.message || 'Network error triggering deploy.')
+      setMessage(err.message || 'Network error triggering deployment.')
     }
   }
 
   return (
-    <div style={{
-      background: 'rgba(255, 255, 255, 0.03)',
-      border: '1px solid rgba(255, 255, 255, 0.12)',
-      borderRadius: '10px',
-      padding: '20px',
-      margin: '20px 0',
-      display: 'grid',
-      gap: '12px',
-    }}>
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '10px' }}>
-        <div>
-          <div style={{ fontWeight: 700, fontSize: '15px', color: '#ffffff', display: 'flex', alignItems: 'center', gap: '8px' }}>
-            <span>⚡ Cloudflare Pages Jamstack Deployment</span>
-          </div>
-          <p style={{ margin: '4px 0 0', fontSize: '13px', color: 'rgba(255, 255, 255, 0.65)' }}>
-            Trigger a fresh static build and publish all updated content to Cloudflare CDN edge nodes.
-          </p>
+    <div
+      style={{
+        padding: '16px 20px',
+        backgroundColor: '#0c1017',
+        border: '1px solid #1f293d',
+        borderRadius: '6px',
+        marginBottom: '24px',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        flexWrap: 'wrap',
+        gap: '12px',
+      }}
+    >
+      <div>
+        <div style={{ fontWeight: 600, color: '#f3f4f6', fontSize: '14px', marginBottom: '4px' }}>
+          Publish to Cloudflare Pages
         </div>
-
-        <button
-          type="button"
-          onClick={handleDeploy}
-          disabled={status === 'loading'}
-          style={{
-            background: status === 'loading' ? '#334155' : 'linear-gradient(135deg, #f7ff14 0%, #e2ea00 100%)',
-            color: '#07090e',
-            fontWeight: 700,
-            fontSize: '13px',
-            padding: '10px 20px',
-            borderRadius: '7px',
-            border: 'none',
-            cursor: status === 'loading' ? 'not-allowed' : 'pointer',
-            boxShadow: '0 2px 10px rgba(247, 255, 20, 0.3)',
-            transition: 'all 0.15s ease',
-            whiteSpace: 'nowrap',
-          }}
-        >
-          {status === 'loading' ? 'Deploying...' : '🚀 Deploy to Cloudflare Pages'}
-        </button>
+        <div style={{ color: '#9ca3af', fontSize: '13px' }}>
+          Deploys the latest content changes from this CMS to the live site (<strong>the-norns.pages.dev</strong>).
+        </div>
+        {message && (
+          <div
+            style={{
+              marginTop: '8px',
+              fontSize: '13px',
+              color: status === 'error' ? '#ef4444' : status === 'success' ? '#10b981' : '#38bdf8',
+            }}
+          >
+            {message}
+          </div>
+        )}
       </div>
 
-      {message && (
-        <div style={{
-          padding: '10px 14px',
-          borderRadius: '6px',
+      <button
+        type="button"
+        onClick={handleDeploy}
+        disabled={status === 'loading'}
+        style={{
+          backgroundColor: status === 'loading' ? '#374151' : '#2563eb',
+          color: '#ffffff',
+          border: 'none',
+          padding: '8px 18px',
+          borderRadius: '4px',
+          fontWeight: 600,
           fontSize: '13px',
-          background: status === 'success' ? 'rgba(52, 211, 153, 0.1)' : status === 'error' ? 'rgba(244, 63, 94, 0.1)' : 'rgba(255, 255, 255, 0.05)',
-          color: status === 'success' ? '#34d399' : status === 'error' ? '#f43f5e' : '#cbd5e1',
-          border: `1px solid ${status === 'success' ? 'rgba(52, 211, 153, 0.3)' : status === 'error' ? 'rgba(244, 63, 94, 0.3)' : 'rgba(255, 255, 255, 0.1)'}`,
-        }}>
-          {message}
-        </div>
-      )}
+          cursor: status === 'loading' ? 'not-allowed' : 'pointer',
+          transition: 'background-color 0.15s ease',
+        }}
+      >
+        {status === 'loading' ? 'Triggering...' : 'Deploy to Cloudflare Pages'}
+      </button>
     </div>
   )
 }

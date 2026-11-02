@@ -71,8 +71,14 @@ export default async function SourcePage() {
           </div>
 
           <h1 className="hero-title">
-            Audit the source.<br />
-            <span className="accent-text">Fly safe in nullsec.</span>
+            {sourceData?.heroTitle ? (
+              <span dangerouslySetInnerHTML={{ __html: sourceData.heroTitle }} />
+            ) : (
+              <>
+                Audit the source.<br />
+                <span className="accent-text">Fly safe in nullsec.</span>
+              </>
+            )}
           </h1>
 
           <p className="hero-subtitle">

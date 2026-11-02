@@ -283,7 +283,7 @@ async function seed() {
         },
       ],
       copyrightNotice: '© 2026 The Norns (ノルン). Independent open-source companion under the MIT License.',
-      ccpDisclaimer: 'EVE Online® & CCP® © 2014 CCP hf. Not affiliated with or endorsed by CCP hf.',
+      ccpDisclaimer: 'EVE related materials © 2014 CCP hf. All rights reserved. "EVE", "EVE Online", "CCP", and all related logos and images are trademarks or registered trademarks of CCP hf. The Norns is not affiliated with, endorsed or sponsored by CCP hf.',
       _status: 'published',
     } as any,
   })
