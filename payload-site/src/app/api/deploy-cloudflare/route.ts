@@ -15,7 +15,7 @@ export async function POST(req: Request) {
       return NextResponse.json(
         {
           success: false,
-          message: 'No Cloudflare Deploy Hook URL configured. Please set CLOUDFLARE_DEPLOY_HOOK in .env or in Site Settings.',
+          message: 'No Cloudflare Deploy Hook URL configured. Please check Site Settings in the admin panel.',
         },
         { status: 400 },
       )

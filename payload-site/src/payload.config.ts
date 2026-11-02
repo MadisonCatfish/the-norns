@@ -17,6 +17,7 @@ import { SiteSettings } from './globals/SiteSettings'
 import { Footer } from './globals/Footer'
 import { Header } from './globals/Header'
 import { SourcePage } from './globals/SourcePage'
+import { withDeployHook, withGlobalDeployHook } from './hooks/triggerCloudflareDeploy'
 
 const filename = fileURLToPath(import.meta.url)
 const dirname = path.dirname(filename)
@@ -39,8 +40,9 @@ export default buildConfig({
       icons: [{ url: '/assets/favicon.ico' }],
     },
   },
-  collections: [Users, Media, Releases, FAQ, Compliance, Features, Metrics, Roadmap],
-  globals: [Header, SiteSettings, Footer, SourcePage],
+  // Publishing site content starts a site build when "Auto-Deploy" is on in Site Settings
+  collections: [Users, ...[Media, Releases, FAQ, Compliance, Features, Metrics, Roadmap].map(withDeployHook)],
+  globals: [Header, SiteSettings, Footer, SourcePage].map(withGlobalDeployHook),
   editor: lexicalEditor(),
   secret: process.env.PAYLOAD_SECRET || 'the-norns-telemetry-payload-secret-key-super-secure-2026',
   typescript: {

@@ -449,7 +449,7 @@
     "title": "13 · Code signing",
     "status": "done",
     "statusLabel": "1.4.0",
-    "description": "Sign TheNorns.exe and the installer through SignPath Foundation (free for open source), so Windows and antivirus ML stop treating each new release as an unknown file. The publisher shown is \"SignPath Foundation\".",
+    "description": "Sign TheNorns.exe and the installer with a code-signing certificate, so Windows and antivirus ML stop treating each new release as an unknown file.",
     "checklist": [
       {
         "text": "Build on GitHub Actions (Windows runner, native\\build.ps1): the signed files must come from an automated build of the repository",
@@ -554,7 +554,7 @@
     "title": "16 · Updates in one click",
     "status": "done",
     "statusLabel": "1.5.0",
-    "description": "The app downloads and installs a newer release itself. The version plate blinks; a click shows \"1.x.x is available — Update\"; the rest goes on its own. Settings → General: \"Install updates automatically\" (off by default). Works from the version that brings it on (1.1–1.3 update by hand once). After SignPath signing: a self-updating unsigned exe looks like a downloader to antivirus heuristics.",
+    "description": "The app downloads and installs a newer release itself. The version plate blinks; a click shows \"1.x.x is available — Update\"; the rest goes on its own. Settings → General: \"Install updates automatically\" (off by default). Works from the version that brings it on (1.1–1.3 update by hand once). After code signing: a self-updating unsigned exe looks like a downloader to antivirus heuristics.",
     "checklist": [
       {
         "text": "The version plate blinks when a newer release is out (as now)",

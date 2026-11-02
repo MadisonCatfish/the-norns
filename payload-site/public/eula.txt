@@ -1,0 +1,134 @@
+================================================================================
+                    THE NORNS — END-USER LICENSE AGREEMENT
+================================================================================
+Last Updated: November 2026
+
+IMPORTANT: PLEASE READ THIS END-USER LICENSE AGREEMENT ("EULA") CAREFULLY BEFORE
+DOWNLOADING, INSTALLING, OR USING THE NORNS ("THE SOFTWARE"). BY INSTALLING,
+COPYING, OR OTHERWISE USING THE SOFTWARE, YOU AGREE TO BE BOUND BY THE TERMS
+AND CONDITIONS OF THIS AGREEMENT. IF YOU DO NOT AGREE TO THESE TERMS, DO NOT
+DOWNLOAD, INSTALL, OR USE THE SOFTWARE.
+
+
+1. DEFINITIONS
+--------------------------------------------------------------------------------
+- "Software" refers to "The Norns", including executable binaries (TheNorns.exe,
+  TheNorns-Setup-<version>.exe), portable archives, configuration files, and associated
+  documentation.
+- "Licensor", "We", or "Authors" refers to The Norns contributors and developers.
+- "Licensee" or "You" refers to the individual or entity that downloads,
+  installs, or uses the Software.
+- "CCP" refers to CCP hf., the developers and publishers of EVE Online.
+
+
+2. GRANT OF LICENSE
+--------------------------------------------------------------------------------
+The Software is provided to you free of charge. Subject to the terms of this
+EULA and the underlying MIT License, the Licensor hereby grants you a personal,
+revocable, non-exclusive, worldwide, royalty-free license to install, run,
+and use the Software on your computer systems.
+
+The source code of the Software is distributed under the terms of the MIT License
+(available in the source repository). Nothing in this EULA restricts any rights
+granted to you under the MIT License regarding the source code itself.
+
+
+3. EVE ONLINE, CCP GAMES & THIRD-PARTY COMPLIANCE
+--------------------------------------------------------------------------------
+3.1. Independent Fan Tool:
+The Norns is an independent, fan-made companion tool. It is NOT affiliated with,
+endorsed, supported, or sponsored by CCP hf. EVE, EVE Online, and all associated
+logos and designs are trademarks or registered trademarks of CCP hf.
+
+3.2. Passive Operation & Policy Adherence:
+The Software is designed and engineered strictly as a passive utility compliant
+with CCP Games' Third-Party Developer and Fair Play policies:
+- By default the Software ONLY reads plain-text combat log files written by the EVE Online
+  client to your local drive ("Documents\EVE\logs\Gamelogs") and standard operating
+  system window titles ("EVE - <Character>").
+- The optional Carousel module (off by default; Settings -> Carousel) can activate client windows,
+  register hotkeys and show a live picture of a client. It is not used unless you turn it on.
+- The Software DOES NOT read, inspect, or scan game client memory (RAM).
+- The Software DOES NOT inject code, DLLs, hooks, or debuggers into the game process.
+- The Software DOES NOT intercept or decrypt network packets.
+- The Software DOES NOT simulate, broadcast, or inject keyboard or mouse inputs into
+  the game client. All game actions remain 100% human-driven.
+
+
+4. IN-GAME ASSET & GAMEPLAY RISK DISCLAIMER
+--------------------------------------------------------------------------------
+EVE Online is a competitive multiplayer game where spaceships, in-game currency
+(ISK), implants, and character assets can be lost permanently.
+
+YOU EXPRESSLY ACKNOWLEDGE AND AGREE THAT:
+- The Software is provided solely as an informational companion display.
+- Telemetry, DPS values, bounty tallies, faction spawn alarms, and hull heat
+  alerts depend entirely on when the game client flushes text logs to disk.
+- Operating system file-caching, log-flush latencies, hardware limitations, or
+  unexpected game updates may delay or prevent telemetry calculations.
+- UNDER NO CIRCUMSTANCES SHALL THE AUTHORS OR CONTRIBUTORS BE HELD LIABLE FOR
+  ANY IN-GAME LOSSES, INCLUDING BUT NOT LIMITED TO: LOST SHIPS, DESTROYED FLEETS,
+  LOST ISK, DESTROYED IMPLANTS, FAILED ANOMALIES, MISSED FACTION SPAWNS, OR ANY
+  DISCIPLINARY ACTIONS TAKEN BY CCP HF. YOU USE THIS SOFTWARE AT YOUR OWN RISK.
+
+
+5. PRIVACY & LOCAL DATA PROCESSING
+--------------------------------------------------------------------------------
+- Offline by Design: The Software runs 100% locally on your computer.
+- No Accounts or Telemetry: The Software collects no personal data, no account
+  credentials, no IP tracking, and transmits no analytics.
+- Network Usage: The sole outbound network communication is an HTTPS request, on by default and switchable,
+  to the public GitHub Releases API to check for newer
+  versions. This check transmits no information about you or your game clients
+  and can be disabled at any time in Settings -> General or within the installer.
+- Local Storage: User configuration and historical session metrics are stored
+  exclusively on your local PC in "%LOCALAPPDATA%\The Norns".
+
+
+6. DISCLAIMER OF WARRANTIES ("AS IS")
+--------------------------------------------------------------------------------
+THE SOFTWARE IS PROVIDED "AS IS" AND "AS AVAILABLE", WITHOUT WARRANTY OF ANY
+KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
+MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE, TITLE, AND NON-INFRINGEMENT.
+
+THE AUTHORS DO NOT WARRANT THAT THE SOFTWARE WILL BE UNINTERRUPTED, ERROR-FREE,
+SECURE, OR COMPATIBLE WITH FUTURE VERSIONS OF WINDOWS OR EVE ONLINE.
+
+
+7. LIMITATION OF LIABILITY
+--------------------------------------------------------------------------------
+TO THE MAXIMUM EXTENT PERMITTED BY APPLICABLE LAW, IN NO EVENT SHALL THE AUTHORS,
+CONTRIBUTORS, OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES, OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT, OR OTHERWISE, ARISING FROM,
+OUT OF, OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE, INCLUDING ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
+CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, LOSS OF PROFITS, DATA,
+BUSINESS INTERRUPTION, OR IN-GAME VIRTUAL ASSETS), EVEN IF ADVISED OF THE
+POSSIBILITY OF SUCH DAMAGE.
+
+
+8. INDEMNIFICATION
+--------------------------------------------------------------------------------
+You agree to indemnify, defend, and hold harmless the authors and contributors
+of The Norns from and against any claims, liabilities, losses, damages, costs,
+or expenses (including reasonable legal fees) arising out of or related to your
+use or misuse of the Software or your violation of this Agreement.
+
+
+9. TERMINATION
+--------------------------------------------------------------------------------
+This Agreement is effective until terminated. Your rights under this EULA will
+terminate automatically without notice if you fail to comply with any of its terms.
+Upon termination, you must cease all use of the Software and delete all copies
+from your systems. You may terminate this Agreement at any time by uninstalling
+and deleting the Software.
+
+
+10. SEVERABILITY & ENTIRE AGREEMENT
+--------------------------------------------------------------------------------
+If any provision of this EULA is held to be invalid, illegal, or unenforceable,
+the remaining provisions shall remain in full force and effect. This Agreement,
+together with the MIT License for source code, constitutes the complete and
+exclusive statement of the agreement between you and the Licensor concerning
+the Software.
+================================================================================

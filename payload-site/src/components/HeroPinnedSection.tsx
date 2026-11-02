@@ -49,39 +49,48 @@ export function HeroPinnedSection({
   useEffect(() => {
     if (items.length <= 1) return
 
+    // Trackpads (macOS especially) send many small wheel events, often under 10 px each, and keep
+    // sending them during momentum. Deltas are summed and one gesture steps once; the gesture stays
+    // locked until wheel events stop for WHEEL_IDLE_MS, so the momentum tail cannot skip phrases.
+    const WHEEL_STEP_PX = 40
+    const WHEEL_IDLE_MS = 200
+    let wheelAccum = 0
+    let wheelLastTime = 0
+    let wheelLocked = false
+
     const handleWheel = (e: WheelEvent) => {
       const scrollY = window.scrollY || window.pageYOffset || 0
-      const now = Date.now()
 
       // Only lock when the user is at the top of the page
-      if (scrollY <= 12) {
-        // Scrolling DOWN
-        if (e.deltaY > 10) {
-          if (activeIdxRef.current < items.length - 1) {
-            e.preventDefault()
-            if (now - lastSwitchTimeRef.current > 300) {
-              lastSwitchTimeRef.current = now
-              const nextIdx = activeIdxRef.current + 1
-              activeIdxRef.current = nextIdx
-              setActiveIdx(nextIdx)
-            }
-          }
-          // When activeIdxRef.current === items.length - 1 (the last phrase):
-          // We DO NOT call e.preventDefault() -> the wheel event naturally scrolls the entire page down!
-        }
-        // Scrolling UP
-        else if (e.deltaY < -10) {
-          if (activeIdxRef.current > 0) {
-            e.preventDefault()
-            if (now - lastSwitchTimeRef.current > 300) {
-              lastSwitchTimeRef.current = now
-              const prevIdx = activeIdxRef.current - 1
-              activeIdxRef.current = prevIdx
-              setActiveIdx(prevIdx)
-            }
-          }
-        }
+      if (scrollY > 12) return
+
+      const now = Date.now()
+      if (now - wheelLastTime > WHEEL_IDLE_MS) {
+        wheelAccum = 0
+        wheelLocked = false
       }
+      wheelLastTime = now
+
+      const dy = e.deltaMode === 1 ? e.deltaY * 16 : e.deltaY
+      const canMoveDown = dy > 0 && activeIdxRef.current < items.length - 1
+      const canMoveUp = dy < 0 && activeIdxRef.current > 0
+
+      // After the last phrase (or before the first) the wheel event is left alone and the page scrolls
+      if (!canMoveDown && !canMoveUp) {
+        wheelAccum = 0
+        return
+      }
+      e.preventDefault()
+      if (wheelLocked) return
+
+      wheelAccum += dy
+      if (Math.abs(wheelAccum) < WHEEL_STEP_PX) return
+
+      wheelLocked = true
+      wheelAccum = 0
+      const nextIdx = activeIdxRef.current + (dy > 0 ? 1 : -1)
+      activeIdxRef.current = nextIdx
+      setActiveIdx(nextIdx)
     }
 
     let touchStartY = 0
