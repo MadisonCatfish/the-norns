@@ -14,15 +14,19 @@ async function seed() {
     limit: 1,
   })
 
+  // the first admin: its e-mail and password from the environment (.env), never written in the code
+  const adminEmail = process.env.PAYLOAD_ADMIN_EMAIL
+  const adminPassword = process.env.PAYLOAD_ADMIN_PASSWORD
   if (existingUsers.totalDocs === 0) {
-    await payload.create({
-      collection: 'users',
-      data: {
-        email: 'admin@the-norns.local',
-        password: 'AdminPassword2026!',
-      },
-    })
-    console.log('✓ Admin user created: admin@the-norns.local')
+    if (!adminEmail || !adminPassword) {
+      console.log('! No admin user created: set PAYLOAD_ADMIN_EMAIL and PAYLOAD_ADMIN_PASSWORD in .env and seed again')
+    } else {
+      await payload.create({
+        collection: 'users',
+        data: { email: adminEmail, password: adminPassword },
+      })
+      console.log(`✓ Admin user created: ${adminEmail}`)
+    }
   }
 
   // 2. Seed Releases
@@ -72,8 +76,8 @@ async function seed() {
       },
       {
         indexTag: '[ 03 ] PASSIVE HUD',
-        title: 'No Input Broadcasting',
-        description: "We designed it around CCP's 1-action-1-input guideline. It displays telemetry only and sends no clicks, keystrokes or broadcasts.",
+        title: 'No Input Sent',
+        description: "We designed it around CCP's 1-action-1-input guideline. It displays telemetry only and sends no clicks or keystrokes.",
         order: 3,
         _status: 'published',
       },
@@ -126,7 +130,7 @@ async function seed() {
 
   if (existingMetrics.totalDocs === 0) {
     const metricsData = [
-      { indexTag: '[ 01 ]', label: 'INPUT INTEGRITY', value: '0 inputs', description: 'Zero macros, clicks, or input broadcasting.', order: 1, _status: 'published' },
+      { indexTag: '[ 01 ]', label: 'INPUT INTEGRITY', value: '0 inputs', description: 'Zero macros, clicks or keystrokes.', order: 1, _status: 'published' },
       { indexTag: '[ 02 ]', label: 'MEMORY SCRAPING', value: '0 DLLs', description: 'Zero game memory reading or DLL injection.', order: 2, _status: 'published' },
       { indexTag: '[ 03 ]', label: 'POTATO MODE CPU', value: '~3.5%', description: "Of one CPU core, measured on the owner's rig in Potato mode.", order: 3, _status: 'published' },
       { indexTag: '[ 04 ]', label: 'CLIENT DOCK', value: '8', description: 'Most clients the Carousel dock shows at once.', order: 4, _status: 'published' },
@@ -361,8 +365,8 @@ async function seed() {
         {
           pill: '[ INPUT INTEGRITY ]',
           status: '✓ PASSIVE TELEMETRY',
-          title: 'Zero Input Broadcasting',
-          description: "No simulated keystrokes, no clicks, and no input broadcasting. The optional Carousel module (off by default) can activate a client window. The telemetry display is passive; the design follows CCP's 1-action-1-input guideline.",
+          title: 'Zero Input Sent',
+          description: "No simulated keystrokes and no clicks. The optional Carousel module (off by default) can activate a client window. The telemetry display is passive; the design follows CCP's 1-action-1-input guideline.",
           codeCallout: 'SendInput / keybd_event / mouse_event: NOT PRESENT',
         },
         {

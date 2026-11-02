@@ -124,7 +124,7 @@ export default async function HomePage() {
           <div className="metric-cell">
             <div className="metric-header"><span>[ 01 ]</span> INPUT INTEGRITY</div>
             <div className="metric-val">0 inputs</div>
-            <div className="metric-desc">Zero macros, clicks, or input broadcasting.</div>
+            <div className="metric-desc">Zero macros, clicks or keystrokes.</div>
           </div>
           <div className="metric-cell">
             <div className="metric-header"><span>[ 02 ]</span> MEMORY SCRAPING</div>
@@ -248,9 +248,9 @@ export default async function HomePage() {
             </div>
             <div className="pipeline-step">
               <span className="pipeline-num">[ 03 ] PASSIVE HUD</span>
-              <h4 className="pipeline-step-title">No Input Broadcasting</h4>
+              <h4 className="pipeline-step-title">No Input Sent</h4>
               <p className="pipeline-step-desc">
-                We designed it around CCP's 1-action-1-input guideline. It displays telemetry only and sends no clicks, keystrokes or broadcasts.
+                We designed it around CCP's 1-action-1-input guideline. It displays telemetry only and sends no clicks or keystrokes.
               </p>
             </div>
           </>
