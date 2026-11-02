@@ -148,10 +148,10 @@ export default async function HomePage() {
     {/*  Capabilities Bento (Attio Style with Real Release Shots & Animated GIF)  */}
     <section className="section-wrap" id="capabilities">
       <div className="section-header">
-        <div className="section-tag">{siteSettings?.featuresTag || '[ FLEET DOCTRINE TELEMETRY ]'}</div>
-        <h2 className="section-title">{siteSettings?.featuresTitle || 'Engineered for nullsec krabbing & Havens.'}</h2>
+        <div className="section-tag">[ FLEET DOCTRINE TELEMETRY ]</div>
+        <h2 className="section-title">Engineered for nullsec krabbing & Havens.</h2>
         <p className="section-desc">
-          {siteSettings?.featuresDesc || 'Replace guesswork with real-time mathematical telemetry. Track individual gunboat efficiency, instant capital alarms, and wallet bounties in the heat of combat.'}
+          Replace guesswork with real-time mathematical telemetry. Track individual gunboat efficiency, instant capital alarms, and wallet bounties in the heat of combat.
         </p>
       </div>
 
@@ -214,10 +214,10 @@ export default async function HomePage() {
     {/*  Architecture & Compliance (Attio Style)  */}
     <section className="section-wrap" id="pipeline">
       <div className="section-header">
-        <div className="section-tag">{siteSettings?.complianceTag || '[ CCP POLICY NOTE ]'}</div>
-        <h2 className="section-title">{siteSettings?.complianceTitle || 'Read-only data pipeline.'}</h2>
+        <div className="section-tag">[ CCP POLICY NOTE ]</div>
+        <h2 className="section-title">Read-only data pipeline.</h2>
         <p className="section-desc">
-          {siteSettings?.complianceDesc || 'How The Norns gets real-time telemetry: it reads the logs the client already writes. We are not affiliated with CCP and cannot promise how CCP treats third-party tools.'}
+          How The Norns gets real-time telemetry: it reads the logs the client already writes. We are not affiliated with CCP and cannot promise how CCP treats third-party tools.
         </p>
       </div>
 
@@ -261,8 +261,8 @@ export default async function HomePage() {
     {/*  Download Card  */}
         <section className="section-wrap" id="faq">
       <div className="section-header">
-        <div className="section-tag">{siteSettings?.faqTag || '[ FAQ ]'}</div>
-        <h2 className="section-title">{siteSettings?.faqTitle || 'Questions about The Norns.'}</h2>
+        <div className="section-tag">[ FAQ ]</div>
+        <h2 className="section-title">Questions about The Norns.</h2>
       </div>
       <div className="faq-list">
         {faqItems && faqItems.length > 0 ? (
@@ -293,11 +293,11 @@ export default async function HomePage() {
 <section className="download-card">
       <div className="download-pill">
         <span className="download-dot"></span>
-        <span>{siteSettings?.ctaPill || 'READY FOR DEPLOYMENT'}</span>
+        <span>READY FOR DEPLOYMENT</span>
       </div>
-      <h2>{siteSettings?.ctaTitle || 'Upgrade your nullsec fleet telemetry today.'}</h2>
+      <h2>Upgrade your nullsec fleet telemetry today.</h2>
       <p>
-        {siteSettings?.ctaDesc || 'Free, open-source, and offline by design, apart from one optional update check. Download the standalone Windows installer or extract the portable archive.'}
+        Free, open-source, and offline by design, apart from one optional update check. Download the standalone Windows installer or extract the portable archive.
       </p>
 
       <div className="cta-group" style={{'marginBottom': '0'}}>
@@ -315,7 +315,7 @@ export default async function HomePage() {
     </section>
 
   </main>
-      <Footer data={footerData} headerData={headerData} discordUrl={siteSettings?.discordUrl} />
+      <Footer data={footerData} />
     </>
   )
 }
