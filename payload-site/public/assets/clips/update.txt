@@ -1,0 +1,3 @@
+Title: Update Notice on the Hull
+Feature: New version notice
+Description: When a newer release is out, the version plate on the hull glows in the accent colour. One click opens About with the download key. The check is one request to GitHub at start, and you can switch it off.

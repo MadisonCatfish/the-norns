@@ -1,0 +1,3 @@
+Title: Dreadnought and Titan Alarm
+Feature: Capital spawn alarm
+Description: A pirate dreadnought on grid heats the hull to amber; a titan turns it crimson. You notice the spawn at a glance, even with the window in the corner of your eye.

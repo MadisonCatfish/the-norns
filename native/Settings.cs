@@ -121,7 +121,7 @@ namespace TheNorns
                 return;
             }
             if (id == "dir:detect") { SetLogDir(""); return; }
-            if (id == "reset") { stats.Tracker.ResetAll(); resetShownUntil = clock.Elapsed.TotalSeconds + 2.5; return; }
+            if (id == "reset") { stats.Tracker.ResetAll(); resetShownUntil = Clock + 2.5; return; }
             if (id.StartsWith("lang:")) SetLanguage(id.Substring(5));
             if (id.StartsWith("page:")) { page = id.Substring(5); storage = null; sessions = null; ShowTab(page); }
             if (id == "tabs:prev") ScrollTabs(-1);
@@ -504,7 +504,7 @@ namespace TheNorns
                     MaterialIcon.Draw(g, a == 0 ? MaterialIcon.ArrowLeft : MaterialIcon.ArrowRight, new RectangleF(kr.Left + (kr.Width - ic) / 2, kr.Top + (kr.Height - ic) / 2, ic, ic), b);
                 if (can) AddKey(id, kr); else keyFaces.Add(kr);
             }
-            tabShift = Potato || SelfTesting ? tabFirst : tabShift + (tabFirst - tabShift) * 0.35f;
+            tabShift = Potato || SelfTesting && !DemoLive ? tabFirst : tabShift + (tabFirst - tabShift) * 0.35f;
             if (Math.Abs(tabFirst - tabShift) < 0.01f) tabShift = tabFirst; else Invalidate();
             var tabClip = g.Save();
             g.SetClip(tabRow);
@@ -630,7 +630,7 @@ namespace TheNorns
             {
                 // the combat log folder: its path (from Documents on: no user name on screen), a mark whether logs are
                 // there, Select / Detect / Open; then the app's own folder with its size, Open, and the anomaly reset
-                bool resetShown = demoResetShown || clock.Elapsed.TotalSeconds < resetShownUntil;
+                bool resetShown = demoResetShown || Clock < resetShownUntil;
                 var lt = L.T("Combat log folder");
                 Glow(g, lt, TitleFont(lt, U(7.2f)), Muted, c.Left, y);
                 y += U(11);

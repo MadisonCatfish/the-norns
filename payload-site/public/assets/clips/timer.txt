@@ -1,0 +1,3 @@
+Title: Warp-to-Warp Anomaly Timer
+Feature: Anomaly clear time
+Description: When the fleet warps out, the damage lines sink and the site's clear time appears, counted from warp to warp. The first hit in the next site brings the lines back.

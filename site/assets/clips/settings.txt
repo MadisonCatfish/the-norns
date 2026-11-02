@@ -1,0 +1,3 @@
+Title: Settings on the Same Screen
+Feature: Settings on the main display
+Description: Click the name and the display turns into the settings: General, Display, Modes and Data tabs, with Statistics and About one key away. One typeface, sizes that read well on every page.

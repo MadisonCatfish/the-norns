@@ -498,7 +498,7 @@ namespace TheNorns
                 var t = cap ? L.T("Press keys…") : L.T("none");
                 var f = TextFont(t, U(7));
                 using (var b = new SolidBrush(cap ? BodyTheme.Ink : Color.FromArgb(120, BodyTheme.Ink))) g.DrawString(t, f, b, x, r.Top + (r.Height - f.GetHeight(g)) / 2, StringFormat.GenericTypographic);
-                if (cap && (SelfTesting || Potato || clock.Elapsed.TotalSeconds % 1.0 < 0.55))
+                if (cap && (SelfTesting || Potato || Clock % 1.0 < 0.55))
                 {
                     float tw = g.MeasureString(t, f, 1000, StringFormat.GenericTypographic).Width;
                     using (var b = new SolidBrush(BodyTheme.Accent)) g.FillRectangle(b, x + tw + U(1.5f), r.Top + U(3.5f), Math.Max(1f, U(0.7f)), r.Height - U(7));

@@ -294,6 +294,9 @@ namespace TheNorns
         const double TipDelay = 0.7;   // seconds on a key before its tip
         string tipText; Point tipAt; double tipDue;
         readonly Stopwatch clock = Stopwatch.StartNew();
+        public double? DemoClock;   // --demo-anim: the clock of a recorded frame
+        public bool DemoLive;       // --demo-anim: DemoNow moves, the eased parts ease as they do live
+        double Clock { get { return DemoClock ?? clock.Elapsed.TotalSeconds; } }
         Bitmap shell;   // the static body, drawn once per size
         public DateTime? DemoNow;            // selftest: a fixed "now"
         public double? DemoSeconds;          // selftest: a fixed animation time
@@ -411,7 +414,7 @@ namespace TheNorns
                 // the glass light follows the mouse (polled, so it also follows while dragging)
                 var mp = PointToClient(Cursor.Position);
                 glare = GlassRect.Contains(mp) ? (Point?)mp : null;
-                if (tipText != null && clock.Elapsed.TotalSeconds >= tipDue) { tip.Show(tipText, this, tipAt.X, tipAt.Y, 3000); tipText = null; }
+                if (tipText != null && Clock >= tipDue) { tip.Show(tipText, this, tipAt.X, tipAt.Y, 3000); tipText = null; }
                 // the ring pulses on while the mouse rests on a key (WM_SETCURSOR comes only when it moves)
                 if (OnPulse(mp) && ClientRectangle.Contains(mp) && WindowFromPoint(Cursor.Position) == Handle) SetCursor(PulseCursor(pulseClock.Elapsed.TotalSeconds).Handle);
                 Render();
@@ -508,7 +511,7 @@ namespace TheNorns
             tipText = hn ? L.T("Settings") : hc ? L.T("Close") : head ?? warn;
             tipAt = hn ? new Point((int)NameRect.Left, (int)(NameRect.Bottom + U(4))) : hc ? new Point((int)CloseRect.Left, (int)(CloseRect.Bottom + U(4)))
                 : head != null ? new Point((int)headKey.Left, (int)(headKey.Bottom + U(4))) : warn != null ? new Point(e.X - (int)U(60), e.Y + (int)U(12)) : Point.Empty;
-            tipDue = clock.Elapsed.TotalSeconds + TipDelay;
+            tipDue = Clock + TipDelay;
             Render();
         }
 
@@ -673,7 +676,7 @@ namespace TheNorns
                 g.SmoothingMode = SmoothingMode.AntiAlias; g.TextRenderingHint = TextRenderingHint.AntiAlias;
                 g.PixelOffsetMode = PixelOffsetMode.HighQuality;
                 bool following = DemoFollowing ?? tail.Following;
-                double secs = DemoSeconds ?? clock.Elapsed.TotalSeconds;
+                double secs = DemoSeconds ?? Clock;
                 PaintLamp(g, following, DemoNoClients ?? clients == 0, secs);
                 PaintDamage(g);
                 PaintNameKey(g);
@@ -959,7 +962,7 @@ namespace TheNorns
         double animTime, animSpeed = 1, animLast = -1;
         double AnimTime(DateTime now)
         {
-            double t = clock.Elapsed.TotalSeconds, dt = animLast < 0 ? 0 : Math.Min(0.2, t - animLast);
+            double t = Clock, dt = animLast < 0 ? 0 : Math.Min(0.2, t - animLast);
             animLast = t;
             var warp = stats.Tracker.LastWarpTime;
             bool warping = warp > DateTime.MinValue && stats.LastNpcHit < warp && (now - warp).TotalSeconds > 8;
@@ -1157,7 +1160,7 @@ namespace TheNorns
                     g.FillPath(tb, corners);
                     var st = g.Save();
                     g.SetClip(fp);
-                    PaintPreviewName(g, face, name, DemoSeconds ?? clock.Elapsed.TotalSeconds);
+                    PaintPreviewName(g, face, name, DemoSeconds ?? Clock);
                     g.Restore(st);
                     PaintPowerGlass(g, face, fp);
                 }
@@ -1210,7 +1213,7 @@ namespace TheNorns
         static readonly Color[] HotYellow = { Color.FromArgb(175, 120, 8), Color.FromArgb(225, 165, 14), Color.FromArgb(250, 200, 36), Color.FromArgb(255, 214, 80) };
         void PaintHeat(Graphics g, DateTime now)
         {
-            double t = clock.Elapsed.TotalSeconds, dt = heatClock < 0 ? 0 : Math.Min(0.5, t - heatClock);
+            double t = Clock, dt = heatClock < 0 ? 0 : Math.Min(0.5, t - heatClock);
             heatClock = t;
             bool titan = (now - stats.LastTitan).TotalSeconds < 20;
             bool demoHot = dreadDemo != DateTime.MinValue && (DateTime.UtcNow - dreadDemo).TotalSeconds % 16 < 6;
@@ -1324,7 +1327,7 @@ namespace TheNorns
                 using (var pen = new Pen(Color.FromArgb(15, 255, 255, 255), 1f)) g.DrawPath(pen, fp);
             }
             var faction = stats.DetectedFaction;
-            double t = clock.Elapsed.TotalSeconds;
+            double t = Clock;
             if (faction != damageFaction) { damageFaction = faction; damageSince = t; }
             if (string.IsNullOrEmpty(faction))
             {
@@ -1446,7 +1449,7 @@ namespace TheNorns
         {
             var warp = stats.Tracker.LastWarpTime;
             bool still = warp != DateTime.MinValue && now >= warp && stats.LastNpcHit < warp;   // no hit since the warp
-            double t = clock.Elapsed.TotalSeconds, dt = lastQuietFrame < 0 ? 0 : Math.Min(0.2, t - lastQuietFrame);
+            double t = Clock, dt = lastQuietFrame < 0 ? 0 : Math.Min(0.2, t - lastQuietFrame);
             lastQuietFrame = t;
             if (still)
             {
@@ -1478,12 +1481,12 @@ namespace TheNorns
             if (rewarp)
             {
                 // the re-warp's time at once, held for 1 s, then counting down second by second to 00:00 (owner, 28.10.2026)
-                double since = DemoCount.HasValue ? DemoCount.Value * (secs + 1) : countStart < 0 ? 0 : clock.Elapsed.TotalSeconds - countStart;
+                double since = DemoCount.HasValue ? DemoCount.Value * (secs + 1) : countStart < 0 ? 0 : Clock - countStart;
                 total = (int)Math.Ceiling(Math.Max(0, secs - Math.Max(0, since - 1)));
             }
             else
             {
-                double p = DemoCount ?? (countStart < 0 ? 1 : Math.Min(1, (clock.Elapsed.TotalSeconds - countStart) / CountSecs));
+                double p = DemoCount ?? (countStart < 0 ? 1 : Math.Min(1, (Clock - countStart) / CountSecs));
                 p = 1 - Math.Pow(1 - p, 3);
                 total = (int)Math.Round(secs * p);
             }
@@ -1522,7 +1525,7 @@ namespace TheNorns
             var sbLine = sbr == null ? null : stats.Series(sbr.Pilot, true, now, "Smartbomb");
             if (sbLine != null) target.Add(sbLine);
             double tMax = Math.Max(100.0, target.SelectMany(s => s).DefaultIfEmpty(0).Max()) * 1.15;
-            bool snap = DemoNow != null || state.VisualMax <= 0 || Potato;
+            bool snap = DemoNow != null && !DemoLive || state.VisualMax <= 0 || Potato;
             const double ease = 0.08;   // per frame at 25 fps
             state.VisualMax = snap ? tMax : state.VisualMax + (tMax - state.VisualMax) * ease;
             state.VisualTotal = snap ? total : state.VisualTotal + (total - state.VisualTotal) * ease * 2;
@@ -1624,7 +1627,7 @@ namespace TheNorns
         void SmartbombMotion(DpsStats.SmartbombReading reading, int n)
         {
             if (sbShown.Length != n) { sbShown = new double[n]; sbTarget = new double[n]; sbLastClock = -1; }
-            double t = clock.Elapsed.TotalSeconds, dt = DemoSeconds != null || sbLastClock < 0 ? 0 : Math.Min(0.5, t - sbLastClock);
+            double t = Clock, dt = DemoSeconds != null || sbLastClock < 0 ? 0 : Math.Min(0.5, t - sbLastClock);
             if (Potato) dt = 1e3;   // the columns jump
             sbLastClock = t;
             for (int k = 0; k < n; k++)
@@ -1675,7 +1678,7 @@ namespace TheNorns
             double a = 1; var col = BodyTheme.Accent;   // the plate in the accent (owner, 31.10.2026)
             if (updateState == 3)
             {
-                double t = DemoSeconds ?? clock.Elapsed.TotalSeconds, c = 0.5 + 0.5 * Math.Cos(t * Math.PI * 2 / 2.4);
+                double t = DemoSeconds ?? Clock, c = 0.5 + 0.5 * Math.Cos(t * Math.PI * 2 / 2.4);
                 double e = Math.Max(0, Math.Min(1, (c - 0.25) / 0.5)); e = e * e * (3 - 2 * e);
                 a = 0.15 + 0.85 * e;
                 SoftGlow(g, new PointF(box.Left + box.Width / 2, box.Top + box.Height / 2), box.Width * 0.7f, col, (int)(e * 60));
@@ -1700,7 +1703,7 @@ namespace TheNorns
         void PaintIsk(Graphics g, RectangleF r)
         {
             IskRect = r;
-            double secs = DemoSeconds ?? clock.Elapsed.TotalSeconds;
+            double secs = DemoSeconds ?? Clock;
             var tr = stats.Tracker;
             var bf = NornsFonts.Body(U(8.5f));
             float bh = U(15), x = r.Left;
@@ -1753,7 +1756,7 @@ namespace TheNorns
                 // a spawn's own tick (at least 4x the site's median: its bounty, not the small ships dying with it) is not
                 // faded in: it is there at once, in its colour, over the grid (owner, 31.10.2026)
                 int kind = i < count && first + i < tr.BountyTimes.Count && ticks[first + i] >= 4 * median ? stats.KindNear(tr.BountyTimes[first + i]) : 0;
-                if (DemoNow != null || Potato || kind != 0) { cellHeat[i] = (float)target; cellLit[i] = (float)presence; }
+                if (DemoNow != null && !DemoLive || Potato || kind != 0) { cellHeat[i] = (float)target; cellLit[i] = (float)presence; }
                 else { cellHeat[i] += (float)((target - cellHeat[i]) * cellPace[i]); cellLit[i] += (float)((presence - cellLit[i]) * cellPace[i]); }
                 double t = cellHeat[i], lit = cellLit[i];
                 if (kind != 0) { spawnDots.Add(Tuple.Create(cell, kind, i == count - 1)); continue; }
@@ -1816,7 +1819,7 @@ namespace TheNorns
                 float cx = r.Left + col * (cw + gap) + cw / 2, cy = r.Top + r.Height / 2;
                 marked.Add(Tuple.Create(new RectangleF(cx - d / 2, cy - d / 2, d, d), pending[j], false));
             }
-            double secs = DemoSeconds ?? clock.Elapsed.TotalSeconds;
+            double secs = DemoSeconds ?? Clock;
             foreach (var m in marked) PaintSpawnDot(g, m.Item1, m.Item2, m.Item3, secs);
         }
 
