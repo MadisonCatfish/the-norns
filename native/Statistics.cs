@@ -264,6 +264,8 @@ namespace TheNorns
     class SessionCalendar : ICardContent
     {
         public IEnumerable<RectangleF> Keys { get { return spots.Where(x => !x.Item1.StartsWith("day:")).Select(x => x.Item2); } }
+        public RectangleF? Spot(string id) { var s = spots.FirstOrDefault(x => x.Item1 == id); return s == null ? (RectangleF?)null : s.Item2; }   // --demo-anim
+        public bool OnDay(PointF p) { return spots.Any(x => x.Item1.StartsWith("day:") && x.Item2.Contains(p)); }
         public DateTime Month;
         public DateTime? From, To;
         public HashSet<DateTime> Days = new HashSet<DateTime>();

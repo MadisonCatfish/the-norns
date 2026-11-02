@@ -1,6 +1,7 @@
 // Program.cs - The Norns: an EVE Online DPS meter that only reads the combat logs.
 //   TheNorns.exe                      the DPS window (one instance)
 //   TheNorns.exe --selftest-dps <dir> the parser test and renders of the window as PNGs
+//   TheNorns.exe --demo-anim <dir> [scene]  frames of the site's short recordings (Anim.cs)
 //   --lang <code>                                one language for this run (en, uk, es, de, it, fr)
 using System;
 using System.Collections.Generic;
@@ -35,6 +36,9 @@ namespace TheNorns
 
             int sdps = Array.IndexOf(args, "--selftest-dps");
             if (sdps >= 0 && args.Length > sdps + 1) { DpsForm.SelfTest(args[sdps + 1]); return; }
+            // --demo-anim <dir> [scene]: the site's short recordings, frames as PNGs (Anim.cs)
+            int anim = Array.IndexOf(args, "--demo-anim");
+            if (anim >= 0 && args.Length > anim + 1) { DpsForm.Anim(args[anim + 1], args.Length > anim + 2 ? args[anim + 2] : null); return; }
 
             bool first;
             using (var one = new Mutex(true, "TheNorns.Instance", out first))

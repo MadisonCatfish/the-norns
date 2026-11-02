@@ -42,7 +42,7 @@ namespace TheNorns
         string editText;     // what was typed in it; null = nothing yet (the first key replaces the number)
         // a key over the field's limit: the field turns red and shakes once (owner, 29.10.2026)
         string errField; double errAt = -10;
-        public void DemoFieldError(string id) { errField = id; errAt = clock.Elapsed.TotalSeconds - 0.06; }
+        public void DemoFieldError(string id) { errField = id; errAt = Clock - 0.06; }
         // the "?" keys: what a field means, in the formula window, shorter than the main screen's (owner, 29.10.2026)
         // the "?" key after Runner: one card with the formula and what every field means, by sections; it scrolls
         // (owner, 29.10.2026)
@@ -138,7 +138,7 @@ namespace TheNorns
             double v;
             if (ch != '.' && (!double.TryParse(next, NumberStyles.Float, CultureInfo.InvariantCulture, out v) || v > FieldMax(focusField)))
             {
-                errField = focusField; errAt = clock.Elapsed.TotalSeconds; Render();   // over the limit: red, one shake
+                errField = focusField; errAt = Clock; Render();   // over the limit: red, one shake
                 return;
             }
             editText = next;
@@ -233,7 +233,7 @@ namespace TheNorns
         {
             bool focus = focusField == id, hot = hotSpot == "field:" + id;
             // the error: red for 0.9 s, one shake in the first 0.35 s
-            double et = errField == id ? clock.Elapsed.TotalSeconds - errAt : 10;
+            double et = errField == id ? Clock - errAt : 10;
             bool err = et < 0.9;
             if (err && et < 0.35 && !Potato) r.Offset((float)(U(2.2f) * Math.Sin(et * 2 * Math.PI * 7) * Math.Exp(-et * 8)), 0);
             using (var p = Round(r, 5))
@@ -254,7 +254,7 @@ namespace TheNorns
             float uw = g.MeasureString(unit, uf, 1000, StringFormat.GenericTypographic).Width;
             using (var b = new SolidBrush(BodyTheme.Ink)) g.DrawString(txt, vf, b, x, r.Top + (r.Height - vf.GetHeight(g)) / 2, StringFormat.GenericTypographic);
             // the caret after the number while typing, blinking (still in self-tests and Potato)
-            if (focus && (SelfTesting || Potato || clock.Elapsed.TotalSeconds % 1.0 < 0.55))
+            if (focus && (SelfTesting || Potato || Clock % 1.0 < 0.55))
             {
                 float tw = txt.Length == 0 ? 0 : g.MeasureString(txt, vf, 1000, StringFormat.GenericTypographic).Width;
                 using (var b = new SolidBrush(BodyTheme.Accent)) g.FillRectangle(b, x + tw + U(1), r.Top + U(3.5f), Math.Max(1f, U(0.7f)), r.Height - U(7));

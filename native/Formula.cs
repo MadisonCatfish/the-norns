@@ -56,8 +56,10 @@ namespace TheNorns
         };
 
         static FormulaWindow current;
+        public static Action<FormulaText> DemoOpen;   // --demo-anim: the card goes to the recording, no window
         public static void Open(Form main, FormulaText text)
         {
+            if (DemoOpen != null) { DemoOpen(text); return; }
             if (current != null && !current.IsDisposed) { current.closing = false; current.Close(); }
             current = new FormulaWindow(main, text);
             current.Show(main);
@@ -449,24 +451,40 @@ namespace TheNorns
         // selftest: the main window's image with the formula window over it at animation state p, on a dark backdrop
         public static void SaveDemo(Bitmap main, FormulaText text, double p, string path, float scroll = 0, PointF? light = null)
         {
+            Point at;
+            using (var bmp = Demo(main, text, p, scroll, light == null ? (PointF?)null : new PointF(-light.Value.X, -light.Value.Y), null, Color.FromArgb(38, 40, 46), out at)) bmp.Save(path, ImageFormat.Png);
+        }
+
+        // the main window's image with the card over it at animation state p, on `back` (transparent for the site's
+        // animations); light and hover in card px (light negative: a share of the card's size); `at`: the card's top-left
+        public static Bitmap Demo(Bitmap main, FormulaText text, double p, float scroll, PointF? light, PointF? hover, Color back, out Point at)
+        {
             float maxScroll;
             var cs = CardSize(main.Size, text); var size = new Size((int)cs.Width, (int)cs.Height);
             var off = CardOffset(main.Size, text);
             float m = Margin, o = U(30);
             var win = new Size(size.Width + 2 * (int)m, size.Height + 2 * (int)m);
             int W = (int)(o + Math.Max(main.Width, off.X - m + win.Width) + o / 2), H = (int)(o + Math.Max(main.Height, off.Y - m + win.Height) + o / 2);
-            using (var bmp = new Bitmap(W, H, PixelFormat.Format32bppArgb))
+            at = new Point((int)(o + off.X), (int)(o + off.Y));
+            if (light != null && light.Value.X < 0) light = new PointF(size.Width * -light.Value.X, size.Height * -light.Value.Y);
+            var bmp = new Bitmap(W, H, PixelFormat.Format32bppArgb);
             using (var g = Graphics.FromImage(bmp))
-            using (var card = DrawCard(size, text, false, false, scroll, out maxScroll))
-            using (var lit = Lit(card, light == null ? (PointF?)null : new PointF(size.Width * light.Value.X, size.Height * light.Value.Y), text))
+            using (var card = DrawCard(size, text, false, false, scroll, out maxScroll, hover))
+            using (var lit = Lit(card, light, text))
             using (var frame = Frame(lit ?? card, win, Ease(p)))
             {
-                g.Clear(Color.FromArgb(38, 40, 46));
+                g.Clear(back);
                 g.DrawImageUnscaled(main, (int)o, (int)o);
-                g.DrawImageUnscaled(frame, (int)(o + off.X - m), (int)(o + off.Y - m));
-                bmp.Save(path, ImageFormat.Png);
+                if (p > 0) g.DrawImageUnscaled(frame, (int)(o + off.X - m), (int)(o + off.Y - m));
             }
+            return bmp;
         }
+        // --demo-anim: the card's size and its close key (card px)
+        public static Size DemoCardSize(Size main, FormulaText t) { var c = CardSize(main, t); return new Size((int)c.Width, (int)c.Height); }
+        public static RectangleF DemoCloseRect(Size main, FormulaText t) { return CloseIn(DemoCardSize(main, t)); }
+        public static float DemoMaxScroll(Size main, FormulaText t) { float m; using (DrawCard(DemoCardSize(main, t), t, false, false, 0, out m)) { } return m; }
+        // where the main window lies in Demo's picture
+        public static int DemoInset { get { return (int)U(30); } }
 
         // selftest: the average time of one animation frame (the frame and its HBITMAP for the layered window)
         public static string Bench(Size main, FormulaText text)
