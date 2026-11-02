@@ -22,9 +22,12 @@ export interface RoadmapItem {
 
 interface RoadmapViewProps {
   items: RoadmapItem[]
+  title?: string | null
+  subtitle?: string | null
+  footerNote?: string | null
 }
 
-export function RoadmapView({ items }: RoadmapViewProps) {
+export function RoadmapView({ items, title, subtitle, footerNote }: RoadmapViewProps) {
   const [activeFilter, setActiveFilter] = useState<'all' | 'done' | 'wip' | 'todo' | 'cancelled'>('all')
 
   const getItemStatus = (i: RoadmapItem) => i.itemStatus || i.status || 'todo'
@@ -75,8 +78,8 @@ export function RoadmapView({ items }: RoadmapViewProps) {
   return (
     <main className="roadmap-main">
       <header className="roadmap-header">
-        <h1>The Norns · roadmap</h1>
-        <p>Features after 1.1.0.</p>
+        <h1>{title || 'The Norns · roadmap'}</h1>
+        <p>{subtitle || 'Features after 1.1.0.'}</p>
         
         {/* Dynamic Progress Bar */}
         <div className="roadmap-progress-bar" aria-label="Roadmap progress">
@@ -161,7 +164,7 @@ export function RoadmapView({ items }: RoadmapViewProps) {
       </div>
 
       <footer style={{ color: 'var(--fg-muted, #9aa0a6)', fontSize: '13px', marginTop: '12px', textAlign: 'center' }}>
-        Updated 31.10.2026, 1.5.0 built · Managed via Payload CMS
+        {footerNote || 'Updated 31.10.2026, 1.5.0 built · Managed via Payload CMS'}
       </footer>
     </main>
   )

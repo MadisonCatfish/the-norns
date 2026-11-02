@@ -13,6 +13,7 @@ export default async function RoadmapPage() {
   let footerData: any = null
   let headerData: any = null
   let latestRelease: any = null
+  let siteSettings: any = null
 
   try {
     const payload = await getPayload({ config })
@@ -32,6 +33,10 @@ export default async function RoadmapPage() {
 
     footerData = await payload.findGlobal({
       slug: 'footer',
+    })
+
+    siteSettings = await payload.findGlobal({
+      slug: 'site-settings',
     })
 
     // Fetch latest release for navigation
@@ -58,8 +63,13 @@ export default async function RoadmapPage() {
         portableUrl={portableUrl}
         versionTag={versionTag}
       />
-      <RoadmapView items={roadmapItems} />
-      <Footer data={footerData} />
+      <RoadmapView
+        items={roadmapItems}
+        title={siteSettings?.roadmapTitle}
+        subtitle={siteSettings?.roadmapSubtitle}
+        footerNote={siteSettings?.roadmapFooter}
+      />
+      <Footer data={footerData} headerData={headerData} discordUrl={siteSettings?.discordUrl} />
     </>
   )
 }

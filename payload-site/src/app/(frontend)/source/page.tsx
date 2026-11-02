@@ -228,7 +228,7 @@ export default async function SourcePage() {
         </section>
       </main>
 
-      <Footer data={footerData} />
+      <Footer data={footerData} headerData={headerData} />
     </>
   )
 }
