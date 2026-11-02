@@ -2177,3 +2177,14 @@
   opacity: 0.85;
   margin-top: 3px;
 }
+
+/* Footer — the Vorton projector module (FooterECG.tsx) in its own band under the footer's content */
+footer.site-footer {
+  padding-bottom: 540px;
+}
+
+@media (max-width: 760px) {
+  footer.site-footer {
+    padding-bottom: 490px;
+  }
+}

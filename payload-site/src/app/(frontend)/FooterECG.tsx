@@ -2,424 +2,404 @@
 
 import React, { useEffect, useRef } from 'react'
 
+// The footer's live graph: the app's main module across the footer's whole width, in its own band under the content
+// (styles.css gives the footer the room). Five pilots' Vorton damage as thin lines (pilot 1 white on top, the others
+// greyer), the anchor's smartbombs as a dotted white line, the fleet's DPS as the big number, then the chips and the
+// ISK grid filling tick by tick. The lines ease towards each new second as they do in the app.
+// The mouse reads the graph (the second, each pilot, the fleet's DPS then); a click is a volley; a fast scroll pushes
+// the fleet. All made up in the page: nothing is fetched.
+
+type Tick = { born: number; v: number; big: boolean }
+type Area = { left: number; right: number; head: number; top: number; bottom: number; chips: number; grid: number; g: number; cols: number }
+
+const N = 60 // a minute of seconds
+const P = 5 // five pilots
+const ROWS = 10 // the ISK grid's rows
+const BASE = [2300, 3000, 3700, 2300, 3000]
+const TICKS = [27000, 27750, 29250, 240000, 260000, 5175, 5400, 5625, 260000, 4050, 4275, 42750, 45000, 47250, 260000, 27750, 30750, 240000]
+
 export function FooterECG() {
   const canvasRef = useRef<HTMLCanvasElement | null>(null)
 
   useEffect(() => {
-    const rawCanvas = canvasRef.current
-    if (!rawCanvas) return
-    const canvas: HTMLCanvasElement = rawCanvas
-    const footer = (canvas.closest('.js-footer-ecg') as HTMLElement) || canvas.parentElement
-    if (!footer) return
+    const cv = canvasRef.current
+    if (!cv) return
+    const footer = (cv.closest('.js-footer-ecg') as HTMLElement | null) || cv.parentElement
+    const ctx = cv.getContext('2d')
+    if (!footer || !ctx) return
+    const reduce = typeof window.matchMedia === 'function' && window.matchMedia('(prefers-reduced-motion: reduce)').matches
 
-    const rawCtx = canvas.getContext('2d')
-    if (!rawCtx) return
-    const ctx: CanvasRenderingContext2D = rawCtx
+    const target: Float32Array[] = []
+    const vis: Float32Array[] = []
+    for (let i = 0; i < P; i++) {
+      target.push(new Float32Array(N))
+      vis.push(new Float32Array(N))
+    }
+    const sb = new Float32Array(N)
+    const sbVis = new Float32Array(N)
+    let W = 0, H = 0, dpr = 1, maxV = 4000, total = 0, totalTarget = 0, flash = 0, energy = 0
+    let t = 0, sec = 0, isk = 0, iskShown = 0, anoms = 3, stars = 0, session = 612.4e6
+    let ticks: Tick[] = []
+    const rnd = Math.random
 
-    let cancelled = false
-    let rafId: number | null = null
-    let io: IntersectionObserver | null = null
-    let lastTick = 0
-
-
-        // Deterministic PRNG for consistent stipple & spire architecture
-        var seed = 4219;
-        function rand() {
-          seed = (seed * 16807) % 2147483647;
-          return (seed - 1) / 2147483646;
-        }
-
-        // 1. Centered multi-peak ECG QRS envelope with moderately crisp spire transitions
-        var PEAKS = [
-          { center: 0.500, width: 0.028, amp: 1.00, power: 0.88 },
-          { center: 0.546, width: 0.021, amp: 0.82, power: 0.88 },
-          { center: 0.452, width: 0.029, amp: 0.65, power: 0.90 },
-          { center: 0.598, width: 0.031, amp: 0.56, power: 0.90 },
-          { center: 0.386, width: 0.038, amp: 0.35, power: 0.94 },
-          { center: 0.660, width: 0.038, amp: 0.33, power: 0.94 },
-          { center: 0.306, width: 0.048, amp: 0.16, power: 0.98 },
-          { center: 0.732, width: 0.048, amp: 0.15, power: 0.98 },
-          { center: 0.212, width: 0.062, amp: 0.06, power: 1.04 },
-          { center: 0.816, width: 0.062, amp: 0.06, power: 1.04 }
-        ];
-
-        function baseEnvelope(u: number) {
-          var val = 0;
-          for (var i = 0; i < PEAKS.length; i++) {
-            var p = PEAKS[i];
-            var d = Math.abs(u - p.center) / p.width;
-            if (d < 4.5) {
-              var contrib = p.amp * Math.exp(-Math.pow(d, p.power));
-              if (contrib > val) val = contrib + val * 0.12;
-              else val += contrib * 0.14;
-            }
-          }
-          var edgeFade = Math.sin(Math.max(0, Math.min(1, u)) * Math.PI);
-          return Math.min(1.10, val * Math.pow(edgeFade, 0.55));
-        }
-
-        // Precompute static ECG QRS profile across M=190 nodes with moderately sharp transitions
-        var M = 190;
-        var nodeEnvelope = new Float32Array(M);
-        for (var c = 0; c < M; c++) {
-          var u = c / (M - 1);
-          var env = baseEnvelope(u);
-          var rawWave = 0.5 + 0.5 * Math.sin(c * 1.32 + Math.cos(c * 0.55) * 1.5);
-          // Power 1.45 sharpens the transitions between sub-peaks without creating harsh needles
-          var harmonic = 0.72 + 0.28 * Math.pow(rawWave, 1.45);
-          var spireCore = Math.exp(-Math.pow(Math.abs(u - 0.500) / 0.017, 1.75)) * 0.19
-                        + Math.exp(-Math.pow(Math.abs(u - 0.546) / 0.014, 1.75)) * 0.14
-                        + Math.exp(-Math.pow(Math.abs(u - 0.452) / 0.018, 1.75)) * 0.11;
-          nodeEnvelope[c] = Math.min(1.12, env * harmonic + spireCore);
-        }
-
-        function sampleEnvelope(u: number) {
-          var f = Math.max(0, Math.min(1, u)) * (M - 1);
-          var idx = Math.floor(f);
-          var frac = f - idx;
-          var next = Math.min(M - 1, idx + 1);
-          return nodeEnvelope[idx] * (1 - frac) + nodeEnvelope[next] * frac;
-        }
-
-        // 2. Smooth scroll-linked growth state (pure exponential lerp, ZERO spring bounce)
-        var currentScale = 0.06;
-        var targetScale = 0.06;
-        var isFooterVisible = false;
-
-        // 3A. Static stippled body point-cloud (12,000 particles anchored strictly to the static burst)
-        var STATIC_STIPPLE_COUNT = 12000;
-        var staticStipples: Array<{ u: number; hFrac: number; size: number; alpha: number; hotCore: boolean }> = [];
-        for (var s = 0; s < STATIC_STIPPLE_COUNT; s++) {
-          var rMode = rand();
-          var u = 0.5;
-          if (rMode < 0.55) {
-            u = 0.50 + (rand() + rand() + rand() - 1.5) * 0.25;
-          } else if (rMode < 0.88) {
-            u = 0.50 + (rand() + rand() - 1.0) * 0.42;
-          } else {
-            u = rand();
-          }
-          u = Math.max(0.008, Math.min(0.992, u));
-          if (rand() < 0.72) {
-            var cSnap = Math.round(u * (M - 1));
-            u = (cSnap + (rand() - 0.5) * 0.62) / (M - 1);
-          }
-          var env = sampleEnvelope(u);
-
-          var kindRand = rand();
-          var hFrac = 0, size = 1, alpha = 1, hotCore = false;
-
-          if (kindRand < 0.82) {
-            // Dense interior stipple body
-            hFrac = Math.pow(rand(), 0.82) * (0.96 + rand() * 0.05);
-            size = rand() < 0.76 ? 1.15 : 1.65;
-            var tipFade = hFrac > 0.84 ? Math.max(0.15, 1 - (hFrac - 0.84) / 0.22) : 1.0;
-            alpha = (0.44 + 0.56 * (1 - hFrac * 0.38)) * tipFade * (0.60 + rand() * 0.40);
-            hotCore = (hFrac < 0.72 && env > 0.25 && rand() < 0.65);
-          } else {
-            // Feathered static spire tips
-            hFrac = 0.97 + Math.pow(rand(), 1.7) * 0.34;
-            size = 0.95 + rand() * 1.15;
-            alpha = Math.max(0.08, (1 - (hFrac - 0.97) / 0.36) * (0.38 + rand() * 0.52));
-            hotCore = rand() < 0.30;
-          }
-
-          staticStipples.push({
-            u: u,
-            hFrac: hFrac,
-            size: size,
-            alpha: Math.max(0.05, Math.min(1, alpha)),
-            hotCore: hotCore
-          });
-        }
-
-        // 3B. Infinite upward-drifting fine particles ("мелкие частички", 3,400 particles)
-        var RISING_COUNT = 3400;
-        var risingParticles: Array<{ u: number; startHFrac: number; riseSpan: number; speed: number; phase: number; size: number; alpha: number; hotCore: boolean }> = [];
-        for (var r = 0; r < RISING_COUNT; r++) {
-          var rMode2 = rand();
-          var ru;
-          if (rMode2 < 0.56) {
-            ru = 0.50 + (rand() + rand() + rand() - 1.5) * 0.24;
-          } else if (rMode2 < 0.88) {
-            ru = 0.50 + (rand() + rand() - 1.0) * 0.40;
-          } else {
-            ru = rand();
-          }
-          ru = Math.max(0.015, Math.min(0.985, ru));
-          var renv = sampleEnvelope(ru);
-
-          risingParticles.push({
-            u: ru,
-            startHFrac: 0.55 + rand() * 0.48,
-            riseSpan: 150 + rand() * 360,
-            speed: 0.07 + rand() * 0.13,
-            phase: rand(),
-            size: 0.75 + rand() * 0.75,
-            alpha: (0.26 + rand() * 0.58) * (0.30 + 0.70 * Math.pow(renv, 0.30)),
-            hotCore: rand() < 0.28
-          });
-        }
-
-        // 4. Compute Scroll Proximity to Footer Base
-        function updateScrollTarget() {
-          var rect = footer.getBoundingClientRect();
-          var vh = window.innerHeight || document.documentElement.clientHeight;
-          var footerH = Math.max(1, footer.offsetHeight || rect.height);
-
-          isFooterVisible = (rect.top < vh + 40) && (rect.bottom > -40);
-
-          var visiblePx = vh - rect.top;
-          var startOffset = footerH * 0.18;
-          var span = Math.max(1, footerH * 0.80);
-          var rawProgress = (visiblePx - startOffset) / span;
-          var clamped = Math.max(0, Math.min(1, rawProgress));
-
-          // Smooth cubic S-curve (smoothstep)
-          var eased = clamped * clamped * (3 - 2 * clamped);
-          targetScale = 0.05 + eased * 0.87;
-        }
-
-        
-    function onScroll() {
-      updateScrollTarget()
-      startLoop()
+    const band = () => (W < 760 ? 470 : 520)
+    // the module: the footer's whole width, in the band; the plot, the chips, the ISK grid under them
+    function area(): Area {
+      const pad = W < 760 ? 16 : 24
+      const top = H - band() + 26
+      const plotTop = top + 44
+      const plotBottom = plotTop + (W < 760 ? 150 : 190)
+      const chips = plotBottom + 22
+      const grid = chips + 44
+      const g = Math.min(16, (H - 28 - grid) / (ROWS - 1))
+      return { left: pad, right: W - pad, head: top, top: plotTop, bottom: plotBottom, chips, grid, g, cols: Math.floor((W - 2 * pad - 8) / g) + 1 }
+    }
+    function resize() {
+      dpr = Math.min(window.devicePixelRatio || 1, 2)
+      W = footer!.clientWidth
+      H = footer!.clientHeight
+      cv!.width = Math.round(W * dpr)
+      cv!.height = Math.round(H * dpr)
     }
 
-    if ('IntersectionObserver' in window) {
-      io = new IntersectionObserver((entries) => {
-        for (let i = 0; i < entries.length; i++) {
-          isFooterVisible = entries[i].isIntersecting
+    // smoothed a little, as in the app: one volley does not spike the curve
+    const smooth = (s: Float32Array, j: number) => (s[Math.max(0, j - 1)] + 2 * s[j] + s[Math.min(N - 1, j + 1)]) / 4
+
+    // one second of the fleet: each pilot hits most seconds, in slow waves; the anchor's smartbombs every 9 s
+    function second() {
+      for (let i = 0; i < P; i++) {
+        const s = target[i]
+        s.copyWithin(0, 1)
+        const wave = 0.7 + 0.3 * Math.sin((sec * 2 * Math.PI) / (13 + 3 * i) + i * 1.3)
+        s[N - 1] = rnd() < 0.16 ? 0 : BASE[i] * wave * (0.75 + rnd() * 0.5) * (1 + energy * 0.6)
+        vis[i].copyWithin(0, 1)
+        vis[i][N - 1] = vis[i][N - 2]
+      }
+      sb.copyWithin(0, 1)
+      sbVis.copyWithin(0, 1)
+      sbVis[N - 1] = sbVis[N - 2]
+      sb[N - 1] = sec % 9 < 2 ? 1500 + rnd() * 600 : sb[N - 2] * 0.55
+      // a bounty tick every ~3 s, its size from a real anomaly's ticks; a full grid is the next site
+      if (sec % 3 === 0 || rnd() < 0.12) {
+        if (ticks.length >= area().cols * ROWS) {
+          ticks = []
+          isk = 0
+          iskShown = 0
+          anoms++
         }
-        if (isFooterVisible) {
-          updateScrollTarget()
-          startLoop()
-        }
-      }, { threshold: 0.01 })
-      io.observe(footer)
+        const big = rnd() < 0.05
+        const v = big ? 1875000 : TICKS[Math.floor(rnd() * TICKS.length)]
+        ticks.push({ born: t, v, big })
+        isk += v
+        session += v
+        if (big) stars++
+      }
+      // the big number takes the fleet's DPS once a second, as the app's does
+      let tot = 0
+      for (let p = 0; p < P; p++) tot += smooth(target[p], N - 2)
+      totalTarget = tot
+      sec++
     }
-// 5. Canvas Sizing & Continuous Render Loop
-        var dpr = 1;
-        function resizeCanvas() {
-          if (!canvas) return;
-          dpr = Math.min(window.devicePixelRatio || 1, 2);
-          var w = footer.clientWidth;
-          var h = footer.clientHeight;
-          if (canvas.width !== Math.round(w * dpr) || canvas.height !== Math.round(h * dpr)) {
-            canvas.width = Math.round(w * dpr);
-            canvas.height = Math.round(h * dpr);
-          }
-          updateScrollTarget();
-          renderFrame(0.016, performance.now());
-          startLoop();
+
+    function step(dt: number) {
+      t += dt
+      energy *= Math.exp(-dt * 0.7)
+      flash *= Math.exp(-dt * 3)
+      while (t >= sec) second()
+      const k = 1 - Math.exp(-dt * 2.1) // the app eases 0.08 a frame at 25 fps
+      let m = 100
+      for (let i = 0; i < P; i++)
+        for (let j = 0; j < N; j++) {
+          const g = smooth(target[i], j)
+          vis[i][j] += (g - vis[i][j]) * k
+          if (g > m) m = g
         }
+      for (let j = 0; j < N; j++) {
+        sbVis[j] += (smooth(sb, j) - sbVis[j]) * k
+        if (sb[j] > m) m = sb[j]
+      }
+      maxV += (m * 1.15 - maxV) * k
+      total += (totalTarget - total) * (1 - Math.exp(-dt * 1.6))
+      iskShown += (isk - iskShown) * (1 - Math.exp(-dt * 4))
+    }
 
-        // (resize listener attached in effect)
+    const grey = (i: number) => {
+      const g = Math.round(255 - i * (110 / (P - 1)))
+      return g + ',' + g + ',' + Math.min(255, g + 6)
+    }
+    const fmt = (n: number) => Math.round(n).toString().replace(/\B(?=(\d{3})+(?!\d))/g, ' ')
+    function roundRect(x: number, y: number, w: number, h: number, r: number) {
+      ctx!.beginPath()
+      ctx!.moveTo(x + r, y)
+      ctx!.arcTo(x + w, y, x + w, y + h, r)
+      ctx!.arcTo(x + w, y + h, x, y + h, r)
+      ctx!.arcTo(x, y + h, x, y, r)
+      ctx!.arcTo(x, y, x + w, y, r)
+      ctx!.closePath()
+    }
 
-        // (rafId managed in effect)
-        // (lastTick managed in effect)
-
-        function startLoop() {
-          if (!rafId) {
-            lastTick = performance.now();
-            rafId = requestAnimationFrame(tick);
-          }
-        }
-
-        function stepSmooth(dt: number) {
-          // Responsive first-order exponential smoothing — crisp follow with ZERO spring bounce
-          var smoothRate = 1 - Math.exp(-dt * 7.2);
-          currentScale += (targetScale - currentScale) * smoothRate;
-          if (Math.abs(targetScale - currentScale) < 0.0004) {
-            currentScale = targetScale;
-          }
-        }
-
-        // Corner-tensioned curve (r = 0.24): preserves crisp ECG angles while rounding razor tips
-        function traceCrispPath(ptsX: Float32Array, ptsY: Float32Array, count: number) {
-          var r = 0.24;
-          for (var i = 1; i < count - 1; i++) {
-            var x0 = ptsX[i - 1], y0 = ptsY[i - 1];
-            var x1 = ptsX[i],     y1 = ptsY[i];
-            var x2 = ptsX[i + 1], y2 = ptsY[i + 1];
-            var ax = x1 + (x0 - x1) * r;
-            var ay = y1 + (y0 - y1) * r;
-            var bx = x1 + (x2 - x1) * r;
-            var by = y1 + (y2 - y1) * r;
-            ctx.lineTo(ax, ay);
-            ctx.quadraticCurveTo(x1, y1, bx, by);
-          }
-          ctx.lineTo(ptsX[count - 1], ptsY[count - 1]);
-        }
-
-        function strokeCrispCurve(ptsX: Float32Array, ptsY: Float32Array, count: number) {
-          if (count < 2) return;
-          ctx.beginPath();
-          ctx.moveTo(ptsX[0], ptsY[0]);
-          traceCrispPath(ptsX, ptsY, count);
-        }
-
-        function renderFrame(dt: number, now: number) {
-          if (!canvas) return;
-          var w = canvas.width / dpr;
-          var h = canvas.height / dpr;
-          if (w <= 0 || h <= 0) return;
-
-          ctx.save();
-          ctx.scale(dpr, dpr);
-          ctx.clearRect(0, 0, w, h);
-
-          var effectiveScale = Math.max(0.05, Math.min(0.95, currentScale));
-          var maxSpikeH = h * 0.72;
-          var baseLineY = h;
-          var timeSec = now * 0.001;
-
-          // Precompute STATIC ECG ridge heights across M nodes (only changes with scroll scale)
-          var ptsX = new Float32Array(M);
-          var traceY = new Float32Array(M);
-          var npcTraceY = new Float32Array(M);
-          for (var i = 0; i < M; i++) {
-            var u = i / (M - 1);
-            ptsX[i] = u * w;
-            var env = nodeEnvelope[i];
-            var hVal = Math.max(2, env * maxSpikeH * effectiveScale);
-            traceY[i] = Math.max(h * 0.28, Math.min(baseLineY - 2, baseLineY - hVal));
-
-            var npcEnv = env * 0.58;
-            var nhVal = Math.max(1, npcEnv * maxSpikeH * effectiveScale);
-            npcTraceY[i] = Math.max(h * 0.34, Math.min(baseLineY - 2, baseLineY - nhVal));
-          }
-
-          // A. Soft atmospheric radial glow behind the central ECG spire (static when scroll stops)
-          var peakX = w * 0.50;
-          var peakY = h - Math.min(h * 0.78, maxSpikeH * effectiveScale * 0.68);
-          var grad = ctx.createRadialGradient(peakX, h, 8, peakX, peakY, Math.max(w * 0.38, h * 0.72));
-          grad.addColorStop(0, 'rgba(247, 255, 20, ' + (0.05 + 0.20 * effectiveScale).toFixed(3) + ')');
-          grad.addColorStop(0.38, 'rgba(247, 255, 20, ' + (0.02 + 0.06 * effectiveScale).toFixed(3) + ')');
-          grad.addColorStop(1, 'rgba(247, 255, 20, 0)');
-          ctx.fillStyle = grad;
-          ctx.fillRect(0, 0, w, h);
-
-          // B. Inner luminous core fill aligned with traceY
-          ctx.beginPath();
-          ctx.moveTo(0, baseLineY);
-          ctx.lineTo(ptsX[0], traceY[0]);
-          traceCrispPath(ptsX, traceY, M);
-          ctx.lineTo(w, baseLineY);
-          ctx.closePath();
-          var coreGrad = ctx.createLinearGradient(0, h - maxSpikeH * Math.max(0.2, effectiveScale), 0, h);
-          coreGrad.addColorStop(0, 'rgba(247, 255, 20, 0.04)');
-          coreGrad.addColorStop(0.34, 'rgba(247, 255, 20, 0.26)');
-          coreGrad.addColorStop(0.70, 'rgba(252, 255, 115, 0.54)');
-          coreGrad.addColorStop(1, 'rgba(254, 255, 198, 0.72)');
-          ctx.fillStyle = coreGrad;
-          ctx.fill();
-
-          var scaleAlpha = Math.min(1.15, 0.25 + 0.85 * effectiveScale);
-
-          // C1. Static stippled point-cloud body (burst remains completely static when not scrolling)
-          for (var s = 0; s < staticStipples.length; s++) {
-            var st = staticStipples[s];
-            var mIdx = Math.min(M - 1, Math.max(0, Math.round(st.u * (M - 1))));
-            var colH = baseLineY - traceY[mIdx];
-            if (colH < 2) continue;
-
-            var py = baseLineY - colH * st.hFrac;
-            if (py < 4 || py > h) continue;
-            var px = st.u * w;
-
-            var a = st.alpha * scaleAlpha;
-            ctx.fillStyle = st.hotCore
-              ? 'rgba(254, 255, 210, ' + Math.min(1, a).toFixed(3) + ')'
-              : 'rgba(247, 255, 20, ' + Math.min(1, a).toFixed(3) + ')';
-            ctx.fillRect(px - st.size * 0.5, py - st.size * 0.5, st.size, st.size);
-          }
-
-          // C2. Infinite upward-drifting fine particles ("мелкие частички постоянно уходят вверх бесконечно")
-          var riseScaleFactor = 0.25 + 0.75 * effectiveScale;
-          for (var r = 0; r < risingParticles.length; r++) {
-            var rp = risingParticles[r];
-            var mIdx2 = Math.min(M - 1, Math.max(0, Math.round(rp.u * (M - 1))));
-            var colH2 = baseLineY - traceY[mIdx2];
-            if (colH2 < 2) continue;
-
-            // Continuous cyclic progress in [0, 1) advancing infinitely upward with timeSec
-            var prog = (rp.phase + timeSec * rp.speed) % 1.0;
-            var originY = baseLineY - colH2 * rp.startHFrac;
-            var py2 = originY - prog * rp.riseSpan * riseScaleFactor;
-            if (py2 < 2 || py2 > h) continue;
-
-            var px2 = rp.u * w;
-            var fadeIn = Math.min(1, prog / 0.10);
-            var fadeOut = Math.pow(1 - prog, 1.35);
-            var ra = rp.alpha * fadeIn * fadeOut * scaleAlpha;
-            if (ra < 0.015) continue;
-
-            ctx.fillStyle = rp.hotCore
-              ? 'rgba(254, 255, 210, ' + Math.min(1, ra).toFixed(3) + ')'
-              : 'rgba(247, 255, 20, ' + Math.min(1, ra).toFixed(3) + ')';
-            ctx.fillRect(px2 - rp.size * 0.5, py2 - rp.size * 0.5, rp.size, rp.size);
-          }
-
-          // D. Crisp Oscilloscope ECG Traces (static contour with moderately sharp transitions)
-          strokeCrispCurve(ptsX, npcTraceY, M);
-          ctx.strokeStyle = 'rgba(238, 242, 248, 0.34)';
-          ctx.lineWidth = 1.0;
-          ctx.lineJoin = 'round';
-          ctx.stroke();
-
-          strokeCrispCurve(ptsX, traceY, M);
-          ctx.lineJoin = 'round';
-          ctx.lineCap = 'round';
-
-          ctx.strokeStyle = 'rgba(247, 255, 20, 0.18)';
-          ctx.lineWidth = 5.0;
-          ctx.stroke();
-
-          ctx.strokeStyle = 'rgba(247, 255, 20, 0.48)';
-          ctx.lineWidth = 2.1;
-          ctx.stroke();
-
-          ctx.strokeStyle = '#feff9e';
-          ctx.lineWidth = 1.15;
-          ctx.stroke();
-
-          ctx.restore();
-        }
-
-        
-    function tick(now: number) {
-      if (cancelled) return
-      var dt = Math.min(0.033, Math.max(0.008, (now - lastTick) / 1000))
-      lastTick = now
-
-      stepSmooth(dt)
-      renderFrame(dt, now)
-
-      if (isFooterVisible || Math.abs(targetScale - currentScale) > 0.0005) {
-        rafId = requestAnimationFrame(tick)
-      } else {
-        rafId = null
+    // points of a series on screen: the newest second at the right, the whole scrolling smoothly with the clock
+    function pts(s: Float32Array, a: Area) {
+      const frac = t - Math.floor(t), dx = (a.right - a.left) / (N - 2), out: number[] = []
+      for (let j = 0; j < N; j++) out.push(a.left + (j - frac) * dx, a.bottom - (a.bottom - a.top) * Math.min(1, s[j] / maxV))
+      return out
+    }
+    // a cardinal spline through the points, as GDI+ DrawCurve(tension 0.5) draws the app's lines
+    function curve(p: number[]) {
+      ctx!.moveTo(p[0], p[1])
+      const c = 0.5 / 3
+      for (let i = 0; i < p.length - 2; i += 2) {
+        const x0 = p[Math.max(0, i - 2)], y0 = p[Math.max(1, i - 1)], x1 = p[i], y1 = p[i + 1], x2 = p[i + 2], y2 = p[i + 3]
+        const x3 = p[Math.min(p.length - 2, i + 4)], y3 = p[Math.min(p.length - 1, i + 5)]
+        ctx!.bezierCurveTo(x1 + (x2 - x0) * c, y1 + (y2 - y0) * c, x2 - (x3 - x1) * c, y2 - (y3 - y1) * c, x2, y2)
       }
     }
 
-    window.addEventListener('scroll', onScroll, { passive: true })
-    window.addEventListener('resize', resizeCanvas, { passive: true })
+    function draw() {
+      const g = ctx!
+      g.setTransform(dpr, 0, 0, dpr, 0, 0)
+      g.globalCompositeOperation = 'source-over'
+      g.clearRect(0, 0, W, H)
+      const a = area()
 
-    updateScrollTarget()
-    currentScale = targetScale
-    resizeCanvas()
+      // the header: the module's title and the fleet's number
+      g.textBaseline = 'alphabetic'
+      g.font = '500 ' + (W < 760 ? 11 : 13) + 'px Orbitron, sans-serif'
+      g.fillStyle = 'rgba(238,242,248,0.9)'
+      const title = 'EFF. DPS · VORTON PROJECTOR'
+      g.fillText(title, a.left, a.head + 18)
+      const tw = g.measureText(title).width
+      g.strokeStyle = 'rgba(238,242,248,0.35)'
+      g.lineWidth = 1
+      roundRect(a.left + tw + 10, a.head + 3, 22, 20, 4)
+      g.stroke()
+      g.font = 'italic 600 12px "Noto Sans", serif'
+      g.fillStyle = 'rgba(238,242,248,0.8)'
+      g.fillText('fx', a.left + tw + 15, a.head + 18)
+      g.font = '700 ' + (W < 760 ? 22 : 30) + 'px Orbitron, sans-serif'
+      g.textAlign = 'right'
+      if (flash > 0.02) {
+        g.shadowColor = 'rgba(247,255,20,' + (0.8 * flash).toFixed(3) + ')'
+        g.shadowBlur = 18 * flash
+      }
+      g.fillStyle = '#ffffff'
+      g.fillText(fmt(total), a.right, a.head + 26)
+      g.shadowBlur = 0
+      g.textAlign = 'left'
+
+      // the plot: its floor line, the lines clipped to it
+      g.fillStyle = 'rgba(238,242,248,0.18)'
+      g.fillRect(a.left, a.bottom, a.right - a.left, 1)
+      g.save()
+      g.beginPath()
+      g.rect(a.left - 2, a.top - 6, a.right - a.left + 4, a.bottom - a.top + 8)
+      g.clip()
+      g.lineJoin = 'round'
+      // the smartbombs: a dotted white line
+      g.setLineDash([1.5, 4])
+      g.lineCap = 'round'
+      g.beginPath()
+      curve(pts(sbVis, a))
+      g.strokeStyle = 'rgba(238,242,248,0.85)'
+      g.lineWidth = 1.6
+      g.stroke()
+      g.setLineDash([])
+      // the pilots, pilot 1 last (on top); a soft glow under each
+      for (let i = P - 1; i >= 0; i--) {
+        const c = grey(i)
+        g.beginPath()
+        curve(pts(vis[i], a))
+        g.globalCompositeOperation = 'lighter'
+        g.strokeStyle = 'rgba(' + c + ',0.07)'
+        g.lineWidth = 6
+        g.stroke()
+        g.globalCompositeOperation = 'source-over'
+        g.strokeStyle = 'rgb(' + c + ')'
+        g.lineWidth = i === 0 ? 1.4 : 1.1
+        g.stroke()
+      }
+      g.restore()
+      // the left edge fades into the footer
+      g.globalCompositeOperation = 'destination-out'
+      const fade = g.createLinearGradient(a.left, 0, a.left + 160, 0)
+      fade.addColorStop(0, 'rgba(0,0,0,1)')
+      fade.addColorStop(1, 'rgba(0,0,0,0)')
+      g.fillStyle = fade
+      g.fillRect(a.left - 4, a.top - 8, 164, a.bottom - a.top + 10)
+      g.globalCompositeOperation = 'source-over'
+
+      // reading the graph under the mouse: the second, each pilot's dot, the fleet's DPS then
+      if (mx > a.left && mx < a.right && my > a.top - 20 && my < a.bottom + 8) {
+        const dx = (a.right - a.left) / (N - 2), frac = t - Math.floor(t)
+        const jf = (mx - a.left) / dx + frac, j0 = Math.max(0, Math.min(N - 2, Math.floor(jf))), f = jf - j0
+        g.setLineDash([2, 4])
+        g.strokeStyle = 'rgba(247,255,20,0.55)'
+        g.lineWidth = 1
+        g.beginPath()
+        g.moveTo(mx + 0.5, a.top - 4)
+        g.lineTo(mx + 0.5, a.bottom)
+        g.stroke()
+        g.setLineDash([])
+        let sum = 0
+        for (let q = 0; q < P; q++) {
+          const v = vis[q][j0] * (1 - f) + vis[q][j0 + 1] * f
+          sum += v
+          const y = a.bottom - (a.bottom - a.top) * Math.min(1, v / maxV)
+          g.fillStyle = q === 0 ? '#ffffff' : 'rgb(' + grey(q) + ')'
+          g.beginPath()
+          g.arc(mx, y, q === 0 ? 3 : 2.3, 0, Math.PI * 2)
+          g.fill()
+        }
+        const ago = Math.max(0, Math.round(N - 1 - jf))
+        const label = (ago === 0 ? 'now' : '−' + ago + ' s') + '   ' + fmt(sum) + ' DPS'
+        g.font = '500 11px Orbitron, sans-serif'
+        const lw = g.measureText(label).width + 16, lx = Math.min(a.right - lw, mx + 10), ly = a.top - 2
+        g.fillStyle = 'rgba(7,9,14,0.92)'
+        roundRect(lx, ly, lw, 22, 4)
+        g.fill()
+        g.strokeStyle = 'rgba(247,255,20,0.45)'
+        g.stroke()
+        g.fillStyle = '#f7ff14'
+        g.fillText(label, lx + 8, ly + 15)
+      }
+
+      // the chips: anomalies, faction spawns, the session's ISK; the anomaly's ISK on the right
+      g.font = '500 ' + (W < 760 ? 11 : 12) + 'px Orbitron, sans-serif'
+      let cx = a.left
+      const chips = [anoms + ' ANOM', '★ ' + stars, 'Σ ' + (session / 1e6).toFixed(1) + ' M. ISK']
+      for (let ci = 0; ci < chips.length; ci++) {
+        const cw = g.measureText(chips[ci]).width + 18
+        roundRect(cx, a.chips, cw, 24, 4)
+        g.fillStyle = ci === 2 ? 'rgba(238,242,248,0.08)' : 'rgba(7,9,14,1)'
+        g.fill()
+        g.strokeStyle = 'rgba(238,242,248,0.28)'
+        g.lineWidth = 1
+        g.stroke()
+        g.fillStyle = '#eef2f8'
+        g.fillText(chips[ci], cx + 9, a.chips + 16)
+        cx += cw + 8
+      }
+      g.font = '700 ' + (W < 760 ? 16 : 20) + 'px Orbitron, sans-serif'
+      g.textAlign = 'right'
+      g.fillStyle = '#ffffff'
+      g.fillText((iskShown / 1e6).toFixed(1) + ' M. ISK', a.right, a.chips + 18)
+      g.textAlign = 'left'
+
+      // the ISK grid: one dot a bounty tick, column by column from the top; the bigger the tick the hotter the dot, a
+      // commander's in white; a ring where the next one lands
+      const r0 = Math.min(4.6, a.g * 0.3)
+      for (let col = 0; col < a.cols; col++)
+        for (let row = 0; row < ROWS; row++) {
+          const x = a.left + 4 + col * a.g, y = a.grid + row * a.g, tk = ticks[col * ROWS + row]
+          g.fillStyle = 'rgba(238,242,248,0.07)'
+          g.beginPath()
+          g.arc(x, y, r0, 0, Math.PI * 2)
+          g.fill()
+          if (!tk) continue
+          const on = Math.min(1, (t - tk.born) / 0.35)
+          const heat = tk.big ? 1 : Math.max(0, Math.min(1, Math.log(tk.v / 4000) / Math.log(260000 / 4000)))
+          const col2 = tk.big ? '255,255,255' : '247,255,20', al = (0.28 + 0.72 * heat) * on
+          if (!reduce && heat > 0.55) {
+            const hr = r0 * 3.2, halo = g.createRadialGradient(x, y, 0, x, y, hr)
+            halo.addColorStop(0, 'rgba(' + col2 + ',' + (0.3 * al).toFixed(3) + ')')
+            halo.addColorStop(1, 'rgba(' + col2 + ',0)')
+            g.fillStyle = halo
+            g.fillRect(x - hr, y - hr, hr * 2, hr * 2)
+          }
+          g.fillStyle = 'rgba(' + col2 + ',' + al.toFixed(3) + ')'
+          g.beginPath()
+          g.arc(x, y, r0, 0, Math.PI * 2)
+          g.fill()
+        }
+      const ncol = Math.floor(ticks.length / ROWS), nrow = ticks.length % ROWS
+      if (ncol < a.cols) {
+        g.strokeStyle = 'rgba(238,242,248,0.75)'
+        g.lineWidth = 1.2
+        g.beginPath()
+        g.arc(a.left + 4 + ncol * a.g, a.grid + nrow * a.g, r0 + 1.2, 0, Math.PI * 2)
+        g.stroke()
+      }
+    }
+
+    // input: the canvas lets the mouse through to the links, so the footer listens
+    let mx = -1, my = -1
+    const onMove = (e: PointerEvent) => {
+      const r = footer.getBoundingClientRect()
+      mx = e.clientX - r.left
+      my = e.clientY - r.top
+    }
+    const onLeave = () => {
+      mx = my = -1
+    }
+    const onDown = () => {
+      if (my < area().head - 20) return
+      for (let i = 0; i < P; i++) target[i][N - 1] += BASE[i] * (1.1 + rnd() * 0.5)
+      flash = 1
+    }
+    let lastScroll = window.scrollY
+    const onScroll = () => {
+      const d = Math.abs(window.scrollY - lastScroll)
+      lastScroll = window.scrollY
+      energy = Math.min(1.5, energy + d / 1200)
+    }
+
+    let visible = true, raf = 0, last = 0, cancelled = false
+    function tick(now: number) {
+      if (cancelled) return
+      const dt = Math.min(0.05, (now - last) / 1000)
+      last = now
+      step(reduce ? dt * 0.5 : dt)
+      draw()
+      raf = visible ? requestAnimationFrame(tick) : 0
+    }
+    function start() {
+      if (!raf) {
+        last = performance.now()
+        raf = requestAnimationFrame(tick)
+      }
+    }
+    let io: IntersectionObserver | null = null
+    if ('IntersectionObserver' in window) {
+      io = new IntersectionObserver((es) => {
+        visible = es[0].isIntersecting
+        if (visible) start()
+      }, { threshold: 0 })
+      io.observe(footer)
+    }
+
+    footer.addEventListener('pointermove', onMove)
+    footer.addEventListener('pointerleave', onLeave)
+    footer.addEventListener('pointerdown', onDown)
+    window.addEventListener('scroll', onScroll, { passive: true })
+    window.addEventListener('resize', resize)
+    // the footer's height settles after the fonts and the page's own layout
+    const ro = typeof ResizeObserver === 'function' ? new ResizeObserver(resize) : null
+    if (ro) ro.observe(footer)
+
+    resize()
+    for (let w = 0; w < 64 * 30; w++) step(1 / 30) // a full minute of history at once
+    // a site already under way: about 40 % of the grid filled
+    const want = Math.round(area().cols * ROWS * 0.4)
+    while (ticks.length < want) ticks.unshift({ born: -10, v: TICKS[Math.floor(rnd() * TICKS.length)], big: rnd() < 0.03 })
+    ticks = ticks.slice(-want)
+    isk = ticks.reduce((s, x) => s + x.v, 0)
+    iskShown = isk
+    stars = ticks.filter((x) => x.big).length
+    total = totalTarget
+    start()
 
     return () => {
       cancelled = true
-      if (rafId) cancelAnimationFrame(rafId)
+      if (raf) cancelAnimationFrame(raf)
+      footer.removeEventListener('pointermove', onMove)
+      footer.removeEventListener('pointerleave', onLeave)
+      footer.removeEventListener('pointerdown', onDown)
       window.removeEventListener('scroll', onScroll)
-      window.removeEventListener('resize', resizeCanvas)
+      window.removeEventListener('resize', resize)
       if (io) io.disconnect()
+      if (ro) ro.disconnect()
     }
   }, [])
 
-  return (
-    <canvas ref={canvasRef} className="footer-ecg-canvas js-footer-ecg-canvas" aria-hidden="true" />
-  )
+  return <canvas ref={canvasRef} className="footer-ecg-canvas js-footer-ecg-canvas" aria-hidden="true" />
 }
