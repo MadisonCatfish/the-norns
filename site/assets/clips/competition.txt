@@ -1,0 +1,3 @@
+Title: Competition Mode: Lightning Rod
+Feature: Runner damage in Competition mode
+Description: When several fleets share a system, the Thunderchilds shoot a frigate runner and their Vorton arcs jump on to the NPCs. The Lightning rod trace shows every hit the runner takes, live.

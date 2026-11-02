@@ -1,0 +1,3 @@
+Title: Session History and Calendar
+Feature: Session statistics with calendar
+Description: Every session is kept on your PC across updates: sites, time, ISK, commanders, titans and dreadnoughts. Open the calendar to pick a day or a period, or the quarter or the year in one click.

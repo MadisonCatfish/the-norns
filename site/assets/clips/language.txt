@@ -1,0 +1,3 @@
+Title: Seven Languages
+Feature: Interface language switch
+Description: English, Deutsch, Français, Español, Italiano, Українська and 简体中文, switched with one click. Chinese is drawn in the embedded Noto Sans SC, so no extra fonts are needed.

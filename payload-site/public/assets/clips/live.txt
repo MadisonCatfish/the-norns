@@ -1,0 +1,3 @@
+Title: Live Site Telemetry
+Feature: Real-time DPS and bounty tracking
+Description: Every pilot's Vorton damage as its own line, the anchor's smartbomb cycles as seven columns, and each bounty tick lighting up the ISK grid. A faction commander on grid adds a star to the session count.

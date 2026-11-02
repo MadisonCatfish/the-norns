@@ -1,0 +1,3 @@
+Title: No Client, No Guessing
+Feature: No-client warning
+Description: When no EVE client is running, the lamp and the power display flicker like a short circuit, so an idle meter never looks like a quiet site.

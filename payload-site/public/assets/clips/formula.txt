@@ -1,0 +1,3 @@
+Title: Every Number Explained
+Feature: Formula cards for every module
+Description: The fx key next to each module opens a card that says how its number is counted, in plain words. It slides in over the body and closes with one click.

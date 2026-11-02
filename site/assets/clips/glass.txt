@@ -1,0 +1,3 @@
+Title: Glass That Catches the Light
+Feature: Cursor-lit glass display
+Description: The display sits behind real glass. Move the cursor over it and the light picks up faint scratches and wipe marks, soft and diffuse, never over a key.
