@@ -39,6 +39,94 @@ export const SourcePage: GlobalConfig = {
       label: 'GitHub Repository URL',
       defaultValue: 'https://github.com/MadisonCatfish/the-norns',
     },
+    {
+      type: 'collapsible',
+      label: 'Hero CTA Buttons (Call to Action)',
+      admin: {
+        initCollapsed: false,
+      },
+      fields: [
+        // Button 1: Primary (GitHub)
+        {
+          type: 'row',
+          fields: [
+            {
+              name: 'heroPrimaryShow',
+              type: 'checkbox',
+              label: 'Show Button 1 (GitHub)',
+              defaultValue: true,
+              admin: { width: '25%' },
+            },
+            {
+              name: 'heroPrimaryLabel',
+              type: 'text',
+              label: 'Button 1 Text',
+              defaultValue: 'Inspect GitHub Repo →',
+              admin: { width: '35%' },
+            },
+            {
+              name: 'heroPrimaryUrl',
+              type: 'text',
+              label: 'Button 1 Custom URL (leave empty for GitHub repo URL)',
+              admin: { width: '40%' },
+            },
+          ],
+        },
+        // Button 2: Secondary (Installer)
+        {
+          type: 'row',
+          fields: [
+            {
+              name: 'heroSecondaryShow',
+              type: 'checkbox',
+              label: 'Show Button 2 (Installer)',
+              defaultValue: true,
+              admin: { width: '25%' },
+            },
+            {
+              name: 'heroSecondaryLabel',
+              type: 'text',
+              label: 'Button 2 Text (use {version} for current version)',
+              defaultValue: 'Download {version} (.exe)',
+              admin: { width: '35%' },
+            },
+            {
+              name: 'heroSecondaryUrl',
+              type: 'text',
+              label: 'Button 2 Custom URL (leave empty for auto latest .exe release)',
+              admin: { width: '40%' },
+            },
+          ],
+        },
+        // Button 3: Tertiary (Architecture / Anchor)
+        {
+          type: 'row',
+          fields: [
+            {
+              name: 'heroTertiaryShow',
+              type: 'checkbox',
+              label: 'Show Button 3 (Architecture / Anchor)',
+              defaultValue: true,
+              admin: { width: '25%' },
+            },
+            {
+              name: 'heroTertiaryLabel',
+              type: 'text',
+              label: 'Button 3 Text',
+              defaultValue: 'Review Architecture',
+              admin: { width: '35%' },
+            },
+            {
+              name: 'heroTertiaryUrl',
+              type: 'text',
+              label: 'Button 3 URL',
+              defaultValue: '#compliance',
+              admin: { width: '40%' },
+            },
+          ],
+        },
+      ],
+    },
 
     // 2. Security Section
     {
