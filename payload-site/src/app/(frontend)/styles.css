@@ -692,9 +692,8 @@
     .bento-box:hover {
       border-color: #38414e;
       background: #020408;
-      transform: translateY(-2px);
       box-shadow:
-        0 20px 48px -8px rgba(0, 0, 0, 0.9),
+        0 16px 40px -8px rgba(0, 0, 0, 0.8),
         inset 0 1px 0 rgba(255, 255, 255, 0.20),
         inset 0 0 0 2px #181a1e,
         inset 0 6px 12px -1px rgba(0, 0, 0, 0.98),
@@ -768,8 +767,7 @@
 
     .bento-box:hover .bento-image-frame img,
     .bento-box:hover .bento-image-frame video {
-      transform: translateY(-2px);
-      filter: drop-shadow(0 18px 36px rgba(0, 0, 0, 0.85)) drop-shadow(0 0 20px rgba(247, 255, 20, 0.08));
+      filter: drop-shadow(0 14px 28px rgba(0, 0, 0, 0.75)) drop-shadow(0 2px 8px rgba(0, 0, 0, 0.45));
     }
 
     .bento-image-frame video.competition-video {
@@ -782,7 +780,7 @@
 
     .bento-box:hover .bento-image-frame video.competition-video {
       border-color: var(--border-bright);
-      box-shadow: 0 16px 36px rgba(0, 0, 0, 0.75), 0 0 24px rgba(247, 255, 20, 0.08);
+      box-shadow: 0 12px 28px rgba(0, 0, 0, 0.6);
       filter: none;
     }
 
