@@ -11,10 +11,10 @@ A passive DPS meter, real-time ISK tracker, and anomaly companion for EVE Online
 </p>
 
 <p align="center">
-  <a href="https://the-norns.pages.dev/"><b>Website</b></a> &nbsp;•&nbsp;
-  <a href="https://the-norns.pages.dev/source.html"><b>Source &amp; Build</b></a> &nbsp;•&nbsp;
-  <a href="https://the-norns.pages.dev/eula.txt"><b>EULA</b></a> &nbsp;•&nbsp;
-  <a href="https://the-norns.pages.dev/roadmap.html"><b>Roadmap</b></a> &nbsp;•&nbsp;
+  <a href="https://the-norns.com/"><b>Website</b></a> &nbsp;•&nbsp;
+  <a href="https://the-norns.com/source.html"><b>Source &amp; Build</b></a> &nbsp;•&nbsp;
+  <a href="https://the-norns.com/eula.txt"><b>EULA</b></a> &nbsp;•&nbsp;
+  <a href="https://the-norns.com/roadmap.html"><b>Roadmap</b></a> &nbsp;•&nbsp;
   <a href="https://github.com/MadisonCatfish/the-norns/releases"><b>Releases</b></a>
 </p>
 

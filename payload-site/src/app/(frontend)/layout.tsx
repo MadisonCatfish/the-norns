@@ -5,13 +5,13 @@ import { MobileNavScript } from '@/components/MobileNavScript'
 import { InteractiveGlassScript } from '@/components/InteractiveGlassScript'
 
 export const metadata: Metadata = {
-  metadataBase: new URL('https://the-norns.pages.dev'),
+  metadataBase: new URL('https://the-norns.com'),
   title: 'The Norns · Elite Fleet HUD for EVE Online Krabbing & Multi-Boxing',
   description: "Dedicated telemetry companion for EVE Online EDENCOM & Smartbomb ratting fleets. Real-time Vorton bounce DPS, warp-to-warp anomaly timer, and instant dread/titan alarms. Passive: it reads the game's logs and sends no input.",
   openGraph: {
     title: 'The Norns · Elite Fleet HUD for EVE Online',
     description: 'Dedicated telemetry companion for EVE Online EDENCOM & Smartbomb ratting fleets. Zero memory injection, 100% passive log tailing.',
-    url: 'https://the-norns.pages.dev',
+    url: 'https://the-norns.com',
     siteName: 'The Norns',
     images: [
       {
