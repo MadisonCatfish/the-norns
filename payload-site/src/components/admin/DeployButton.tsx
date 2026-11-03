@@ -49,7 +49,7 @@ export function DeployButton() {
           Publish to Cloudflare Pages
         </div>
         <div style={{ color: '#9ca3af', fontSize: '13px' }}>
-          Deploys the latest content changes from this CMS to the live site (<strong>the-norns.pages.dev</strong>).
+          Deploys the latest content changes from this CMS to the live site (<strong>the-norns.com</strong>).
         </div>
         {message && (
           <div

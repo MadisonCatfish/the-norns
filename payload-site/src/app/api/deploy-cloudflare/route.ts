@@ -29,14 +29,23 @@ export async function POST(req: Request) {
       },
     })
 
+    // Cloudflare returns 304 Not Modified when a build is already active or queued
+    if (response.status === 304) {
+      return NextResponse.json({
+        success: true,
+        message: 'Deployment is already queued or currently running on Cloudflare Pages (~30s).',
+      })
+    }
+
     if (!response.ok) {
       const errText = await response.text()
+      const statusCode = response.status >= 400 && response.status <= 599 ? response.status : 502
       return NextResponse.json(
         {
           success: false,
           message: `Cloudflare returned error ${response.status}: ${errText}`,
         },
-        { status: response.status },
+        { status: statusCode },
       )
     }
 
