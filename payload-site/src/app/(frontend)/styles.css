@@ -538,11 +538,6 @@
       position: absolute;
       inset: 0;
       background-image: url('/assets/glass_scratches.png');
-      background-image: image-set(
-        url('/assets/glass_scratches.avif') type('image/avif'),
-        url('/assets/glass_scratches.webp') type('image/webp'),
-        url('/assets/glass_scratches.png') type('image/png')
-      );
       background-size: 512px 512px;
       background-repeat: repeat;
       pointer-events: none;
