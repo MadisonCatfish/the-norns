@@ -1,6 +1,7 @@
 @font-face {
       font-family: 'Orbitron';
-      src: url('/assets/fonts/Orbitron.ttf') format('truetype');
+      src: url('/assets/fonts/Orbitron.woff2') format('woff2'),
+           url('/assets/fonts/Orbitron.ttf') format('truetype');
       font-weight: 400 900;
       font-style: normal;
       font-display: swap;
@@ -8,7 +9,8 @@
 
     @font-face {
       font-family: 'Noto Sans';
-      src: url('/assets/fonts/NotoSans.ttf') format('truetype');
+      src: url('/assets/fonts/NotoSans.woff2') format('woff2'),
+           url('/assets/fonts/NotoSans.ttf') format('truetype');
       font-weight: 400 800;
       font-style: normal;
       font-display: swap;
@@ -536,6 +538,11 @@
       position: absolute;
       inset: 0;
       background-image: url('/assets/glass_scratches.png');
+      background-image: image-set(
+        url('/assets/glass_scratches.avif') type('image/avif'),
+        url('/assets/glass_scratches.webp') type('image/webp'),
+        url('/assets/glass_scratches.png') type('image/png')
+      );
       background-size: 512px 512px;
       background-repeat: repeat;
       pointer-events: none;
@@ -2187,4 +2194,13 @@ footer.site-footer {
   footer.site-footer {
     padding-bottom: 490px;
   }
+}
+
+
+/* Performance: Content visibility for offscreen sections */
+.pipeline-grid,
+.faq-list,
+.site-footer {
+  content-visibility: auto;
+  contain-intrinsic-size: auto 500px;
 }

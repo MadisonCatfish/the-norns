@@ -262,16 +262,63 @@ export function HeroPinnedSection({
       {/* Asynchronous Levitating Hero Showcase */}
       <div className="hero-showcase">
         <div className="hero-card hero-card-1">
-          <img src="/assets/norns-client-1.png" alt="The Norns Vorton Projector HUD" loading="eager" />
+          <picture>
+            <source type="image/avif" srcSet="/assets/norns-client-1.avif" />
+            <source type="image/webp" srcSet="/assets/norns-client-1.webp" />
+            <img
+              src="/assets/norns-client-1.png"
+              alt="The Norns Vorton Projector HUD"
+              width={538}
+              height={617}
+              loading="eager"
+              fetchPriority="high"
+            />
+          </picture>
         </div>
         <div className="hero-card hero-card-2">
-          <img src="/assets/norns-client-2.png" alt="The Norns Competition Mode Runner Lead" loading="eager" />
+          <picture>
+            <source type="image/avif" srcSet="/assets/norns-client-2.avif" />
+            <source type="image/webp" srcSet="/assets/norns-client-2.webp" />
+            <img
+              src="/assets/norns-client-2.png"
+              alt="The Norns Competition Mode Runner Lead"
+              width={538}
+              height={617}
+              loading="lazy"
+              decoding="async"
+              fetchPriority="low"
+            />
+          </picture>
         </div>
         <div className="hero-card hero-card-3">
-          <img src="/assets/norns-client-3.png" alt="The Norns Tactical Settings" loading="eager" />
+          <picture>
+            <source type="image/avif" srcSet="/assets/norns-client-3.avif" />
+            <source type="image/webp" srcSet="/assets/norns-client-3.webp" />
+            <img
+              src="/assets/norns-client-3.png"
+              alt="The Norns Tactical Settings"
+              width={538}
+              height={617}
+              loading="lazy"
+              decoding="async"
+              fetchPriority="low"
+            />
+          </picture>
         </div>
         <div className="hero-card hero-card-4">
-          <img src="/assets/norns-client-4.png" alt="The Norns Dual Doctrine Smartbomb & Bounty Grid" loading="eager" />
+          <picture>
+            <source type="image/avif" srcSet="/assets/norns-client-4.avif" />
+            <source type="image/webp" srcSet="/assets/norns-client-4.webp" />
+            <img
+              src="/assets/norns-client-4.png"
+              alt="The Norns Dual Doctrine Smartbomb & Bounty Grid"
+              width={538}
+              height={617}
+              loading="lazy"
+              decoding="async"
+              fetchPriority="low"
+            />
+          </picture>
         </div>
       </div>
     </section>

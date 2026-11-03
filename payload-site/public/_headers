@@ -1,0 +1,14 @@
+# Static Next.js Bundles
+/_next/static/*
+  Cache-Control: public, max-age=31536000, immutable
+
+# Assets (Images, Fonts, Media)
+/assets/*
+  Cache-Control: public, max-age=31536000, immutable
+
+# HTML Pages (Always revalidate with origin)
+/*.html
+  Cache-Control: public, max-age=0, must-revalidate
+
+/
+  Cache-Control: public, max-age=0, must-revalidate

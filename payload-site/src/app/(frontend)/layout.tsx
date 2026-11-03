@@ -44,6 +44,8 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   return (
     <html lang="en">
       <head>
+        <link rel="preload" href="/assets/fonts/Orbitron.woff2" as="font" type="font/woff2" crossOrigin="anonymous" />
+        <link rel="preload" as="image" href="/assets/norns-client-1.avif" type="image/avif" fetchPriority="high" />
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
         <link

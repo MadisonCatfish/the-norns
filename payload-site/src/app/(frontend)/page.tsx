@@ -186,29 +186,43 @@ export default async function HomePage() {
                   <p className="bento-desc">{f.description}</p>
                 </div>
                 <div className="bento-image-frame">
-                  {f.isVideo ? (
-                    <video
-                      className="competition-video"
-                      autoPlay
-                      muted
-                      loop
-                      playsInline
-                      preload="metadata"
-                      poster={f.videoPoster || '/assets/the-norns-competition-poster.jpg'}
-                      role="img"
-                      aria-label={f.title}
-                    >
-                      <source src={f.videoUrl || '/assets/the-norns-competition.mp4'} type="video/mp4" />
-                    </video>
-                  ) : (
-                    <img
-                      loading="lazy"
-                      decoding="async"
-                      width={538}
-                      height={617}
-                      src={imgSrc}
-                      alt={f.title}
-                    />
+                  {f.isVideo ? (() => {
+                    const rawUrl = f.videoUrl || '/assets/the-norns-competition.mp4'
+                    const cleanUrl = rawUrl.replace('https://the-norns.pages.dev', '')
+                    const webmUrl = cleanUrl.replace(/\.mp4$/, '.webm')
+                    const posterUrl = (f.videoPoster || '/assets/the-norns-competition-poster.jpg')
+                      .replace('https://the-norns.pages.dev', '')
+                      .replace(/\.jpg$/, '.webp')
+
+                    return (
+                      <video
+                        className="competition-video"
+                        autoPlay
+                        muted
+                        loop
+                        playsInline
+                        preload="metadata"
+                        poster={posterUrl}
+                        role="img"
+                        aria-label={f.title}
+                      >
+                        <source src={webmUrl} type="video/webm" />
+                        <source src={cleanUrl} type="video/mp4" />
+                      </video>
+                    )
+                  })() : (
+                    <picture>
+                      <source type="image/avif" srcSet={imgSrc.replace(/\.png$/, '.avif')} />
+                      <source type="image/webp" srcSet={imgSrc.replace(/\.png$/, '.webp')} />
+                      <img
+                        loading="lazy"
+                        decoding="async"
+                        width={538}
+                        height={617}
+                        src={imgSrc}
+                        alt={f.title}
+                      />
+                    </picture>
                   )}
                 </div>
               </div>
