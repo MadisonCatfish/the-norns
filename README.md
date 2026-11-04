@@ -138,7 +138,7 @@ Self-tests: `TheNorns.exe --selftest-dps <folder>` and `TheNorns-Setup-1.5.0.exe
 
 The Norns collects no data about you, your characters or your game: no account, no telemetry, no analytics.
 
-The only network request is the update check: an HTTPS request to the GitHub Releases API (`api.github.com/repos/MadisonCatfish/the-norns/releases/latest`) at start and when you press "Check for updates" in About. It sends nothing but the request itself; GitHub sees your IP address and the app's user agent, as with any visit (see the [GitHub Privacy Statement](https://docs.github.com/site-policy/privacy-policies/github-general-privacy-statement)). Turn it off in Settings → General → "Check for updates at start".
+The only network request is the update check: an HTTPS request for the latest release page (`github.com/MadisonCatfish/the-norns/releases/latest`; the GitHub Releases API only if that page gives no answer) at start and when you press "Check for updates" in About. It sends nothing but the request itself; GitHub sees your IP address and the app's user agent, as with any visit (see the [GitHub Privacy Statement](https://docs.github.com/site-policy/privacy-policies/github-general-privacy-statement)). Turn it off in Settings → General → "Check for updates at start".
 
 Settings and session statistics stay on your PC, in `%LOCALAPPDATA%\The Norns`.
 

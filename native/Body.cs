@@ -268,6 +268,8 @@ namespace TheNorns
         // Potato mode (owner, 28.10.2026; config.json "app": { "potato" }, off by default): for rigs running many clients.
         // 5 fps, the power display still, no glow, halo, glass light or shimmer, a plain hull; the numbers jump instead of gliding
         public static bool Potato = AppSetting("potato") is bool && (bool)AppSetting("potato");
+        // the power display's animation (PowerAnims.cs; Settings -> Display): config.json "app": { "power_anim" }
+        public static string PowerAnimName = PowerAnims.Known(AppSetting("power_anim") as string) ? (string)AppSetting("power_anim") : "working";
         // the spawn alert sound (owner, 28.10.2026; config.json "app": { "spawn_sound" }, off by default): three short
         // pulses (synthesized, res\spawn_alert.wav) when a titan or a dreadnought spawns; no sound for the other spawns
         public static bool SpawnSound = AppSetting("spawn_sound") is bool && (bool)AppSetting("spawn_sound");
@@ -302,8 +304,8 @@ namespace TheNorns
         public double? DemoSeconds;          // selftest: a fixed animation time
         public Point? DemoMouse;             // selftest: where the mouse lights the glass
         public bool? DemoFollowing;          // selftest: the LOG lamp state
-        bool hoverName, downName, hoverClose, downClose;
-        public bool ShowHoverName, ShowHoverClose;   // selftest: draw hover states
+        bool hoverName, downName, hoverClose, downClose, hoverMin, downMin, hoverMode, downMode;
+        public bool ShowHoverName, ShowHoverClose, ShowHoverMin, ShowHoverMode;   // selftest: draw hover states
         static string PosFile { get { return Path.Combine(AppInfo.DataDir, "dps_pos.txt"); } }
         DateTime lastPoll = DateTime.MinValue;
         int clients = -1;              // open EVE client windows at the last poll (-1: not looked yet)
@@ -371,7 +373,13 @@ namespace TheNorns
         // right-aligned, right to left: Close (as tall as the power display, owner 27.10.2026), power display, printed dot
         // the key centred on the power display's glass and lip, 2 px lower than it (owner 27.10.2026)
         RectangleF CloseRect { get { if (Compact) { var d = DamageRect; return new RectangleF(StripRect.Right - U(14.2f), d.Top, U(14.2f), d.Height + U(1.5f)); } var p = PowerRect; return new RectangleF(StripRect.Right - U(14.2f), p.Top - U(1), U(14.2f), p.Height + U(1.5f) + U(2)); } }
-        RectangleF PowerRect { get { var s = StripRect; return new RectangleF(s.Right - U(14.2f) - U(5) - U(53), s.Top + (s.Height - U(28)) / 2, U(53), U(28)); } }
+        // the minimize and mode (compact / full) keys, as large as Close, in a row left of it: minimize > mode > close
+        // (owner, 04.11.2026); only on the standalone body, like Close
+        RectangleF ModeRect { get { if (!Standalone) return RectangleF.Empty; var c = CloseRect; c.Offset(-(c.Width + U(3)), 0); return c; } }
+        RectangleF MinRect { get { if (!Standalone) return RectangleF.Empty; var m = ModeRect; m.Offset(-(m.Width + U(3)), 0); return m; } }
+        // the keys at the right end of the strip
+        float KeysW { get { return !Standalone ? U(14.2f) : U(14.2f) * 3 + U(3) * 2; } }
+        RectangleF PowerRect { get { var s = StripRect; return new RectangleF(s.Right - KeysW - U(5) - U(53), s.Top + (s.Height - U(28)) / 2, U(53), U(28)); } }
         PointF DotCenter { get { var p = PowerRect; return new PointF(p.Left - U(5) - U(4.75f), p.Top + p.Height / 2); } }
         // ノルン is the key to the settings (owner 27.10.2026: they replace the LOG / RST keys)
         RectangleF NameRect { get { var s = StripRect; return RectangleF.FromLTRB(nameLeft - U(3), s.Top + U(3), nameRight + U(3), s.Bottom - U(3)); } }
@@ -389,9 +397,11 @@ namespace TheNorns
             this.anchor = anchor;
             var ps = (pilots ?? Enumerable.Empty<string>()).ToList();
             tail = new GameLogTail(ps, standalone); stats = new DpsStats(ps) { Thundpack = true };
-            FormBorderStyle = FormBorderStyle.None; ShowInTaskbar = standalone; StartPosition = FormStartPosition.Manual;
+            // no taskbar button: the body lives in the tray icon (Tray.cs; owner, 04.11.2026)
+            FormBorderStyle = FormBorderStyle.None; ShowInTaskbar = false; StartPosition = FormStartPosition.Manual;
             TopMost = true; Text = AppInfo.Name + " — DPS"; AutoScaleMode = AutoScaleMode.None;
             if (standalone) Icon = AppInfo.Icon;
+            StartTray();   // the icon in the notification area (Tray.cs)
             Size = new Size(DesiredWidth, DesiredHeight);
             StartSessionStats();
             if (Fleet.TracePath != null || (!SelfTesting && FleetOn)) StartFleet();   // the client module (Fleet.cs, EveO.cs)
@@ -458,8 +468,8 @@ namespace TheNorns
         }
 
         // where the pulsing pointer shows: the keys, and in the settings only the spots that do something
-        bool OnPulse(Point p) { return NameRect.Contains(p) || (Standalone && CloseRect.Contains(p)) || updateMark.Contains(p) || (!settingsOpen && (vortonFx.Contains(p) || sbFx.Contains(p) || spawnChip.Contains(p))) || (settingsOpen && spots.Any(sp => sp.Item2.Contains(p))); }
-        bool OnKey(Point p) { return NameRect.Contains(p) || (settingsOpen && GlassRect.Contains(p)) || (Standalone && CloseRect.Contains(p)) || vortonFx.Contains(p) || sbFx.Contains(p) || spawnChip.Contains(p) || updateMark.Contains(p); }
+        bool OnPulse(Point p) { return NameRect.Contains(p) || (Standalone && (CloseRect.Contains(p) || MinRect.Contains(p) || ModeRect.Contains(p))) || updateMark.Contains(p) || (!settingsOpen && (vortonFx.Contains(p) || sbFx.Contains(p) || spawnChip.Contains(p))) || (settingsOpen && spots.Any(sp => sp.Item2.Contains(p))); }
+        bool OnKey(Point p) { return NameRect.Contains(p) || (settingsOpen && GlassRect.Contains(p)) || (Standalone && (CloseRect.Contains(p) || MinRect.Contains(p) || ModeRect.Contains(p))) || vortonFx.Contains(p) || sbFx.Contains(p) || spawnChip.Contains(p) || updateMark.Contains(p); }
 
         [DllImport("user32.dll")] static extern IntPtr SetCursor(IntPtr h);
         [DllImport("user32.dll")] static extern IntPtr WindowFromPoint(Point p);
@@ -491,7 +501,7 @@ namespace TheNorns
         {
             base.OnMouseMove(e);
             if (MoveRowDrag(e.Y) || MoveBarDrag(e.Y)) return;
-            bool hn = NameRect.Contains(e.Location), hc = Standalone && CloseRect.Contains(e.Location);
+            bool hn = NameRect.Contains(e.Location), hc = Standalone && CloseRect.Contains(e.Location), hm = Standalone && MinRect.Contains(e.Location), hmo = Standalone && ModeRect.Contains(e.Location);
             bool hv = !settingsOpen && vortonFx.Contains(e.Location), hs = !settingsOpen && sbFx.Contains(e.Location);
             bool hsp = !settingsOpen && spawnChip.Contains(e.Location);
             if (hsp != hoverSpawns) { hoverSpawns = hsp; Render(); }
@@ -499,8 +509,8 @@ namespace TheNorns
             if (hup != hoverUpdate) { hoverUpdate = hup; Render(); }
             var spot = settingsOpen ? SpotAt(e.Location) : null;
             mouseAt = e.Location;
-            if (hn == hoverName && hc == hoverClose && (hv || hs) == hoverFx && spot == hotSpot) return;
-            hoverName = hn; hoverClose = hc; hoverFx = hv || hs; hotSpot = spot;
+            if (hn == hoverName && hc == hoverClose && hm == hoverMin && hmo == hoverMode && (hv || hs) == hoverFx && spot == hotSpot) return;
+            hoverName = hn; hoverClose = hc; hoverMin = hm; hoverMode = hmo; hoverFx = hv || hs; hotSpot = spot;
             // the tip after a short rest on the key, not at once (owner, 27.10.2026)
             tip.Hide(this);
             var warn = WarnTip(spot);   // Settings -> Carousel: the EVE client's action on a hotkey (EveO.cs)
@@ -508,8 +518,8 @@ namespace TheNorns
             string head = spot == "page:stats" ? L.T("Statistics") : spot == "page:about" ? L.T("About") : spot == "stats:calendar" ? L.T("Calendar")
                 : spot == "stats:titans" ? L.T("Titans") : spot == "stats:dreads" ? L.T("Pirate dreadnoughts") : spot == "stats:stars" ? L.T("Faction NPCs and commanders") : null;
             var headKey = head != null ? spots.First(s => s.Item1 == spot).Item2 : RectangleF.Empty;
-            tipText = hn ? L.T("Settings") : hc ? L.T("Close") : head ?? warn;
-            tipAt = hn ? new Point((int)NameRect.Left, (int)(NameRect.Bottom + U(4))) : hc ? new Point((int)CloseRect.Left, (int)(CloseRect.Bottom + U(4)))
+            tipText = hn ? L.T("Settings") : hc ? L.T("Close") : hm ? L.T("Minimize") : hmo ? L.T(Compact ? "Full mode" : "Compact mode") : head ?? warn;
+            tipAt = hn ? new Point((int)NameRect.Left, (int)(NameRect.Bottom + U(4))) : hc ? new Point((int)CloseRect.Left, (int)(CloseRect.Bottom + U(4))) : hm ? new Point((int)MinRect.Left, (int)(MinRect.Bottom + U(4))) : hmo ? new Point((int)ModeRect.Left, (int)(ModeRect.Bottom + U(4)))
                 : head != null ? new Point((int)headKey.Left, (int)(headKey.Bottom + U(4))) : warn != null ? new Point(e.X - (int)U(60), e.Y + (int)U(12)) : Point.Empty;
             tipDue = Clock + TipDelay;
             Render();
@@ -518,9 +528,9 @@ namespace TheNorns
         protected override void OnMouseLeave(EventArgs e)
         {
             base.OnMouseLeave(e);
-            if (hoverName || downName || hoverClose || downClose || hoverFx || hotSpot != null || downSpot != null)
+            if (hoverName || downName || hoverClose || downClose || hoverMin || downMin || hoverMode || downMode || hoverFx || hotSpot != null || downSpot != null)
             {
-                hoverName = downName = hoverClose = downClose = hoverFx = false; hotSpot = downSpot = null;
+                hoverName = downName = hoverClose = downClose = hoverMin = downMin = hoverMode = downMode = hoverFx = false; hotSpot = downSpot = null;
                 tip.Hide(this); tipText = null;
                 Render();
             }
@@ -534,6 +544,8 @@ namespace TheNorns
             if (updateMark.Contains(e.Location)) downUpdate = true;
             else if (NameRect.Contains(e.Location)) downName = true;
             else if (Standalone && CloseRect.Contains(e.Location)) downClose = true;
+            else if (Standalone && MinRect.Contains(e.Location)) downMin = true;
+            else if (Standalone && ModeRect.Contains(e.Location)) downMode = true;
             else if (settingsOpen && BeginBarDrag(e.Location)) { }   // a page's scroll bar is pulled (Settings.cs)
             else if (settingsOpen)
             {
@@ -567,6 +579,10 @@ namespace TheNorns
                 if (left && (which == 1 ? vortonFx : sbFx).Contains(e.Location)) FormulaWindow.Open(this, which == 1 ? FormulaWindow.Vorton : Competition ? RodFormula : FormulaWindow.Smartbombs);
             }
             if (downClose) { downClose = false; Render(); if (left && Standalone && CloseRect.Contains(e.Location)) { SavePos(); Close(); } }
+            // to the tray icon (Tray.cs)
+            if (downMin) { downMin = false; hoverMin = false; Render(); if (left && Standalone && MinRect.Contains(e.Location)) HideToTray(); }
+            // the mode key: compact <> full, as the switch in Settings -> Display (saved)
+            if (downMode) { downMode = false; if (left && Standalone && ModeRect.Contains(e.Location)) { Activate("compact"); hoverMode = false; } Render(); }
         }
 
         // self-tests render fixed states: the PC's saved window position is neither read nor written
@@ -683,6 +699,8 @@ namespace TheNorns
                 PaintHeat(g, now);
                 if (!Compact) PaintPower(g, following, DemoSeconds ?? AnimTime(now), DemoNoClients ?? clients == 0, secs);
                 PaintClose(g, hoverClose || ShowHoverClose, downClose);
+                PaintMinimize(g, hoverMin || ShowHoverMin, downMin);
+                PaintModeKey(g, hoverMode || ShowHoverMode, downMode);
                 PaintVersionPlate(g);
                 PaintScreen(g, now);
             }
@@ -1061,7 +1079,7 @@ namespace TheNorns
                     if (!noClients || shortLevel > 0)
                         // it runs while a log is followed - and always while the client module is on (owner, 29.10.2026: with
                         // the live picture turned off the animation stood still)
-                        PowerAnim.Draw(g, new PointF(face.Left + face.Width / 2, face.Top + face.Height / 2), face.Height * 1.89f, following || noClients || fleet != null ? animSecs : 0, dotColor, K * Scale);
+                        PowerAnims.Draw(PowerAnimName, "body", g, face, following || noClients || fleet != null ? animSecs : 0, dotColor);
                     var line = noClients ? ShortLine(secs) : null;
                     if (line != null)
                     {
@@ -1175,8 +1193,24 @@ namespace TheNorns
             CloseKey(g, CloseRect, hover, down, U(1));
         }
 
+        // Minimize: the same key, yellow under the mouse in the close key's red's tone (owner, 04.11.2026)
+        void PaintMinimize(Graphics g, bool hover, bool down)
+        {
+            if (!Standalone) return;
+            Key(g, MinRect, hover, down, U(1), MinYellow, Color.FromArgb(160, 124, 10));
+        }
+        internal static readonly Color MinYellow = Color.FromArgb(232, 184, 14);   // AlarmRed's saturation and value at a yellow hue
+        // the mode key (compact / full): green under the mouse, the same tone (owner, 04.11.2026)
+        void PaintModeKey(Graphics g, bool hover, bool down)
+        {
+            if (!Standalone) return;
+            Key(g, ModeRect, hover, down, U(1), ModeGreen, Color.FromArgb(50, 104, 32));
+        }
+        internal static readonly Color ModeGreen = Color.FromArgb(86, 168, 56);   // softer and darker, a touch of yellow (owner, 04.11.2026)
+
         // u = one logical px (U(1)) of the window that draws it
-        internal static void CloseKey(Graphics g, RectangleF r, bool hover, bool down, float u)
+        internal static void CloseKey(Graphics g, RectangleF r, bool hover, bool down, float u) { Key(g, r, hover, down, u, AlarmRed, Color.FromArgb(160, 14, 10)); }
+        static void Key(Graphics g, RectangleF r, bool hover, bool down, float u, Color hot, Color pressed)
         {
             Func<RectangleF, float, GraphicsPath> round = (rr, lr) => Theme.Round(rr, u * lr * 0.6f, 0.6f);
             using (var cp = round(r, 5))
@@ -1187,7 +1221,7 @@ namespace TheNorns
             }
             var face = RectangleF.Inflate(r, -2 * u, -2 * u);
             if (down) face.Offset(0, 0.5f * u);
-            var c = down ? Color.FromArgb(160, 14, 10) : hover ? AlarmRed : Color.FromArgb(150, 154, 162);
+            var c = down ? pressed : hover ? hot : Color.FromArgb(150, 154, 162);
             using (var fp = round(face, 3.5f))
             {
                 using (var b = new SolidBrush(c)) g.FillPath(b, fp);
@@ -1234,7 +1268,7 @@ namespace TheNorns
             using (var region = new Region(body))
             {
                 using (var cav = Round(CavityRect, 17)) region.Exclude(cav);
-                region.Exclude(DamageRect); region.Exclude(PowerRect); region.Exclude(CloseRect);   // the glass and the key stay as they are
+                region.Exclude(DamageRect); region.Exclude(PowerRect); region.Exclude(CloseRect); if (Standalone) { region.Exclude(MinRect); region.Exclude(ModeRect); }   // the glass and the key stay as they are
                 var st = g.Save();
                 g.SetClip(region, CombineMode.Replace);
                 double flick = 0.94 + 0.06 * Math.Sin(t * 7.3) * Math.Sin(t * 3.1);
@@ -1262,7 +1296,7 @@ namespace TheNorns
             get
             {
                 // compact: left of the Close key, narrower, as tall as the faction's damage row
-                if (Compact) { var s = StripRect; float h = U(17); return new RectangleF(s.Right - U(14.2f) - U(5) - U(56), s.Top + (s.Height - h) / 2, U(56), h); }
+                if (Compact) { var s = StripRect; float h = U(17); return new RectangleF(s.Right - KeysW - U(5) - U(56), s.Top + (s.Height - h) / 2, U(56), h); }
                 // right-aligned to the printed dot, as far from it as the power display on its other side (owner 27.10.2026)
                 var p = PowerRect; float right = DotCenter.X - (p.Left - DotCenter.X), minLeft = nameRight + U(6) + U(6.825f) + U(9);
                 return RectangleF.FromLTRB(Math.Max(minLeft, right - U(74)), p.Top, right, p.Bottom);
@@ -1919,7 +1953,7 @@ namespace TheNorns
             finally { if (pf != null) pf.Dispose(); }
         }
 
-        protected override void Dispose(bool disposing) { if (disposing) { timer.Dispose(); tip.Dispose(); if (shell != null) shell.Dispose(); if (fleet != null) fleet.Dispose(); } base.Dispose(disposing); }
+        protected override void Dispose(bool disposing) { if (disposing) { timer.Dispose(); tip.Dispose(); if (shell != null) shell.Dispose(); if (fleet != null) fleet.Dispose(); StopTray(); } base.Dispose(disposing); }
 
         // ================= self-test =================
 
@@ -2028,6 +2062,7 @@ namespace TheNorns
                 Potato = false; if (f.shell != null) { f.shell.Dispose(); f.shell = null; }
                 Compact = true; f.Size = new Size(f.DesiredWidth, f.DesiredHeight); if (f.shell != null) { f.shell.Dispose(); f.shell = null; }
                 save(f, "dps_compact.png");
+                f.ShowHoverMode = true; save(f, "dps_compact_hover_mode.png"); f.ShowHoverMode = false;
                 f.DemoSettings(true, null, false, "general"); save(f, "dps_compact_general.png"); f.DemoSettings(false, null, false);
                 Compact = false; f.Size = new Size(f.DesiredWidth, f.DesiredHeight); if (f.shell != null) { f.shell.Dispose(); f.shell = null; }
                 f.DemoUpdate("1.5.0");
@@ -2041,6 +2076,9 @@ namespace TheNorns
                 f.DemoSeconds = keepSecs;
                 f.DemoSettings(true, null, false, "general"); save(f, "dps_update_general.png");
                 f.DemoSettings(true, null, false, "about"); save(f, "dps_update_about.png");
+                f.DemoUpdateState(6, 42); save(f, "dps_update_downloading.png");
+                f.DemoUpdateState(7); save(f, "dps_update_failed.png");
+                f.DemoUpdateState(3);
                 f.DemoSettings(false, null, false);
                 var r = f.Stats.Smartbombs(now);
                 sb.AppendLine(string.Format(CultureInfo.InvariantCulture, "smartbombs: pilot {0}, modules {1}, total {2:0} DPS, per module {3}",
@@ -2151,11 +2189,29 @@ namespace TheNorns
                 f.DemoStatFrom = f.DemoStatTo = null; f.statFrom = f.statTo = null;
                 f.DemoSessions = null;
                 f.DemoSettings(true, "page:about", false, "display"); save(f, "dps_settings_display.png");
+                {
+                    var keepA = PowerAnimName;
+                    f.DemoSettings(false, null, false);
+                    foreach (var an in PowerAnims.Names) { PowerAnimName = an; f.DemoSeconds = 4.3; save(f, "dps_anim_" + an + ".png"); }
+                    // the cost of one frame of each, on a display-sized bitmap (the body redraws ~25 times a second)
+                    using (var bb = new Bitmap(80, 44))
+                    using (var bg = Graphics.FromImage(bb))
+                        foreach (var an in PowerAnims.Names)
+                        {
+                            var sw = System.Diagnostics.Stopwatch.StartNew();
+                            for (int fr = 0; fr < 100; fr++) PowerAnims.Draw(an, "bench", bg, new RectangleF(0, 0, 80, 44), fr * 0.04, BodyTheme.Accent);
+                            sb.AppendLine(string.Format(CultureInfo.InvariantCulture, "power anim {0}: {1:0.00} ms a frame", an, sw.Elapsed.TotalMilliseconds / 100));
+                        }
+                    PowerAnimName = "cubewave"; f.DemoSettings(true, "anim:flow", false, "display"); save(f, "dps_settings_display_anims.png");
+                    PowerAnimName = keepA; f.DemoSeconds = 1.3; f.DemoSettings(true, "page:about", false, "display");
+                }
                 f.DemoSettings(true, "page:general", false, "about"); save(f, "dps_settings_about.png");
                 f.DemoAboutView = "credits"; save(f, "dps_settings_about_credits.png");
                 f.DemoAboutView = "legal"; save(f, "dps_settings_about_legal.png"); f.DemoAboutView = "news";
                 f.DemoSettings(false, null, false);
                 f.ShowHoverClose = true; save(f, "dps_hover_close.png"); f.ShowHoverClose = false;
+                f.ShowHoverMin = true; save(f, "dps_hover_minimize.png"); f.ShowHoverMin = false;
+                f.ShowHoverMode = true; save(f, "dps_hover_mode.png"); f.ShowHoverMode = false;
                 f.ShowHoverFx = true; save(f, "dps_hover_formula.png"); f.ShowHoverFx = false;
                 // a commander and a titan in the site: their ticks on the grid, the hull heated
                 {

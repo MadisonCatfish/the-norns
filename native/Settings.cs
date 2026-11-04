@@ -128,7 +128,8 @@ namespace TheNorns
             if (id == "tabs:next") ScrollTabs(1);
             if (id == "data") OpenDataFolder();
             if (id.StartsWith("about:")) { aboutView = id.Substring(6); newsScroll = 0; }
-            if (id == "update") { if (updateState == 3) OpenReleasePage(); else CheckForUpdates(false); }
+            // a newer version: download its installer and run it (Update.cs); after a failed download, the release page
+            if (id == "update") { if (updateState == 3) StartUpdate(); else if (updateState == 7) OpenReleasePage(); else if (updateState != 6) CheckForUpdates(false); }
             if (id == "updatestart") { UpdateAtStart = !UpdateAtStart; SaveApp("update_check", UpdateAtStart); }
             if (id == "compact")
             {
@@ -151,6 +152,7 @@ namespace TheNorns
             }
             if (id == "spawnsound") { SpawnSound = !SpawnSound; SaveApp("spawn_sound", SpawnSound); if (SpawnSound) PlayAlert(); }
             if (id == "playalert") PlayAlert();
+            if (id.StartsWith("anim:") && PowerAnims.Known(id.Substring(5))) { PowerAnimName = id.Substring(5); SaveApp("power_anim", PowerAnimName); }
             if (id == "remember") { RememberPos = !RememberPos; SaveApp("remember_position", RememberPos); if (RememberPos) SavePos(); }
         }
 
@@ -201,11 +203,13 @@ namespace TheNorns
         // ---- About ----
         string aboutView = "news";   // news, credits, legal
         float newsScroll;            // What's new: lines scrolled with the wheel
-        int updateState;             // 0 not checked, 1 checking, 2 up to date, 3 newer found, 4 failed, 5 no release page yet
+        int updateState;             // 0 not checked, 1 checking, 2 up to date, 3 newer found, 4 failed, 5 no release page yet,
+                                     // 6 downloading the installer, 7 download failed (Update.cs)
         string updateLatest, updatePage;
         // the update check at start (owner, 27.10.2026: on by default, a switch in General; before, only on the key)
         public static bool UpdateAtStart = !(AppSetting("update_check") is bool) || (bool)AppSetting("update_check");
         public void DemoUpdate(string version) { updateLatest = version; updatePage = ReleasesPage; updateState = 3; }
+        public void DemoUpdateState(int state, int percent = 0) { updateState = state; updatePercent = percent; }   // selftest
         const string ReleasesPage = "https://github.com/MadisonCatfish/the-norns/releases/latest";
         public string DemoAboutView { set { aboutView = value; } }
 
@@ -218,7 +222,9 @@ namespace TheNorns
             {
                 case 1: return L.T("Checking…");
                 case 2: return L.T("Up to date");
-                case 3: return L.F("Download {0}", updateLatest);
+                case 3: return L.F("Update to {0}", updateLatest);
+                case 6: return L.F("Downloading… {0} %", updatePercent);
+                case 7: return L.T("Download failed");
                 case 4: return L.T("Check failed");
                 case 5: return L.T("No release page yet");
                 default: return L.T("Check for updates");
@@ -228,7 +234,7 @@ namespace TheNorns
         // quiet (the check at start): nothing shows unless a newer version is found
         void CheckForUpdates(bool quiet)
         {
-            if (updateState == 1 || updateState == 3) return;
+            if (updateState == 1 || updateState == 3 || updateState == 6) return;
             if (ReleasesApi == "") { if (!quiet) updateState = 5; return; }
             if (!quiet) updateState = 1;
             new System.Threading.Thread(() =>
@@ -237,14 +243,27 @@ namespace TheNorns
                 try
                 {
                     System.Net.ServicePointManager.SecurityProtocol |= System.Net.SecurityProtocolType.Tls12;
-                    using (var wc = new System.Net.WebClient())
+                    // the release page, not the API: github.com/.../releases/latest answers with a redirect to
+                    // .../releases/tag/v<version>. The API allows 60 requests an hour per IP without a token and then
+                    // answers 403, so behind a shared or busy address the check failed (owner, 04.11.2026)
+                    var req = (System.Net.HttpWebRequest)System.Net.WebRequest.Create(ReleasesPage);
+                    req.Method = "HEAD"; req.AllowAutoRedirect = false; req.UserAgent = "TheNorns"; req.Timeout = 15000;
+                    using (var resp = (System.Net.HttpWebResponse)req.GetResponse())
                     {
-                        wc.Headers.Add("User-Agent", "TheNorns");
-                        var json = wc.DownloadString(ReleasesApi);
-                        var o = new System.Web.Script.Serialization.JavaScriptSerializer().DeserializeObject(json) as Dictionary<string, object>;
-                        latest = o != null && o.ContainsKey("tag_name") ? Convert.ToString(o["tag_name"]).TrimStart('v') : null;
-                        html = o != null && o.ContainsKey("html_url") ? Convert.ToString(o["html_url"]) : null;
+                        var loc = resp.Headers["Location"];
+                        int at = loc == null ? -1 : loc.LastIndexOf("/tag/", StringComparison.Ordinal);
+                        if (at >= 0) { latest = Uri.UnescapeDataString(loc.Substring(at + 5)).TrimStart('v'); html = loc; }
                     }
+                    // the API as a fallback when the page did not redirect
+                    if (latest == null)
+                        using (var wc = new System.Net.WebClient())
+                        {
+                            wc.Headers.Add("User-Agent", "TheNorns");
+                            var json = wc.DownloadString(ReleasesApi);
+                            var o = new System.Web.Script.Serialization.JavaScriptSerializer().DeserializeObject(json) as Dictionary<string, object>;
+                            latest = o != null && o.ContainsKey("tag_name") ? Convert.ToString(o["tag_name"]).TrimStart('v') : null;
+                            html = o != null && o.ContainsKey("html_url") ? Convert.ToString(o["html_url"]) : null;
+                        }
                     Version a, b;
                     bool newer = latest != null && Version.TryParse(latest.Split('-')[0], out a) && Version.TryParse(AppInfo.Version, out b) && a > b;
                     st = latest == null ? 4 : newer ? 3 : 2;
@@ -623,6 +642,34 @@ namespace TheNorns
                 y += U(19) - 3;
                 LampRow(g, c, y, "potato", Potato, L.T("Potato mode: low CPU, no effects"));
                 y += U(19) - 3;
+                y += U(4);
+                // the power display's animation: a live preview of each in one row, about the display's own size; the chosen one
+                // framed in the accent (owner, 04.11.2026)
+                var at = L.T("Power display");
+                Glow(g, at, TitleFont(at, U(7.2f)), Muted, c.Left, y);
+                y += U(11);
+                int cols = PowerAnims.Names.Length; float gap = U(5), tileW = (c.Width - (cols - 1) * gap) / cols, tileH = tileW * 28 / 53, lh = U(10);
+                for (int i = 0; i < PowerAnims.Names.Length; i++)
+                {
+                    string an = PowerAnims.Names[i], id = "anim:" + an;
+                    var tile = new RectangleF(c.Left + (i % cols) * (tileW + gap), y + (i / cols) * (tileH + lh + U(4)), tileW, tileH);
+                    bool cur = PowerAnimName == an, hot = hotSpot == id;
+                    using (var p = Round(tile, 5))
+                    {
+                        using (var b = new SolidBrush(Color.FromArgb(4, 4, 5))) g.FillPath(b, p);
+                        var st2 = g.Save(); g.SetClip(p);
+                        PowerAnims.Draw(an, "tile", g, tile, Potato ? 0 : Clock, BodyTheme.Accent);
+                        g.Restore(st2);
+                        using (var pen = new Pen(cur ? BodyTheme.Accent : hot ? Color.FromArgb(120, BodyTheme.Ink) : Color.FromArgb(40, BodyTheme.Ink), cur ? 1.5f : 1f)) g.DrawPath(pen, p);
+                    }
+                    var name = L.T(PowerAnims.Titles[i]);
+                    var nf2 = TextFont(name, U(6.6f));
+                    var ns = g.MeasureString(name, nf2, 1000, StringFormat.GenericTypographic);
+                    using (var b = new SolidBrush(cur ? BodyTheme.Accent : hot ? BodyTheme.Ink : Color.FromArgb(165, 168, 176)))
+                        g.DrawString(name, nf2, b, tile.Left + (tile.Width - ns.Width) / 2, tile.Bottom + U(2), StringFormat.GenericTypographic);
+                    AddKey(id, RectangleF.FromLTRB(tile.Left, tile.Top, tile.Right, tile.Bottom + lh));
+                }
+                y += tileH + lh + U(4);
             }
             else if (page == "modes") PaintModes(g, c, y);
             else if (page == "eveo") PaintEveO(g, c, y);
@@ -685,7 +732,7 @@ namespace TheNorns
                 using (var b = new SolidBrush(BodyTheme.Accent)) g.DrawString(vt, NornsFonts.Body(U(7.2f)), b, c.Left, y + U(14), StringFormat.GenericTypographic);
                 // the update check: only when pressed (nothing goes to the network otherwise)
                 var uk = new RectangleF(c.Right - U(118), y, U(118), U(19));
-                PaintWideKey(g, uk, updateState == 3 ? MaterialIcon.Download : MaterialIcon.Refresh, UpdateLabel(), "update", updateState == 2 || updateState == 3);
+                PaintWideKey(g, uk, updateState == 3 || updateState == 6 ? MaterialIcon.Download : MaterialIcon.Refresh, UpdateLabel(), "update", updateState == 2 || updateState == 3 || updateState == 6);
                 y += U(27);
                 float kh = U(17), kw = (c.Width - 2 * U(4)) / 3, ky = c.Bottom - U(12) - kh;
                 var subs = new[] { new[] { "news", "What's new" }, new[] { "credits", "Credits" }, new[] { "legal", "Legal & info" } };
