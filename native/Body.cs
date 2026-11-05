@@ -1533,7 +1533,10 @@ namespace TheNorns
         void StepQuiet(DateTime now)
         {
             var warp = stats.Tracker.LastWarpTime;
-            bool still = warp != DateTime.MinValue && now >= warp && stats.LastNpcHit < warp;   // no hit since the warp
+            // no EVE client (owner, 06.11.2026): the timer fades out as after a site, and the warp it belonged to is not
+            // shown again when a client comes back - only the next warp pair is
+            if (NoClientNow) hiddenWarp = warp;
+            bool still = warp != DateTime.MinValue && warp != hiddenWarp && now >= warp && stats.LastNpcHit < warp;   // no hit since the warp
             double t = Clock, dt = lastQuietFrame < 0 ? 0 : Math.Min(0.2, t - lastQuietFrame);
             lastQuietFrame = t;
             if (still)
@@ -1555,9 +1558,12 @@ namespace TheNorns
             if (DemoQuiet != null) quiet = DemoQuiet.Value;
             if (DemoTimerA != null) timerA = DemoTimerA.Value;
         }
+        DateTime hiddenWarp = DateTime.MinValue;   // the warp whose timer went with the clients
+        bool NoClientNow { get { return DemoNoClients ?? clients == 0; } }
         void PaintAnomalyTimer(Graphics g, RectangleF plot, DateTime now)
         {
             var tr = stats.Tracker;
+            if (NoClientNow && DemoTimerA != null) return;   // a self-test frame set by hand: no clients, no timer
             if (timerA <= 0 || tr.LastWarpTime == DateTime.MinValue || tr.PrevWarpTime == DateTime.MinValue) return;
             double a = timerA * timerA * (3 - 2 * timerA);
             // counts up from 00:00 to the clear time, slowing down at the end. A false re-warp (no hit on an NPC between the two
@@ -1668,7 +1674,7 @@ namespace TheNorns
         // smaller than the anomaly timer
         void PaintNoClient(Graphics g, RectangleF plot, double total)
         {
-            if (!(DemoNoClients ?? clients == 0) || total >= 1) return;
+            if (!NoClientNow || total >= 1) return;
             string a = L.T("No EVE client running"), b = L.T("Start EVE — The Norns finds it by itself");
             var fa = TextFont(a, U(7.5f)); var fb = TextFont(b, U(6.6f));
             float ha = fa.GetHeight(g), hb = fb.GetHeight(g), y = plot.Top + (plot.Height - ha - hb - U(2)) / 2;
@@ -2376,6 +2382,8 @@ namespace TheNorns
                 f.DemoQuiet = 1; f.DemoTimerA = 0.45f; f.DemoCount = 0.15f; save(f, "dps_timer_2_fade_in.png");
                 f.DemoTimerA = 1; f.DemoCount = 0.5f; save(f, "dps_timer_3_counting.png");
                 f.DemoCount = 1; save(f, "dps_timer_3_clear_time.png");
+                // the clients gone after a cleared site: no timer (owner, 06.11.2026)
+                f.DemoNoClients = true; save(f, "dps_timer_noclient.png"); f.DemoNoClients = null;
                 // a re-warp of 0:48 (no hits between the warps): red, 00:48 at once, then down to 00:00 in real time
                 var keepPrev = f.Stats.Tracker.PrevWarpTime;
                 f.Stats.Tracker.PrevWarpTime = f.Stats.Tracker.LastWarpTime.AddSeconds(-48); f.DemoRewarp = true;
