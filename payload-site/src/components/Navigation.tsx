@@ -29,9 +29,9 @@ interface NavigationProps {
 export function Navigation({
   data,
   activePage = 'overview',
-  installerUrl = 'https://github.com/MadisonCatfish/the-norns/releases/download/v1.4.0/TheNorns-Setup-1.4.0.exe',
-  versionTag = 'v1.5.0',
-  portableUrl = 'https://github.com/MadisonCatfish/the-norns/releases/download/v1.4.0/TheNorns-1.4.0-portable.zip',
+  installerUrl = 'https://github.com/MadisonCatfish/the-norns/releases/download/v1.5.1/TheNorns-Setup-1.5.1.exe',
+  versionTag = 'v1.5.1',
+  portableUrl = 'https://github.com/MadisonCatfish/the-norns/releases/download/v1.5.1/TheNorns-1.5.1-portable.zip',
 }: NavigationProps) {
   const brandName = data?.brandName || 'THE NORNS'
   const brandKatakana = data?.brandKatakana ?? 'ノルン'

@@ -42,8 +42,8 @@ const defaultColumns: FooterColumn[] = [
   {
     title: 'Distribution',
     links: [
-      { label: 'Installer (.exe)', url: 'https://github.com/MadisonCatfish/the-norns/releases/download/v1.4.0/TheNorns-Setup-1.4.0.exe' },
-      { label: 'Portable (.zip)', url: 'https://github.com/MadisonCatfish/the-norns/releases/download/v1.4.0/TheNorns-1.4.0-portable.zip' },
+      { label: 'Installer (.exe)', url: 'https://github.com/MadisonCatfish/the-norns/releases/download/v1.5.1/TheNorns-Setup-1.5.1.exe' },
+      { label: 'Portable (.zip)', url: 'https://github.com/MadisonCatfish/the-norns/releases/download/v1.5.1/TheNorns-1.5.1-portable.zip' },
       { label: 'GitHub', url: 'https://github.com/MadisonCatfish/the-norns', newTab: true },
     ],
   },

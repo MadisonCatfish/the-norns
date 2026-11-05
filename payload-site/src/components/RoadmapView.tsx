@@ -161,7 +161,7 @@ export function RoadmapView({ items }: RoadmapViewProps) {
       </div>
 
       <footer style={{ color: 'var(--fg-muted, #9aa0a6)', fontSize: '13px', marginTop: '12px', textAlign: 'center' }}>
-        Updated 31.10.2026, 1.5.0 built · Managed via Payload CMS
+        Updated 05.11.2026, 1.5.1 built · Managed via Payload CMS
       </footer>
     </main>
   )

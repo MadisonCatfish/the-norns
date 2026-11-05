@@ -1,59 +1,28 @@
-[live]  live.mp4 / live.webm / live.webp / live-poster.jpg
-Title: Live Site Telemetry
-Feature: Real-time DPS and bounty tracking
-Description: Every pilot's Vorton damage as its own line, the anchor's smartbomb cycles as seven columns, and each bounty tick lighting up the ISK grid. A faction commander on grid adds a star to the session count.
+The Norns 1.5.1 — interface clips for the website and the press release
+Format: WebM (VP9), 25 fps, on the site background #07090e; a JPEG poster for each.
+HTML: <video autoplay muted loop playsinline poster="NAME-poster.jpg"><source src="NAME.webm" type="video/webm"></video>
 
-[glass]  glass.mp4 / glass.webm / glass.webp / glass-poster.jpg
-Title: Glass That Catches the Light
-Feature: Cursor-lit glass display
-Description: The display sits behind real glass. Move the cursor over it and the light picks up faint scratches and wipe marks, soft and diffuse, never over a key.
+[keys]  keys.webm / keys-poster.jpg
+Title: Three Keys on the Hull
+Feature: Minimize and compact / full mode keys
+Description: Two new keys sit left of Close, as large: minimize glows yellow and hides the body to the tray, the mode key glows green and switches compact and full mode in one click.
 
-[spawns]  spawns.mp4 / spawns.webm / spawns.webp / spawns-poster.jpg
-Title: Dreadnought and Titan Alarm
-Feature: Capital spawn alarm
-Description: A pirate dreadnought on grid heats the hull to amber; a titan turns it crimson. You notice the spawn at a glance, even with the window in the corner of your eye.
+[displaypick]  displaypick.webm / displaypick-poster.jpg
+Title: Pick Your Power Display
+Feature: Power display animations with live previews
+Description: Settings → Display shows every animation for the small power display as a live preview: the Working sphere, Cube wave, ノルン and Flow field. Click one and the hull's display switches at once.
 
-[timer]  timer.mp4 / timer.webm / timer.webp / timer-poster.jpg
-Title: Warp-to-Warp Anomaly Timer
-Feature: Anomaly clear time
-Description: When the fleet warps out, the damage lines sink and the site's clear time appears, counted from warp to warp. The first hit in the next site brings the lines back.
+[readlogs]  readlogs.webm / readlogs-poster.jpg
+Title: Your Logs, Remembered
+Feature: Read logs into session statistics
+Description: One key on the Statistics page reads your combat logs (read-only) and adds the faction commanders, titans and pirate dreadnoughts found there to the sessions you already have, each spawn counted once.
 
-[competition]  competition.mp4 / competition.webm / competition.webp / competition-poster.jpg
-Title: Competition Mode: Lightning Rod
-Feature: Runner damage in Competition mode
-Description: When several fleets share a system, the Thunderchilds shoot a frigate runner and their Vorton arcs jump on to the NPCs. The Lightning rod trace shows every hit the runner takes, live.
+[oneclick]  oneclick.webm / oneclick-poster.jpg
+Title: Update in One Click
+Feature: One-click update
+Description: When a new release is out, About offers "Update to …". Press it and The Norns downloads the installer from GitHub, checks it against the published SHA-256 and starts it for you.
 
-[settings]  settings.mp4 / settings.webm / settings.webp / settings-poster.jpg
-Title: Settings on the Same Screen
-Feature: Settings on the main display
-Description: Click the name and the display turns into the settings: General, Display, Modes and Data tabs, with Statistics and About one key away. One typeface, sizes that read well on every page.
-
-[language]  language.mp4 / language.webm / language.webp / language-poster.jpg
-Title: Seven Languages
-Feature: Interface language switch
-Description: English, Deutsch, Français, Español, Italiano, Українська and 简体中文, switched with one click. Chinese is drawn in the embedded Noto Sans SC, so no extra fonts are needed.
-
-[stats]  stats.mp4 / stats.webm / stats.webp / stats-poster.jpg
-Title: Session History and Calendar
-Feature: Session statistics with calendar
-Description: Every session is kept on your PC across updates: sites, time, ISK, commanders, titans and dreadnoughts. Open the calendar to pick a day or a period, or the quarter or the year in one click.
-
-[formula]  formula.mp4 / formula.webm / formula.webp / formula-poster.jpg
-Title: Every Number Explained
-Feature: Formula cards for every module
-Description: The fx key next to each module opens a card that says how its number is counted, in plain words. It slides in over the body and closes with one click.
-
-[update]  update.mp4 / update.webm / update.webp / update-poster.jpg
-Title: Update Notice on the Hull
-Feature: New version notice
-Description: When a newer release is out, the version plate on the hull glows in the accent colour. One click opens About with the download key. The check is one request to GitHub at start, and you can switch it off.
-
-[noclient]  noclient.mp4 / noclient.webm / noclient.webp / noclient-poster.jpg
-Title: No Client, No Guessing
-Feature: No-client warning
-Description: When no EVE client is running, the lamp and the power display flicker like a short circuit, so an idle meter never looks like a quiet site.
-
-[compact]  compact.mp4 / compact.webm / compact.webp / compact-poster.jpg
-Title: Compact Mode for Small Screens
-Feature: Smaller body with the key numbers
-Description: A smaller body for a corner of the screen or a second monitor. It keeps the Vorton damage, the smartbombs, the star count and the ISK total, and drops the power display and the printed band.
+[rewarp]  rewarp.webm / rewarp-poster.jpg
+Title: A Timer That Knows a Re-Warp
+Feature: Anomaly timer, re-warp aware
+Description: Warp out and the clear time counts up. Warp again without a shot fired and the timer flashes red, rushes a random time down to zero and waits for the next site; after a long idle break it simply stays dark.
