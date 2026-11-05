@@ -3,7 +3,7 @@
 ## 1.5.2 — unreleased
 
 - The body's three keys carry a mark each (remove, unfold, close) and the minimize key's tip says Hide; the bottom band lost the warning triangle and "MOD 1.0".
-- The Vorton graph is the tallest block; the ISK grid has 6 rows instead of 10, and only its newest tick glows. With no EVE client the empty graph says so.
+- With no EVE client the empty Vorton graph says so.
 - The session ISK badge is outlined like the two next to it.
 - One red (the Lightning rod's) and one dread tone for the hull's heat, the grid dot, the tray and the minimize key; every colour is a token.
 - Settings: the off lamps have a rim; one row step for lamps and choices; the Carousel bar sits 8 px off the fields; the hotkey field's "none" is in the keys' font; Data shows a warning triangle when no logs are found and a check once the anomaly counter is reset; What's new scrolls by whole points.

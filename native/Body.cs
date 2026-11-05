@@ -1444,8 +1444,7 @@ namespace TheNorns
                 var c = RectangleF.FromLTRB(glassR.Left + U(10), glassR.Top + U(9), glassR.Right - U(10), glassR.Bottom - U(8));
                 float gap = U(6), line = Math.Max(1f, U(0.5f));
                 float avail = c.Height - 4 * gap - 2 * line;
-                // the Vorton graph the tallest block, the ISK grid a third lower than in 1.5.1 (owner, 1.5.2); it was 1.1 / 0.9 / 1.7
-                float h1 = avail * 1.7f / 3.7f, h2 = avail * 0.9f / 3.7f, h3 = avail * 1.1f / 3.7f;
+                float h1 = avail * 1.1f / 3.7f, h2 = avail * 0.9f / 3.7f, h3 = avail * 1.7f / 3.7f;
                 if (Compact) { h1 = U(60.8f); h2 = U(49.7f); h3 = avail - h1 - h2; }   // the graphs as tall as in the full body
                 float y = c.Top;
                 if (settingsOpen) PaintSettings(g, c);
@@ -1799,8 +1798,7 @@ namespace TheNorns
             Glow(g, FormatIsk(tr.CurrentAnomalyIsk), NornsFonts.Screen(U(8.8f)), BodyTheme.Ink, r.Right, r.Top, true);
 
             if (Compact) { PaintIskRow(g, RectangleF.FromLTRB(r.Left, r.Top + bh + U(5), r.Right, r.Bottom)); return; }
-            // the heat grid: every bounty tick of the anomaly (all clients), filled column by column. 6 rows and only the
-            // newest tick glows (owner, 1.5.2: the grid drew the eye before the DPS; it was 10 rows, every cell lit)
+            // the heat grid: every bounty tick of the anomaly (all clients), filled column by column, 10 rows
             const int Rows = GridRows, Cols = GridCols;
             var grid = RectangleF.FromLTRB(r.Left, r.Top + bh + U(5), r.Right, r.Bottom);
             float gap = U(1.5f), cw = (grid.Width - gap * (Cols - 1)) / Cols, ch = (grid.Height - gap * (Rows - 1)) / Rows, d = Math.Min(cw, ch);
@@ -1848,7 +1846,7 @@ namespace TheNorns
                 if (lit < 0.01) continue;
                 var c = HeatColor(t);
                 bool newest = i == count - 1;
-                if (newest) SoftGlow(g, new PointF(cx, cy), d / 2 + U(3 + (float)t * 7), c, (int)(t * t * 255 * lit * 0.3));
+                SoftGlow(g, new PointF(cx, cy), d / 2 + U(3 + (float)t * 7), c, (int)(t * t * 255 * lit * 0.3));
                 using (var b = new SolidBrush(Color.FromArgb((int)((0.6 + t * 0.4) * 255 * lit), c))) g.FillEllipse(b, cell);
                 if (!Potato) using (var lg = new LinearGradientBrush(cell, Color.FromArgb((int)(56 * lit), 255, 255, 255), Color.FromArgb((int)(71 * lit), 0, 0, 0), 90f)) g.FillEllipse(lg, cell);
                 if (newest) using (var pen = new Pen(BodyTheme.Ink, Math.Max(1f, U(0.5f)))) g.DrawEllipse(pen, cell);
@@ -1867,7 +1865,7 @@ namespace TheNorns
         // compact: the grid folded into one row - each dot is one column of the full grid (10 ticks), at their average
         // ISK. A column with a commander's or a titan's tick takes its colour outright, full and a little larger, drawn
         // over its neighbours (owner, 28.10.2026)
-        const int GridRows = 6, GridCols = 26;
+        const int GridRows = 10, GridCols = 26;
         void PaintIskRow(Graphics g, RectangleF r)
         {
             const int Rows = GridRows, Cols = GridCols;
@@ -1892,7 +1890,7 @@ namespace TheNorns
                 double t = Math.Max(0, Math.Min(1, (Math.Log(Math.Max(1, avg)) - Math.Log(3000)) / (Math.Log(270000) - Math.Log(3000))));
                 if (kind != 0) { marked.Add(Tuple.Create(cell, kind, b == count)); continue; }
                 var c = HeatColor(t);
-                if (b == count) SoftGlow(g, new PointF(cx, cy), d / 2 + U(3 + (float)t * 7), c, (int)(t * t * 255 * 0.3));
+                SoftGlow(g, new PointF(cx, cy), d / 2 + U(3 + (float)t * 7), c, (int)(t * t * 255 * 0.3));
                 using (var br = new SolidBrush(Color.FromArgb((int)((0.6 + t * 0.4) * 255), c))) g.FillEllipse(br, cell);
                 if (!Potato) using (var lg = new LinearGradientBrush(cell, Color.FromArgb(56, 255, 255, 255), Color.FromArgb(71, 0, 0, 0), 90f)) g.FillEllipse(lg, cell);
                 if (b == count) using (var pen = new Pen(BodyTheme.Ink, Math.Max(1f, U(0.5f)))) g.DrawEllipse(pen, cell);
