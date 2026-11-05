@@ -350,7 +350,7 @@ namespace TheNorns
             return L.F("{0} is a free, independent, fan-made tool. It is not affiliated with, endorsed or sponsored by CCP hf. EVE, EVE Online and CCP are trademarks or registered trademarks of CCP hf.", AppInfo.Name) + "\n\n" +
                    L.T("• It never sends anything to the game: no key presses, no clicks, no screen reading.") + "\n" +
                    L.T("• It does not read game memory, network traffic or cache files, and does not change the EVE client or its settings.") + "\n" +
-                   L.F("• It collects no data. The only network request is the update check: at start (it can be turned off in {0}) and when you press it.", L.T("General"));
+                   L.F("• It collects no data. It goes to the network only for updates: the check at start (it can be turned off in {0}) and when you press it, and the installer's download when you press Update.", L.T("General"));
         }
 
         // a small key in a row of three: lit = the one shown

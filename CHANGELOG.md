@@ -1,5 +1,15 @@
 # Changelog
 
+## 1.5.1 — 2026-11-05
+
+- Tray: The Norns lives in the notification area instead of the taskbar. A click on the icon hides or shows the body; its menu has Show / Hide, Settings, Statistics, Compact and Potato mode, Check for updates and Exit. A dot on the icon tells the state (a log followed, no EVE client, a newer version), and a titan or a pirate dreadnought on grid makes the icon flash red or yellow. The tip shows the fleet's DPS and the anomaly's ISK. Settings → General → Tray: "Close to tray" and "Start in the tray" (both off by default). While hidden the body keeps reading the logs and is not drawn.
+- Two keys left of Close, as large: minimize (yellow under the mouse) hides the body to the tray; the mode key (green) switches compact and full mode.
+- Update in one click: when a newer release is out, About shows "Update to <version>". Pressed, the app downloads that release's installer from GitHub, checks its SHA-256 against the release notes, starts it and closes itself; if the download fails, the key opens the release page.
+- The update check no longer fails behind a busy address: it reads the latest release page instead of the GitHub API, which allows 60 requests an hour per IP and then refuses.
+- Statistics → Read logs: reads the game's combat logs (read-only) for faction NPCs and commanders, titans and pirate dreadnoughts and adds them to the saved sessions they fall in. No session is created, a spawn seen by several clients counts once, and counts only go up.
+- Power display animation, chosen in Settings → Display with live previews: Working (the sphere, default), Cube wave, ノルン (the dots form the name, burst and gather again) and Flow field.
+- Anomaly timer: a false re-warp (no hit between two warps) shows in red a random time under a minute and rushes it down to 00:00; with no hit for more than 2 minutes between the warps the pack was idle and nothing is shown. Two re-warps in a row each count again.
+
 ## 1.5.0 — 2026-11-02
 
 - Carousel (Settings → Carousel, off by default): the active EVE window's live picture on the power display with its character's name, next / previous hotkeys (set by pressing them; a key the EVE client already uses gets a warning with its action), the wheel over the power display, and client squares beside the body (left, top or right) to click. The clients' order is set by dragging rows in a table; the window left behind can be minimized, and a pin keeps one open. It brings windows to the front as Windows itself does and sends nothing into the game.

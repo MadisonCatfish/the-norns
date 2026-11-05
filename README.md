@@ -24,7 +24,7 @@ It runs 100% locally on your PC: no cloud, no account, no telemetry. It only **r
 - It does not read game memory, network traffic or cache files.
 - It does not modify the EVE client or its settings.
 - Carousel (off by default) only brings the EVE window you pick to the front, as clicking it on the taskbar would, and can minimize the one you leave; its live picture is the window thumbnail Windows itself draws (as in Alt+Tab).
-- The only network request is the update check (the GitHub Releases API): at start and when you press it. It can be turned off in Settings → General.
+- It goes to the network only for updates: the update check at start and when you press it (it can be turned off in Settings → General), and the installer's download when you press Update.
 
 ---
 
@@ -138,7 +138,7 @@ Self-tests: `TheNorns.exe --selftest-dps <folder>` and `TheNorns-Setup-1.5.0.exe
 
 The Norns collects no data about you, your characters or your game: no account, no telemetry, no analytics.
 
-The only network request is the update check: an HTTPS request for the latest release page (`github.com/MadisonCatfish/the-norns/releases/latest`; the GitHub Releases API only if that page gives no answer) at start and when you press "Check for updates" in About. It sends nothing but the request itself; GitHub sees your IP address and the app's user agent, as with any visit (see the [GitHub Privacy Statement](https://docs.github.com/site-policy/privacy-policies/github-general-privacy-statement)). Turn it off in Settings → General → "Check for updates at start".
+The only network request is the update check: an HTTPS request for the latest release page (`github.com/MadisonCatfish/the-norns/releases/latest`; the GitHub Releases API only if that page gives no answer) at start and when you press "Check for updates" in About. It sends nothing but the request itself; GitHub sees your IP address and the app's user agent, as with any visit (see the [GitHub Privacy Statement](https://docs.github.com/site-policy/privacy-policies/github-general-privacy-statement)). Turn it off in Settings → General → "Check for updates at start". When a newer release is out, About shows "Update to <version>": only when you press it, the app downloads that release's installer from GitHub Releases, checks its SHA-256 against the release notes, starts it and closes itself.
 
 Settings and session statistics stay on your PC, in `%LOCALAPPDATA%\The Norns`.
 
