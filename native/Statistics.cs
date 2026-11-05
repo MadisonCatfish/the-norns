@@ -26,9 +26,17 @@ namespace TheNorns
 
         // the mean clear time of a site (owner, 1.5.2: the list's second column); from the sites kept, else, for the
         // files before 1.5.0 that have none, the session's length over its sites; null with nothing to go by
+        TimeSpan? meanClear; bool meanClearSet;   // a saved session does not change: its mean is worked out once
         public TimeSpan? MeanClear
         {
             get
+            {
+                if (!Current) { if (!meanClearSet) { meanClearSet = true; meanClear = Mean(); } return meanClear; }
+                return Mean();
+            }
+        }
+        TimeSpan? Mean()
+        {
             {
                 if (SiteList.Count > 0) return TimeSpan.FromTicks((long)SiteList.Average(x => (double)(x[1] - x[0])));
                 return !Current && Sites > 0 && End > Start ? TimeSpan.FromTicks((End - Start).Ticks / Sites) : (TimeSpan?)null;
@@ -38,6 +46,7 @@ namespace TheNorns
 
     partial class DpsForm
     {
+        string statColKey; float[] statCols;   // the Statistics list's column offsets, per language and size
         readonly SessionInfo session = new SessionInfo { Start = DateTime.Now, End = DateTime.Now };
         List<SessionInfo> sessions;   // the earlier ones, newest first (read when the page opens)
         static string SessionDir { get { return Path.Combine(AppInfo.DataDir, "sessions"); } }
@@ -214,12 +223,19 @@ namespace TheNorns
             float right = max0 > 0 ? c.Right - U(8) : c.Right;
             float pw = U(7.5f) + U(2) + g.MeasureString("00", vf, 1000, StringFormat.GenericTypographic).Width;   // one icon + count pair
             // each text column as wide as its heading or its widest value, 8 units apart; the pairs and ISK take the rest
-            Func<string, Font, float> wd = (t, f) => g.MeasureString(t, f, 1000, StringFormat.GenericTypographic).Width;
-            var rf0 = TextFont("0", U(7));
-            float xLen = c.Left + Math.Max(wd(L.T("This session"), TextFont(L.T("This session"), U(7))), wd("00.00 00:00", rf0)) + U(8);
-            float xSite = xLen + Math.Max(wd(L.T("Length").ToUpperInvariant(), TitleFont(L.T("Length"), U(5.8f))), wd("00:00", rf0)) + U(8);
-            float xAnom = xSite + Math.Max(wd(L.T("Per site").ToUpperInvariant(), TitleFont(L.T("Per site"), U(5.8f))), wd("00:00", rf0)) + U(8);
-            float xPairs = xAnom + Math.Max(wd(L.T("anom").ToUpperInvariant(), TitleFont(L.T("anom"), U(5.8f))), wd("00", rf0)) + U(8);
+            // measured once per language and size, not on every frame (1.5.2 review)
+            var colKey = L.Code + "|" + U(1).ToString(CultureInfo.InvariantCulture);
+            if (colKey != statColKey)
+            {
+                Func<string, Font, float> wd = (t, f) => g.MeasureString(t, f, 1000, StringFormat.GenericTypographic).Width;
+                var rf0 = TextFont("0", U(7));
+                float l = Math.Max(wd(L.T("This session"), TextFont(L.T("This session"), U(7))), wd("00.00 00:00", rf0)) + U(8);
+                float s2 = l + Math.Max(wd(L.T("Length").ToUpperInvariant(), TitleFont(L.T("Length"), U(5.8f))), wd("00:00", rf0)) + U(8);
+                float a2 = s2 + Math.Max(wd(L.T("Per site").ToUpperInvariant(), TitleFont(L.T("Per site"), U(5.8f))), wd("00:00", rf0)) + U(8);
+                float p2 = a2 + Math.Max(wd(L.T("anom").ToUpperInvariant(), TitleFont(L.T("anom"), U(5.8f))), wd("00", rf0)) + U(8);
+                statCols = new[] { l, s2, a2, p2 }; statColKey = colKey;
+            }
+            float xLen = c.Left + statCols[0], xSite = c.Left + statCols[1], xAnom = c.Left + statCols[2], xPairs = c.Left + statCols[3];
             var hf = TitleFont("ISK", U(5.8f));
             using (var hb = new SolidBrush(Color.FromArgb(120, BodyTheme.Ink)))
             {

@@ -76,8 +76,6 @@
   "Thundpack: filter out anchor ship, show NPC DPS only": "Thundpack：过滤 anchor 舰船，只显示 NPC DPS",
   "Thundpack: active (NPC DPS only)": "Thundpack：已启用（只显示 NPC DPS）",
   "Total ISK/per anomaly": "ISK 合计 / 每个 anomaly",
-  "Reset anomaly counter": "重置 anomaly 计数",
-  "Anomaly counter reset": "anomaly 计数已重置",
   "anom": "anom",
   "Current anomaly": "当前 anomaly",
   "Session total": "本次合计",
@@ -208,5 +206,7 @@
   "Start EVE — The Norns finds it by itself": "启动 EVE，The Norns 会自动找到它",
   "Session": "会话",
   "Length": "时长",
-  "Per site": "每个异常"
+  "Per site": "每个异常",
+  "Reset anomalies, ISK and grid": "重置异常、ISK 和网格",
+  "Anomalies, ISK and grid reset": "已重置异常、ISK 和网格"
 }

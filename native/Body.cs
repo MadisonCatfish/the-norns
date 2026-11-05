@@ -1533,13 +1533,20 @@ namespace TheNorns
         void StepQuiet(DateTime now)
         {
             var warp = stats.Tracker.LastWarpTime;
-            // no EVE client (owner, 06.11.2026): the timer fades out as after a site, and the warp it belonged to is not
-            // shown again when a client comes back - only the next warp pair is
-            if (NoClientNow) hiddenWarp = warp;
-            bool still = warp != DateTime.MinValue && warp != hiddenWarp && now >= warp && stats.LastNpcHit < warp;   // no hit since the warp
             double t = Clock, dt = lastQuietFrame < 0 ? 0 : Math.Min(0.2, t - lastQuietFrame);
             lastQuietFrame = t;
-            if (still)
+            // no EVE client for NoClientAfter s (owner, 06.11.2026; one empty poll - a relog, the character select - is
+            // not enough): the timer fades out as after a site and the lines sink, the graph says no client is running;
+            // the warp it belonged to is not shown again when a client comes back - only the next warp pair is
+            if (!NoClientNow) noClientSince = -1; else if (noClientSince < 0) noClientSince = t;
+            if (ClientsGone) hiddenWarp = warp;
+            bool still = warp != DateTime.MinValue && warp != hiddenWarp && now >= warp && stats.LastNpcHit < warp;   // no hit since the warp
+            if (ClientsGone)
+            {
+                timerA = Math.Max(0, timerA - (float)(dt / 0.15));
+                if (timerA <= 0) quiet = Math.Min(1, quiet + (float)(dt / 0.7));
+            }
+            else if (still)
             {
                 quiet = Math.Min(1, quiet + (float)(dt / 0.7));                                        // lines down in 0.7 s
                 if (quiet >= 1)
@@ -1559,11 +1566,13 @@ namespace TheNorns
             if (DemoTimerA != null) timerA = DemoTimerA.Value;
         }
         DateTime hiddenWarp = DateTime.MinValue;   // the warp whose timer went with the clients
+        double noClientSince = -1;                 // since when no client is found (Clock), -1 while there is one
+        const double NoClientAfter = 5;
         bool NoClientNow { get { return DemoNoClients ?? clients == 0; } }
+        bool ClientsGone { get { return noClientSince >= 0 && Clock - noClientSince >= NoClientAfter; } }
         void PaintAnomalyTimer(Graphics g, RectangleF plot, DateTime now)
         {
             var tr = stats.Tracker;
-            if (NoClientNow && DemoTimerA != null) return;   // a self-test frame set by hand: no clients, no timer
             if (timerA <= 0 || tr.LastWarpTime == DateTime.MinValue || tr.PrevWarpTime == DateTime.MinValue) return;
             double a = timerA * timerA * (3 - 2 * timerA);
             // counts up from 00:00 to the clear time, slowing down at the end. A false re-warp (no hit on an NPC between the two
@@ -1674,7 +1683,7 @@ namespace TheNorns
         // smaller than the anomaly timer
         void PaintNoClient(Graphics g, RectangleF plot, double total)
         {
-            if (!NoClientNow || total >= 1) return;
+            if (!NoClientNow || !(ClientsGone && timerA <= 0 || total < 1)) return;   // at once with no data, else once the timer is out
             string a = L.T("No EVE client running"), b = L.T("Start EVE — The Norns finds it by itself");
             var fa = TextFont(a, U(7.5f)); var fb = TextFont(b, U(6.6f));
             float ha = fa.GetHeight(g), hb = fb.GetHeight(g), y = plot.Top + (plot.Height - ha - hb - U(2)) / 2;
@@ -2383,7 +2392,12 @@ namespace TheNorns
                 f.DemoTimerA = 1; f.DemoCount = 0.5f; save(f, "dps_timer_3_counting.png");
                 f.DemoCount = 1; save(f, "dps_timer_3_clear_time.png");
                 // the clients gone after a cleared site: no timer (owner, 06.11.2026)
-                f.DemoNoClients = true; save(f, "dps_timer_noclient.png"); f.DemoNoClients = null;
+                // through StepQuiet itself: no client for longer than NoClientAfter, a few real frames for the fade
+                // the frames' clock driven by hand (40 ms a frame), so the fade runs the same on any PC
+                f.DemoNoClients = true; f.DemoTimerA = null; f.DemoQuiet = null; f.DemoClock = 1000; f.noClientSince = 990;
+                for (int k = 0; k < 40; k++) { using (f.Draw()) { } f.DemoClock += 0.04; }
+                save(f, "dps_timer_noclient.png");
+                f.DemoNoClients = null; f.noClientSince = -1; f.hiddenWarp = DateTime.MinValue; f.DemoClock = null; f.DemoTimerA = 1; f.DemoQuiet = 1;
                 // a re-warp of 0:48 (no hits between the warps): red, 00:48 at once, then down to 00:00 in real time
                 var keepPrev = f.Stats.Tracker.PrevWarpTime;
                 f.Stats.Tracker.PrevWarpTime = f.Stats.Tracker.LastWarpTime.AddSeconds(-48); f.DemoRewarp = true;

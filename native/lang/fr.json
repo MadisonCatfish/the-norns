@@ -76,8 +76,6 @@
   "Thundpack: filter out anchor ship, show NPC DPS only": "Thundpack: filtrer le vaisseau ancre, afficher uniquement le DPS des PNJ",
   "Thundpack: active (NPC DPS only)": "Thundpack: actif (DPS des PNJ uniquement)",
   "Total ISK/per anomaly": "Total ISK/par anomalie",
-  "Reset anomaly counter": "Réinitialiser le compteur d'anomalies",
-  "Anomaly counter reset": "Compteur d'anomalies réinitialisé",
   "anom": "anom",
   "Current anomaly": "Anomalie actuelle",
   "Session total": "Total de la session",
@@ -208,5 +206,7 @@
   "Start EVE — The Norns finds it by itself": "Lancez EVE : The Norns le trouve toute seule",
   "Session": "Session",
   "Length": "Durée",
-  "Per site": "Par site"
+  "Per site": "Par site",
+  "Reset anomalies, ISK and grid": "Réinitialiser anomalies, ISK et grille",
+  "Anomalies, ISK and grid reset": "Anomalies, ISK et grille réinitialisés"
 }

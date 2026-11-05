@@ -322,7 +322,9 @@ namespace TheNorns
                     var f = TextFont(t, U(7.2f)) ?? bf;
                     var h = g.MeasureString("• " + t, f, (int)(box.Width - indent)).Height;
                     newsTops.Add(y + newsScroll - box.Top);
-                    if (y >= box.Top - 0.5f && y + h <= box.Bottom + 0.5f) g.DrawString("• " + t, f, bb, new RectangleF(box.Left + indent, y, box.Width - indent, h + U(1)));
+                    // a point drawn whole; one taller than the box itself is drawn from its top, clipped (1.5.2 review)
+                    bool fits = y >= box.Top - 0.5f && y + h <= box.Bottom + 0.5f, tall = h > box.Height && Math.Abs(y - box.Top) < 0.5f;
+                    if (fits || tall) g.DrawString("• " + t, f, bb, new RectangleF(box.Left + indent, y, box.Width - indent, h + U(1)));
                     y += h + U(2);
                 }
             newsHeight = y + newsScroll - box.Top; newsBox = box.Height;
@@ -332,7 +334,8 @@ namespace TheNorns
         void ScrollNews(int delta)
         {
             float max = Math.Max(0, newsHeight - newsBox);
-            if (delta < 0) { var next = newsTops.FirstOrDefault(t => t > newsScroll + 0.5f); newsScroll = next > 0 ? Math.Min(next, max) : max; }
+            // down: to the next point's top while the end is not in view; the list stops on a point's top, never between
+            if (delta < 0) { if (newsScroll < max - 0.5f) { var next = newsTops.FirstOrDefault(t => t > newsScroll + 0.5f); if (next > 0) newsScroll = next; } }
             else { var prev = newsTops.LastOrDefault(t => t < newsScroll - 0.5f); newsScroll = Math.Max(0, prev); }
         }
 
@@ -749,7 +752,7 @@ namespace TheNorns
                 PaintWideKey(g, new RectangleF(c.Left, y, c.Width, U(19)), MaterialIcon.Folder, L.T("Open app data folder"), "data", false);
                 y += U(23);
                 // done: a check for the 2.5 s the key is lit (owner, 1.5.2: the refresh icon looked pressable again)
-                PaintWideKey(g, new RectangleF(c.Left, y, c.Width, U(19)), resetShown ? MaterialIcon.Check : MaterialIcon.Refresh, resetShown ? L.T("Anomaly counter reset") : L.T("Reset anomaly counter"), "reset", resetShown);
+                PaintWideKey(g, new RectangleF(c.Left, y, c.Width, U(19)), resetShown ? MaterialIcon.Check : MaterialIcon.Refresh, resetShown ? L.T("Anomalies, ISK and grid reset") : L.T("Reset anomalies, ISK and grid"), "reset", resetShown);
             }
             else if (page == "stats") PaintStats(g, c, y, line);
             else

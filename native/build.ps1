@@ -4,7 +4,7 @@
 #   .\build.ps1 -Out <folder>   -> a scratch build elsewhere (native\bin stays untouched)
 #   .\build.ps1 -Setup          -> also TheNorns-Setup-<version>.exe (native\setup\Setup.cs + the app's files as
 #                                  an embedded zip) and a portable zip, next to the exe
-#   .uild.ps1 -Out <folder> -Test "ui152: 1.5.2 UI fixes"
+#   .\build.ps1 -Out <folder> -Test "ui152: 1.5.2 UI fixes"
 #                               -> a test build: the bottom band reads TEST BUILD and this text (owner, 06.11.2026)
 param([string]$Out = "", [switch]$Setup, [string]$Test = "")
 $ErrorActionPreference = "Stop"

@@ -76,8 +76,6 @@
   "Thundpack: filter out anchor ship, show NPC DPS only": "Thundpack: фільтрувати якірний корабель, показувати лише DPS по NPC",
   "Thundpack: active (NPC DPS only)": "Thundpack: активний (лише DPS по NPC)",
   "Total ISK/per anomaly": "Total ISK/за аномалію",
-  "Reset anomaly counter": "Скинути лічильник аномалій",
-  "Anomaly counter reset": "Лічильник аномалій скинуто",
   "anom": "аном",
   "Current anomaly": "Поточна аномалія",
   "Session total": "Всього за сесію",
@@ -208,5 +206,7 @@
   "Start EVE — The Norns finds it by itself": "Запустіть EVE — The Norns знайде його сама",
   "Session": "Сесія",
   "Length": "Тривалість",
-  "Per site": "На аномалію"
+  "Per site": "На аномалію",
+  "Reset anomalies, ISK and grid": "Скинути аномалії, ISK і сітку",
+  "Anomalies, ISK and grid reset": "Аномалії, ISK і сітку скинуто"
 }
