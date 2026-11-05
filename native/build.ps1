@@ -4,8 +4,11 @@
 #   .\build.ps1 -Out <folder>   -> a scratch build elsewhere (native\bin stays untouched)
 #   .\build.ps1 -Setup          -> also TheNorns-Setup-<version>.exe (native\setup\Setup.cs + the app's files as
 #                                  an embedded zip) and a portable zip, next to the exe
-param([string]$Out = "", [switch]$Setup)
+#   .uild.ps1 -Out <folder> -Test "ui152: 1.5.2 UI fixes"
+#                               -> a test build: the bottom band reads TEST BUILD and this text (owner, 06.11.2026)
+param([string]$Out = "", [switch]$Setup, [string]$Test = "")
 $ErrorActionPreference = "Stop"
+if ($Test -and $Setup) { throw "-Test is for test builds: no installer or zip with a test label" }
 $here = Split-Path -Parent $MyInvocation.MyCommand.Path
 $root = Split-Path -Parent $here
 # Build Tools install under Program Files (x86); the full Visual Studio 2022 (GitHub's windows runners) under Program Files
@@ -32,7 +35,15 @@ $common += Get-ChildItem "$here\lang" -Filter *.json | ForEach-Object { "/resour
 # the body's fonts (OFL) and the power display's glass texture (Body.cs)
 $common += "/resource:$here\res\fonts\Orbitron.ttf,TheNorns.font.Orbitron.ttf", "/resource:$here\res\fonts\NotoSans.ttf,TheNorns.font.NotoSans.ttf", "/resource:$here\res\fonts\NotoSansSC-Regular.ttf,TheNorns.font.NotoSansSC-Regular.ttf", "/resource:$here\res\fonts\NotoSansSC-Bold.ttf,TheNorns.font.NotoSansSC-Bold.ttf",
     "/resource:$here\res\power_glass.png,TheNorns.power_glass.png", "/resource:$here\res\glass_smudge.png,TheNorns.glass_smudge.png","/resource:$here\res\spawn_alert.wav,TheNorns.spawn_alert.wav", "/resource:$here\res\name_path.txt,TheNorns.name_path.txt", "/resource:$root\CHANGELOG.md,TheNorns.CHANGELOG.md"
-& $csc @common "/out:$out\TheNorns.exe" "/main:TheNorns.Program" @refs @src
+# a test build's label, embedded as TheNorns.testbuild.txt (Body.cs PaintBand); a release build has none
+$testRes = @()
+if ($Test) {
+    $testFile = Join-Path ([IO.Path]::GetTempPath()) ("norns_test_" + [guid]::NewGuid().ToString("N").Substring(0, 8) + ".txt")
+    [IO.File]::WriteAllText($testFile, $Test, (New-Object System.Text.UTF8Encoding $false))
+    $testRes = @("/resource:$testFile,TheNorns.testbuild.txt")
+}
+& $csc @common @testRes "/out:$out\TheNorns.exe" "/main:TheNorns.Program" @refs @src
+if ($Test) { Remove-Item -Force $testFile }
 if ($LASTEXITCODE -ne 0) { throw "build failed" }
 Get-Item "$out\TheNorns.exe" | Select-Object FullName, Length, LastWriteTime
 

@@ -853,7 +853,7 @@ namespace TheNorns
                 x += V(6) - sp;
                 using (var b = new SolidBrush(Color.FromArgb(191, 236, 235, 228))) g.FillRectangle(b, x, cy - V(2), V(2.5f), V(4));
                 x += V(2.5f) + V(6);
-                Spaced(g, "PASSIVE · READ ONLY · NO INPUT", f, silk, x, ty, sp);
+                if (TestLabel == null) Spaced(g, "PASSIVE · READ ONLY · NO INPUT", f, silk, x, ty, sp);
 
                 float rx = r.Right;
                 float kw = SpacedWidth(g, PlateText, f, sp) + V(6);
@@ -861,7 +861,33 @@ namespace TheNorns
                 updateMark = box;   // the version plate, drawn per frame (it can blink)
                 rx = box.Left - V(6);
                 for (int i = 2; i >= 0; i--) g.FillRectangle(silk, rx - V(0.75f) - i * V(1.75f), cy - V(2.25f), V(0.75f), V(4.5f));
+                // a test build (build.ps1 -Test): TEST BUILD and its short description in place of the promise, in the dread
+                // tone, cut with "…" before the ticks (owner, 06.11.2026)
+                if (TestLabel != null)
+                {
+                    float room = rx - V(5.25f) - V(6) - x;
+                    var t = ("TEST BUILD · " + TestLabel).ToUpperInvariant();
+                    if (SpacedWidth(g, t, f, sp) > room)
+                    {
+                        while (t.Length > 1 && SpacedWidth(g, t + "…", f, sp) > room) t = t.Substring(0, t.Length - 1).TrimEnd();
+                        t += "…";
+                    }
+                    using (var tb = new SolidBrush(BodyTheme.Dread)) Spaced(g, t, f, tb, x, ty, sp);
+                }
             }
+        }
+
+        // the label of a test build, embedded by build.ps1 -Test; null in a release build
+        internal static readonly string TestLabel = ReadTestLabel();
+        static string ReadTestLabel()
+        {
+            try
+            {
+                using (var s = typeof(DpsForm).Assembly.GetManifestResourceStream("TheNorns.testbuild.txt"))
+                    if (s != null) { var t = new StreamReader(s, Encoding.UTF8).ReadToEnd().Trim(); return t.Length > 0 ? t : null; }
+            }
+            catch { }
+            return null;
         }
 
         // the band's warning triangle (6 x 4.5 units of v around cx, cy, the mark inside); Settings -> Carousel uses it too
