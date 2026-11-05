@@ -113,6 +113,7 @@ namespace TheNorns
             if (ActivateEveO(id)) return;
             if (id == "back") { ToggleSettings(); return; }
             if (id == "stats:calendar") { OpenCalendar(); return; }
+            if (id == "stats:readlogs") { ReadLogsIntoSessions(); return; }
             if (id == "logs") { OpenGameLogs(); return; }
             if (id == "dir:select")
             {

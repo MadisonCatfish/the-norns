@@ -37,6 +37,9 @@ namespace TheNorns
             int sdps = Array.IndexOf(args, "--selftest-dps");
             if (sdps >= 0 && args.Length > sdps + 1) { DpsForm.SelfTest(args[sdps + 1]); return; }
             // --demo-anim <dir> [scene]: the site's short recordings, frames as PNGs (Anim.cs)
+            // --scan-logs <sessions dir>: "Read logs" (LogScan.cs) into that folder, the result on the console
+            int scan = Array.IndexOf(args, "--scan-logs");
+            if (scan >= 0 && args.Length > scan + 1) { Console.WriteLine(DpsForm.ScanLogsInto(args[scan + 1])); return; }
             int anim = Array.IndexOf(args, "--demo-anim");
             if (anim >= 0 && args.Length > anim + 1) { DpsForm.Anim(args[anim + 1], args.Length > anim + 2 ? args[anim + 2] : null); return; }
 

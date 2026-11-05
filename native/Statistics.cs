@@ -141,11 +141,24 @@ namespace TheNorns
             all.AddRange(sessions);
             all = all.Where(InPeriod).ToList();
 
-            // the period on the left, the calendar key on the right (owner, 31.10.2026)
+            // the period on the left, the calendar key on the right (owner, 31.10.2026); left of it "Read logs" (LogScan.cs),
+            // whose result shows in the period's place for a few seconds
             var ck = new RectangleF(c.Right - U(15), y - U(3.5f), U(15), U(15));
             SquareKey(g, ck, MaterialIcon.Calendar, false, "stats:calendar", statFrom != null);
-            var tt = PeriodText();
-            Glow(g, tt, TitleFont(tt, U(7.2f)), statFrom != null ? BodyTheme.Accent : Muted, c.Left, y);
+            var rk = new RectangleF(ck.Left - U(18), ck.Top, U(15), U(15));
+            SquareKey(g, rk, MaterialIcon.Description, false, "stats:readlogs", scanning);
+            if (scanNote != null && Clock < scanNoteUntil)
+            {
+                var nf = TextFont(scanNote, U(6.6f));
+                using (var b = new SolidBrush(BodyTheme.Accent))
+                using (var sf = new StringFormat(StringFormat.GenericTypographic) { Trimming = StringTrimming.EllipsisCharacter, FormatFlags = StringFormatFlags.NoWrap })
+                    g.DrawString(scanNote, nf, b, new RectangleF(c.Left, y, rk.Left - U(6) - c.Left, nf.GetHeight(g) + U(1)), sf);
+            }
+            else
+            {
+                var tt = PeriodText();
+                Glow(g, tt, TitleFont(tt, U(7.2f)), statFrom != null ? BodyTheme.Accent : Muted, c.Left, y);
+            }
             y += U(14);
             line(y); y += U(5);
 

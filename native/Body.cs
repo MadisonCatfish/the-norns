@@ -515,7 +515,7 @@ namespace TheNorns
             tip.Hide(this);
             var warn = WarnTip(spot);   // Settings -> Carousel: the EVE client's action on a hotkey (EveO.cs)
             // the settings' header keys: their page's name under the key (owner, 31.10.2026)
-            string head = spot == "page:stats" ? L.T("Statistics") : spot == "page:about" ? L.T("About") : spot == "stats:calendar" ? L.T("Calendar")
+            string head = spot == "page:stats" ? L.T("Statistics") : spot == "page:about" ? L.T("About") : spot == "stats:calendar" ? L.T("Calendar") : spot == "stats:readlogs" ? L.T("Read logs")
                 : spot == "stats:titans" ? L.T("Titans") : spot == "stats:dreads" ? L.T("Pirate dreadnoughts") : spot == "stats:stars" ? L.T("Faction NPCs and commanders") : null;
             var headKey = head != null ? spots.First(s => s.Item1 == spot).Item2 : RectangleF.Empty;
             tipText = hn ? L.T("Settings") : hc ? L.T("Close") : hm ? L.T("Minimize") : hmo ? L.T(Compact ? "Full mode" : "Compact mode") : head ?? warn;
@@ -2178,6 +2178,9 @@ namespace TheNorns
                     f.DemoSessions.Add(new SessionInfo { Start = now.Date.AddDays(-k).AddHours(19), End = now.Date.AddDays(-k).AddHours(20.5), Sites = 3 + k % 7, Isk = 90000000L * (3 + k % 7), Spawns = k % 5 == 0 ? 1 : 0, Titans = k % 11 == 0 ? 1 : 0, Dreads = k % 9 == 0 ? 1 : 0 });
                 f.DemoSettings(true, null, false, "stats"); save(f, "dps_settings_stats.png");
                 f.statsScroll = 1000; save(f, "dps_settings_stats_scrolled.png"); f.statsScroll = 0;
+                f.hotSpot = "stats:readlogs"; save(f, "dps_settings_stats_readlogs_hover.png"); f.hotSpot = null;
+                f.scanNote = L.F("{0} logs: {1} sessions, +{2} ★ +{3} titans +{4} dreads", 167, 2, 1, 1, 0); f.scanNoteUntil = double.MaxValue;
+                save(f, "dps_settings_stats_readlogs.png"); f.scanNote = null;
                 f.DemoStatFrom = now.Date.AddDays(-9); f.DemoStatTo = now.Date.AddDays(-2); save(f, "dps_settings_stats_period.png");
                 using (var b = f.Draw()) FormulaWindow.SaveDemo(b, f.CalendarCard(), 1, Path.Combine(dir, "dps_stats_calendar.png"));
                 f.DemoStatFrom = f.DemoStatTo = null; f.statFrom = f.statTo = null;
