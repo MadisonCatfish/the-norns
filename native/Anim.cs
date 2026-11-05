@@ -19,14 +19,14 @@ namespace TheNorns
     {
         const int AnimFps = 25;   // the live timer's rate: the easing steps are per frame at 25 fps
 
-        static readonly string[] AnimScenes = { "live", "glass", "spawns", "timer", "competition", "settings", "language", "stats", "formula", "update", "noclient", "compact", "rewarp" };
+        static readonly string[] AnimScenes = { "live", "glass", "spawns", "timer", "competition", "settings", "language", "stats", "formula", "update", "noclient", "compact", "rewarp", "keys", "displaypick", "readlogs", "oneclick" };
 
         public static void Anim(string dir, string only)
         {
             SelfTesting = true;
             L.Init("en");
             UiScale = 1.25f; Compact = false; Potato = false; SpawnSound = false; FleetOn = false; FleetPreview = false;
-            Competition = false; UpdateAtStart = false;
+            Competition = false; UpdateAtStart = false; PowerAnimName = "working"; CloseToTray = false;
             foreach (var s in AnimScenes)
             {
                 if (only != null && only != s) continue;
@@ -154,6 +154,52 @@ namespace TheNorns
                     r.Site(Five, 16, 40, 16);
                     r.Spawn(3.5, "Shadow Serpentis Vice Admiral", 3);
                     r.Wait(9);
+                    break;
+                case "keys":
+                    // the keys left of Close (1.5.1): minimize in yellow, the mode key in green, close in red under the mouse
+                    r.Site(Five, 8, 70);
+                    r.Mouse = r.MainAt(f.GlassRect, 0.55f, 0.35f);
+                    r.Wait(0.6);
+                    r.MoveTo(r.MainAt(f.MinRect, 0.5f, 0.5f), 0.8); r.Wait(1.3);
+                    r.MoveTo(r.MainAt(f.ModeRect, 0.5f, 0.5f), 0.5); r.Wait(1.3);
+                    r.MoveTo(r.MainAt(f.CloseRect, 0.5f, 0.5f), 0.5); r.Wait(1.3);
+                    r.MoveTo(r.MainAt(f.GlassRect, 0.6f, 0.4f), 0.7); r.Wait(0.5);
+                    break;
+                case "displaypick":
+                    // Settings -> Display: the power display's animation picked from live previews; the body's display follows
+                    r.Site(Five, 16, 70);
+                    f.DemoSettings(true, null, false, "display");
+                    r.Mouse = r.MainAt(f.GlassRect, 0.5f, 0.5f);
+                    r.Wait(0.8);
+                    foreach (var an in new[] { "cubewave", "norns", "flow", "working" }) { r.MoveToSpot("anim:" + an, 0.6); r.Click(); r.Wait(2.6); }
+                    PowerAnimName = "working";
+                    break;
+                case "readlogs":
+                    // Statistics -> Read logs: the spawns found in the game's logs added to the saved sessions (shown, not run)
+                    f.DemoSessions = AnimSessions(r.T0);
+                    r.Site(Five, 10, 70);
+                    f.DemoSettings(true, null, false, "stats");
+                    r.Mouse = r.MainAt(f.GlassRect, 0.5f, 0.55f);
+                    r.Wait(0.8);
+                    r.MoveToSpot("stats:readlogs", 0.8); r.Wait(0.3);
+                    f.downSpot = "stats:readlogs"; r.Wait(0.12); f.downSpot = null;
+                    f.scanning = true; f.scanNote = L.T("Reading logs…"); f.scanNoteUntil = double.MaxValue;
+                    r.Wait(1.4);
+                    var ds = f.DemoSessions; ds[1].Spawns += 2; ds[3].Titans += 1; f.sessions = null;
+                    f.scanning = false; f.scanNote = L.F("{0} logs: {1} sessions, +{2} ★ +{3} titans +{4} dreads", 168, 2, 2, 1, 0);
+                    r.Wait(3.4);
+                    break;
+                case "oneclick":
+                    // About with a newer version: "Update to ..." pressed, the installer's download running (shown, nothing is fetched)
+                    r.Site(Five, 9, 70);
+                    f.DemoUpdate("1.6.0"); f.aboutView = "legal";
+                    f.DemoSettings(true, null, false, "about");
+                    r.Mouse = r.MainAt(f.GlassRect, 0.4f, 0.6f);
+                    r.Wait(0.8);
+                    r.MoveToSpot("update", 0.8); r.Wait(0.5);
+                    f.downSpot = "update"; r.Wait(0.12); f.downSpot = null;
+                    r.Ease(2.6, p => f.DemoUpdateState(6, (int)Math.Round(p * 100)));
+                    r.Wait(1.0);
                     break;
                 case "rewarp":
                     // a site, the warp out (the clear time), then two false re-warps: a random time rushing down to 00:00 each
