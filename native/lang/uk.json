@@ -203,5 +203,10 @@
   "offline": "не в мережі",
   "Minimize the previous client on switching": "Згортати попередній клієнт при перемиканні",
   "Drag a row to change the switching order. The pin keeps a client open when the others are minimized.": "Перетягніть рядок, щоб змінити порядок перемикання. Шпилька залишає клієнт відкритим, коли інші згортаються.",
-  "may be unstable": "нестабільно"
+  "may be unstable": "нестабільно",
+  "No EVE client running": "Клієнт EVE не запущений",
+  "Start EVE — The Norns finds it by itself": "Запустіть EVE — The Norns знайде його сама",
+  "Session": "Сесія",
+  "Length": "Тривалість",
+  "Per site": "На аномалію"
 }

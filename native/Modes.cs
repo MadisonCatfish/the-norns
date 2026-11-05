@@ -160,10 +160,9 @@ namespace TheNorns
                 var row = new RectangleF(c.Left + i * colW, y, colW - U(4), U(14));
                 if (hot) using (var p = Round(row, 6)) using (var b = new SolidBrush(Color.FromArgb(22, BodyTheme.Ink))) g.FillPath(b, p);
                 float d = U(5.5f), lx = row.Left + U(5), ly = row.Top + row.Height / 2;
-                if (cur) SoftGlow(g, new PointF(lx + d / 2, ly), d / 2 + U(4), BodyTheme.Accent, 140);
-                using (var b = new SolidBrush(cur ? BodyTheme.Accent : Color.FromArgb(46, 48, 30))) g.FillEllipse(b, lx, ly - d / 2, d, d);
+                Lamp(g, lx, ly, d, cur);
                 var nf = TextFont(name, U(7.5f));
-                using (var b = new SolidBrush(cur || hot ? BodyTheme.Ink : Color.FromArgb(165, 168, 176)))
+                using (var b = new SolidBrush(cur || hot ? BodyTheme.Ink : BodyTheme.LabelDim))
                     g.DrawString(name, nf, b, lx + d + U(6), ly - nf.GetHeight(g) / 2, StringFormat.GenericTypographic);
                 spots.Add(Tuple.Create(id, row));
             }
@@ -209,7 +208,7 @@ namespace TheNorns
         void RowLabel(Graphics g, string text, float x, float y, float h)
         {
             var f = TextFont(text, U(7));
-            using (var b = new SolidBrush(Color.FromArgb(200, 203, 210))) g.DrawString(text, f, b, x, y + (h - f.GetHeight(g)) / 2, StringFormat.GenericTypographic);
+            using (var b = new SolidBrush(BodyTheme.Label)) g.DrawString(text, f, b, x, y + (h - f.GetHeight(g)) / 2, StringFormat.GenericTypographic);
         }
 
         // the "?" key: drawn like the function badge of the module titles (Material question_mark)

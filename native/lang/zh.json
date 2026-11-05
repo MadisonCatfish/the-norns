@@ -203,5 +203,10 @@
   "offline": "离线",
   "Minimize the previous client on switching": "切换时最小化上一个客户端",
   "Drag a row to change the switching order. The pin keeps a client open when the others are minimized.": "拖动一行以更改切换顺序。图钉可让客户端在其他客户端最小化时保持打开。",
-  "may be unstable": "不稳定"
+  "may be unstable": "不稳定",
+  "No EVE client running": "没有运行中的 EVE 客户端",
+  "Start EVE — The Norns finds it by itself": "启动 EVE，The Norns 会自动找到它",
+  "Session": "会话",
+  "Length": "时长",
+  "Per site": "每个异常"
 }

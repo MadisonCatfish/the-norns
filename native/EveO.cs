@@ -191,7 +191,7 @@ namespace TheNorns
             var st = g.Save();
             g.SetClip(eveoView);
             int firstSpot = spots.Count;
-            var inner = RectangleF.FromLTRB(c.Left, c.Top, c.Right - U(7), c.Bottom);
+            var inner = RectangleF.FromLTRB(c.Left, c.Top, c.Right - U(10.5f), c.Bottom);   // 8 px between the fields and the bar (owner, 1.5.2)
             float end = PaintEveOContent(g, inner, top - eveoScroll);
             g.Restore(st);
             // the keys scrolled out of view can't be clicked
@@ -226,15 +226,15 @@ namespace TheNorns
         {
             // on / off, and the live client on the power display: lamp rows as on General
             LampRow(g, c, y, "eveo:on", FleetOn, L.T("Client switching"));
-            y += U(19) - 3;
+            y += RowStep;
             LampRow(g, c, y, "eveo:preview", FleetPreview, L.T("Live client on the power display instead of the animation"));
-            y += U(19) - 3;
+            y += RowStep;
             LampRow(g, c, y, "eveo:minimize", Fleet.MinimizeOthers, L.T("Minimize the previous client on switching"), "(" + L.T("may be unstable") + ")");
             y += U(19);
             // the side of the body the client squares are on (Dock.cs): three keys as the window size's on General
             var dl = L.T("Navigation panel");
             var df = TextFont(dl, U(7.5f));
-            using (var b = new SolidBrush(Color.FromArgb(200, 203, 210))) g.DrawString(dl, df, b, c.Left, y + (U(15) - df.GetHeight(g)) / 2, StringFormat.GenericTypographic);
+            using (var b = new SolidBrush(BodyTheme.Label)) g.DrawString(dl, df, b, c.Left, y + (U(15) - df.GetHeight(g)) / 2, StringFormat.GenericTypographic);
             float kw = U(40), bx = c.Right - 3 * kw - 2 * U(3);
             foreach (var side in DockSides)
             {
@@ -439,6 +439,16 @@ namespace TheNorns
             return true;
         }
 
+        // a lamp: lit in the accent with its glow; off, a dark disc with a faint rim so it is still seen (owner, 1.5.2:
+        // the off lamps were 1.6 : 1 against the screen)
+        void Lamp(Graphics g, float lx, float ly, float d, bool on)
+        {
+            if (on) SoftGlow(g, new PointF(lx + d / 2, ly), d / 2 + U(4), BodyTheme.Accent, 140);
+            using (var b = new SolidBrush(on ? BodyTheme.Accent : BodyTheme.LampOff)) g.FillEllipse(b, lx, ly - d / 2, d, d);
+            if (!on) using (var pen = new Pen(BodyTheme.LampRing, Math.Max(1f, U(0.6f)))) g.DrawEllipse(pen, lx, ly - d / 2, d, d);
+        }
+        float RowStep { get { return U(16); } }   // one step for every lamp or choice row (owner, 1.5.2)
+
         // note: a short remark after the text, dimmer (owner, 29.10.2026: "may be unstable" by the minimizing)
         void LampRow(Graphics g, RectangleF c, float y, string id, bool on, string text, string note = null)
         {
@@ -446,10 +456,9 @@ namespace TheNorns
             bool hot = hotSpot == id;
             if (hot) using (var p = Round(r, 6)) using (var b = new SolidBrush(Color.FromArgb(22, BodyTheme.Ink))) g.FillPath(b, p);
             float dd = U(5.5f), lx = r.Left + U(5), ly = r.Top + r.Height / 2;
-            if (on) SoftGlow(g, new PointF(lx + dd / 2, ly), dd / 2 + U(4), BodyTheme.Accent, 140);
-            using (var b = new SolidBrush(on ? BodyTheme.Accent : Color.FromArgb(46, 48, 30))) g.FillEllipse(b, lx, ly - dd / 2, dd, dd);
+            Lamp(g, lx, ly, dd, on);
             var f = TextFont(text, U(7.5f));
-            using (var b = new SolidBrush(hot ? BodyTheme.Ink : Color.FromArgb(200, 203, 210))) g.DrawString(text, f, b, lx + dd + U(6), ly - f.GetHeight(g) / 2, StringFormat.GenericTypographic);
+            using (var b = new SolidBrush(hot ? BodyTheme.Ink : BodyTheme.Label)) g.DrawString(text, f, b, lx + dd + U(6), ly - f.GetHeight(g) / 2, StringFormat.GenericTypographic);
             if (note != null)
             {
                 float tw = g.MeasureString(text, f, 10000, StringFormat.GenericTypographic).Width;
@@ -496,7 +505,9 @@ namespace TheNorns
             if (cap || keys.Count == 0)
             {
                 var t = cap ? L.T("Press keys…") : L.T("none");
-                var f = TextFont(t, U(7));
+                // "none" in the keys' Orbitron where it has the glyphs (owner, 1.5.2: one font in one field); the prompt, and
+                // a translation Orbitron can't set, in the text font
+                var f = !cap && t.All(ch => ch < 128) ? NornsFonts.Screen(U(6.5f)) : TextFont(t, U(7));
                 using (var b = new SolidBrush(cap ? BodyTheme.Ink : Color.FromArgb(120, BodyTheme.Ink))) g.DrawString(t, f, b, x, r.Top + (r.Height - f.GetHeight(g)) / 2, StringFormat.GenericTypographic);
                 if (cap && (SelfTesting || Potato || Clock % 1.0 < 0.55))
                 {

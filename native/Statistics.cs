@@ -22,6 +22,18 @@ namespace TheNorns
         public int Spawns;
         public int Titans, Dreads;   // from 1.5.0 (owner, 31.10.2026); 0 in the files before
         public List<long[]> SiteList = new List<long[]>();   // start ticks, end ticks, ISK
+        public bool Current;   // this session: no site closed yet means no time, not the session's length
+
+        // the mean clear time of a site (owner, 1.5.2: the list's second column); from the sites kept, else, for the
+        // files before 1.5.0 that have none, the session's length over its sites; null with nothing to go by
+        public TimeSpan? MeanClear
+        {
+            get
+            {
+                if (SiteList.Count > 0) return TimeSpan.FromTicks((long)SiteList.Average(x => (double)(x[1] - x[0])));
+                return !Current && Sites > 0 && End > Start ? TimeSpan.FromTicks((End - Start).Ticks / Sites) : (TimeSpan?)null;
+            }
+        }
     }
 
     partial class DpsForm
@@ -46,7 +58,7 @@ namespace TheNorns
         {
             // the site under way counts too
             var tr = stats.Tracker;
-            return new SessionInfo { Start = session.Start, End = DateTime.Now, Sites = session.Sites + (tr.CurrentAnomalyIsk > 0 ? 1 : 0), Isk = session.Isk + tr.CurrentAnomalyIsk, Spawns = stats.Spawns.Count, Titans = Titans, Dreads = Dreads };
+            return new SessionInfo { Start = session.Start, End = DateTime.Now, Sites = session.Sites + (tr.CurrentAnomalyIsk > 0 ? 1 : 0), Isk = session.Isk + tr.CurrentAnomalyIsk, Spawns = stats.Spawns.Count, Titans = Titans, Dreads = Dreads, SiteList = session.SiteList, Current = true };
         }
         // the titans and pirate dreadnoughts of this session: each spawn once (a name seen again within 10 minutes is the same)
         int Titans { get { return stats.Sightings.Count(x => x.Kind == 2); } }
@@ -72,6 +84,27 @@ namespace TheNorns
                 File.WriteAllText(SessionFile, new JavaScriptSerializer().Serialize(o));
             }
             catch { }
+        }
+
+        // "site_list" of a session file (from 1.5.0): each site's start, end and ISK; empty where the file has none
+        static List<long[]> SiteListOf(Dictionary<string, object> o)
+        {
+            var res = new List<long[]>();
+            object raw;
+            if (!o.TryGetValue("site_list", out raw) || !(raw is object[])) return res;
+            foreach (var item in (object[])raw)
+            {
+                var d = item as Dictionary<string, object>;
+                if (d == null) continue;
+                try
+                {
+                    res.Add(new[] { DateTime.Parse((string)d["start"], CultureInfo.InvariantCulture, DateTimeStyles.RoundtripKind).Ticks,
+                                    DateTime.Parse((string)d["end"], CultureInfo.InvariantCulture, DateTimeStyles.RoundtripKind).Ticks,
+                                    Convert.ToInt64(d["isk"], CultureInfo.InvariantCulture) });
+                }
+                catch { }
+            }
+            return res;
         }
 
         public List<SessionInfo> DemoSessions;   // selftest: earlier sessions shown instead of the PC's own
@@ -101,6 +134,7 @@ namespace TheNorns
                             Spawns = o.ContainsKey("spawns") ? Convert.ToInt32(o["spawns"], CultureInfo.InvariantCulture) : 0,   // before 1.2: none kept
                             Titans = o.ContainsKey("titans") ? Convert.ToInt32(o["titans"], CultureInfo.InvariantCulture) : 0,   // before 1.5: none kept
                             Dreads = o.ContainsKey("dreads") ? Convert.ToInt32(o["dreads"], CultureInfo.InvariantCulture) : 0,
+                            SiteList = SiteListOf(o),
                         });
                     }
                     catch { }
@@ -174,11 +208,32 @@ namespace TheNorns
             float tx = IconCount(g, titans, MaterialIcon.Skull, true, vf, titans > 0 ? AlarmRed : Color.FromArgb(90, AlarmRed), dx - U(6), fy, 0, "stats:titans");
             IconCount(g, all.Sum(x => x.Spawns), MaterialIcon.Star, false, vf, BodyTheme.Accent, tx - U(6), fy, 0, "stats:stars");
 
+            // the columns (owner, 1.5.2): session, its length, the mean time per site, sites, the rare spawns, ISK; a
+            // heading over each, in the muted title face
+            float rowH = U(15), max0 = Math.Max(0, all.Count * rowH - (fy - U(9) - y - U(11)));
+            float right = max0 > 0 ? c.Right - U(8) : c.Right;
+            float pw = U(7.5f) + U(2) + g.MeasureString("00", vf, 1000, StringFormat.GenericTypographic).Width;   // one icon + count pair
+            // each text column as wide as its heading or its widest value, 8 units apart; the pairs and ISK take the rest
+            Func<string, Font, float> wd = (t, f) => g.MeasureString(t, f, 1000, StringFormat.GenericTypographic).Width;
+            var rf0 = TextFont("0", U(7));
+            float xLen = c.Left + Math.Max(wd(L.T("This session"), TextFont(L.T("This session"), U(7))), wd("00.00 00:00", rf0)) + U(8);
+            float xSite = xLen + Math.Max(wd(L.T("Length").ToUpperInvariant(), TitleFont(L.T("Length"), U(5.8f))), wd("00:00", rf0)) + U(8);
+            float xAnom = xSite + Math.Max(wd(L.T("Per site").ToUpperInvariant(), TitleFont(L.T("Per site"), U(5.8f))), wd("00:00", rf0)) + U(8);
+            float xPairs = xAnom + Math.Max(wd(L.T("anom").ToUpperInvariant(), TitleFont(L.T("anom"), U(5.8f))), wd("00", rf0)) + U(8);
+            var hf = TitleFont("ISK", U(5.8f));
+            using (var hb = new SolidBrush(Color.FromArgb(120, BodyTheme.Ink)))
+            {
+                Action<string, float> head = (t, hx) => g.DrawString(t.ToUpperInvariant(), TitleFont(t, U(5.8f)), hb, hx, y, StringFormat.GenericTypographic);
+                head(L.T("Session"), c.Left); head(L.T("Length"), xLen); head(L.T("Per site"), xSite); head(L.T("anom"), xAnom);
+                var it = "ISK";
+                g.DrawString(it, hf, hb, right - g.MeasureString(it, hf, 1000, StringFormat.GenericTypographic).Width, y, StringFormat.GenericTypographic);
+            }
+            y += U(11);
+
             // the rows between, clipped to the view and scrolled; a thin bar on the right when they do not fit
             statsView = RectangleF.FromLTRB(c.Left, y, c.Right, fy - U(9));
-            float rowH = U(15), max = Math.Max(0, all.Count * rowH - statsView.Height);
+            float max = Math.Max(0, all.Count * rowH - statsView.Height);
             statsScroll = Math.Max(0, Math.Min(max, statsScroll));
-            float right = max > 0 ? c.Right - U(8) : c.Right;
             var st = g.Save();
             g.SetClip(statsView);
             float ry = y - statsScroll;
@@ -187,20 +242,30 @@ namespace TheNorns
                 if (ry + rowH < statsView.Top || ry > statsView.Bottom) { ry += rowH; continue; }
                 bool now = ReferenceEquals(x, cur);
                 var when = now ? L.T("This session") : x.Start.ToString("dd.MM HH:mm", CultureInfo.InvariantCulture);
-                var dur = x.End - x.Start;
-                var mid = (int)dur.TotalHours + ":" + dur.Minutes.ToString("00") + "  ·  " + x.Sites + " " + L.T("anom");
+                var len = x.End - x.Start;
+                var lenT = (int)len.TotalHours + ":" + len.Minutes.ToString("00");
+                var mc = x.MeanClear;   // the mean time a site took; "—" with none closed yet
+                var siteT = mc == null ? "—" : mc.Value.TotalHours >= 1 ? (int)mc.Value.TotalHours + ":" + mc.Value.Minutes.ToString("00") + ":" + mc.Value.Seconds.ToString("00") : (int)mc.Value.TotalMinutes + ":" + mc.Value.Seconds.ToString("00");
                 using (var b = new SolidBrush(now ? BodyTheme.Ink : Color.FromArgb(190, 193, 200)))
                 {
-                    g.DrawString(when, TextFont(when, U(7)), b, c.Left, ry, StringFormat.GenericTypographic);
-                    g.DrawString(mid, TextFont(mid, U(7)), b, c.Left + c.Width * 0.25f, ry, StringFormat.GenericTypographic);
+                    var rf = TextFont(when, U(7));
+                    g.DrawString(when, rf, b, c.Left, ry, StringFormat.GenericTypographic);
+                    g.DrawString(lenT, rf, b, xLen, ry, StringFormat.GenericTypographic);
+                    g.DrawString(siteT, rf, b, xSite, ry, StringFormat.GenericTypographic);
+                    g.DrawString(x.Sites.ToString(CultureInfo.InvariantCulture), rf, b, xAnom, ry, StringFormat.GenericTypographic);
                 }
                 var iv = FormatIsk(x.Isk).ToUpperInvariant();
                 float ivx = right - g.MeasureString(iv, vf, 1000, StringFormat.GenericTypographic).Width;
                 using (var b = new SolidBrush(now ? BodyTheme.Accent : BodyTheme.Ink)) g.DrawString(iv, vf, b, ivx, ry + U(0.5f), StringFormat.GenericTypographic);
-                var dim = Color.FromArgb(90, BodyTheme.Ink);
-                IconCount(g, x.Dreads, MaterialIcon.Swords, true, vf, x.Dreads > 0 ? AlarmRed : dim, right - U(58), ry + U(0.5f), 2, "stats:dreads");
-                IconCount(g, x.Titans, MaterialIcon.Skull, true, vf, x.Titans > 0 ? AlarmRed : dim, right - U(76), ry + U(0.5f), 2, "stats:titans");
-                IconCount(g, x.Spawns, MaterialIcon.Star, false, vf, x.Spawns > 0 ? BodyTheme.Ink : dim, right - U(94), ry + U(0.5f), 2, "stats:stars");
+                // a zero stays blank, and the pairs shown line up from the left of the column (owner, 1.5.2: rows of grey
+                // "0" said nothing); the totals below show all three
+                float px = xPairs;
+                foreach (var pair in new[] { Tuple.Create(x.Spawns, MaterialIcon.Star, false, BodyTheme.Ink, "stats:stars"), Tuple.Create(x.Titans, MaterialIcon.Skull, true, AlarmRed, "stats:titans"), Tuple.Create(x.Dreads, MaterialIcon.Swords, true, AlarmRed, "stats:dreads") })
+                {
+                    if (pair.Item1 <= 0) continue;
+                    IconCount(g, pair.Item1, pair.Item2, pair.Item3, vf, pair.Item4, px + pw, ry + U(0.5f), 2, pair.Item5);
+                    px += U(16);
+                }
                 ry += rowH;
             }
             g.Restore(st);

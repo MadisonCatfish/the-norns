@@ -1,5 +1,14 @@
 # Changelog
 
+## 1.5.2 — unreleased
+
+- The body's three keys carry a mark each (remove, unfold, close) and the minimize key's tip says Hide; the bottom band lost the warning triangle and "MOD 1.0".
+- The Vorton graph is the tallest block; the ISK grid has 6 rows instead of 10, and only its newest tick glows. With no EVE client the empty graph says so.
+- The session ISK badge is outlined like the two next to it.
+- One red (the Lightning rod's) and one dread tone for the hull's heat, the grid dot, the tray and the minimize key; every colour is a token.
+- Settings: the off lamps have a rim; one row step for lamps and choices; the Carousel bar sits 8 px off the fields; the hotkey field's "none" is in the keys' font; Data shows a warning triangle when no logs are found and a check once the anomaly counter is reset; What's new scrolls by whole points.
+- Statistics: a zero count stays blank in the rows; the totals keep all three.
+
 ## 1.5.1 — 2026-11-05
 
 - Tray: The Norns lives in the notification area instead of the taskbar. A click on the icon hides or shows the body; its menu has Show / Hide, Settings, Statistics, Compact and Potato mode, Check for updates and Exit. A dot on the icon tells the state (a log followed, no EVE client, a newer version), and a titan or a pirate dreadnought on grid makes the icon flash red or yellow. The tip shows the fleet's DPS and the anomaly's ISK. Settings → General → Tray: "Close to tray" and "Start in the tray" (both off by default). While hidden the body keeps reading the logs and is not drawn.

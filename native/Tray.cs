@@ -130,8 +130,8 @@ namespace TheNorns
                 {
                     g.SmoothingMode = SmoothingMode.AntiAlias; g.InterpolationMode = InterpolationMode.HighQualityBicubic;
                     using (var app = new Icon(AppInfo.Icon, s, s)) g.DrawIcon(app, new Rectangle(0, 0, s, s));
-                    Color? dot = key == "follow" ? BodyTheme.Accent : key == "noclient" ? AlarmRed : key == "update" ? Color.FromArgb(80, 150, 255)
-                        : key == "alarm-red" ? AlarmRed : key == "alarm-yellow" ? Color.FromArgb(255, 200, 30) : (Color?)null;
+                    Color? dot = key == "follow" ? BodyTheme.Accent : key == "noclient" ? AlarmRed : key == "update" ? BodyTheme.Info
+                        : key == "alarm-red" ? AlarmRed : key == "alarm-yellow" ? BodyTheme.Dread : (Color?)null;
                     if (dot != null && !key.StartsWith("alarm"))
                     {
                         float d = s * 0.46f, x = s - d - 0.5f, y = s - d - 0.5f;
@@ -142,7 +142,7 @@ namespace TheNorns
                 // the alarm: the icon itself tinted, pixel by pixel, keeping its own alpha (its round corners stay clear)
                 if (key.StartsWith("alarm"))
                 {
-                    var tint = key == "alarm-red" ? AlarmRed : Color.FromArgb(255, 200, 30);
+                    var tint = key == "alarm-red" ? AlarmRed : BodyTheme.Dread;
                     for (int y = 0; y < s; y++)
                         for (int x = 0; x < s; x++)
                         {

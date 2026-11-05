@@ -203,5 +203,10 @@
   "offline": "offline",
   "Minimize the previous client on switching": "Riduci a icona il client precedente al cambio",
   "Drag a row to change the switching order. The pin keeps a client open when the others are minimized.": "Trascina una riga per cambiare l'ordine di cambio. La puntina tiene un client aperto quando gli altri vengono ridotti a icona.",
-  "may be unstable": "instabile"
+  "may be unstable": "instabile",
+  "No EVE client running": "Nessun client EVE in esecuzione",
+  "Start EVE — The Norns finds it by itself": "Avvia EVE: The Norns lo trova da sola",
+  "Session": "Sessione",
+  "Length": "Durata",
+  "Per site": "Per sito"
 }

@@ -17,7 +17,7 @@ namespace TheNorns
 {
     partial class DpsForm
     {
-        internal static readonly Color RodRed = Color.FromArgb(236, 28, 48);
+        // the one red is BodyTheme.Alarm (AlarmRed in Body.cs); RodRed went in 1.5.2
 
         public static readonly FormulaText RodFormula = new FormulaText
         {
@@ -123,7 +123,7 @@ namespace TheNorns
             var tf = NornsFonts.Screen(U(5.9f));   // 18 % larger (owner, 29.10.2026)
             float tw = g.MeasureString(tl, tf, 1000, StringFormat.GenericTypographic).Width;
             bool losing = RunnerRepair > 0 && takes > RunnerRepair;
-            using (var b = new SolidBrush(losing ? RodRed : Color.FromArgb(140, BodyTheme.Ink))) g.DrawString(tl, tf, b, r.Right - tw, r.Top + big.GetHeight(g) + U(1), StringFormat.GenericTypographic);
+            using (var b = new SolidBrush(losing ? AlarmRed : Color.FromArgb(140, BodyTheme.Ink))) g.DrawString(tl, tf, b, r.Right - tw, r.Top + big.GetHeight(g) + U(1), StringFormat.GenericTypographic);
 
             SimRod(now);
             var area = RectangleF.FromLTRB(r.Left, r.Top + U(19), r.Right, r.Bottom - U(1));
@@ -142,10 +142,10 @@ namespace TheNorns
             var pts = trace(rodVorton);
             if (!Potato)
             {
-                using (var pen = new Pen(Color.FromArgb(40, RodRed), U(7)) { LineJoin = LineJoin.Round, StartCap = LineCap.Round, EndCap = LineCap.Round }) g.DrawCurve(pen, pts, 0.45f);
-                using (var pen = new Pen(Color.FromArgb(90, RodRed), U(3.4f)) { LineJoin = LineJoin.Round, StartCap = LineCap.Round, EndCap = LineCap.Round }) g.DrawCurve(pen, pts, 0.45f);
+                using (var pen = new Pen(Color.FromArgb(40, AlarmRed), U(7)) { LineJoin = LineJoin.Round, StartCap = LineCap.Round, EndCap = LineCap.Round }) g.DrawCurve(pen, pts, 0.45f);
+                using (var pen = new Pen(Color.FromArgb(90, AlarmRed), U(3.4f)) { LineJoin = LineJoin.Round, StartCap = LineCap.Round, EndCap = LineCap.Round }) g.DrawCurve(pen, pts, 0.45f);
             }
-            using (var pen = new Pen(RodRed, U(1.5f)) { LineJoin = LineJoin.Round, StartCap = LineCap.Round, EndCap = LineCap.Round }) g.DrawCurve(pen, pts, 0.45f);
+            using (var pen = new Pen(AlarmRed, U(1.5f)) { LineJoin = LineJoin.Round, StartCap = LineCap.Round, EndCap = LineCap.Round }) g.DrawCurve(pen, pts, 0.45f);
             g.Restore(st);
         }
     }

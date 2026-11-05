@@ -42,6 +42,16 @@ namespace TheNorns
         public static readonly Color Pointer = Color.FromArgb(43, 123, 255);      // the app's arrow pointer in electric blue
         public static readonly Color PointerOutline = Color.FromArgb(150, 0, 18, 48);
         public const float Smoothing = 0.85f;
+        // 1.5.2 (owner): every colour a token, one red, one dread tone
+        public static readonly Color Alarm = Color.FromArgb(236, 28, 48);         // titans, the close key, errors, the runner losing (the former RodRed)
+        public static readonly Color Dread = Color.FromArgb(255, 152, 24);        // pirate dreadnoughts everywhere: the hull's heat, the grid dot, the tray, the minimize key
+        public static readonly Color Lamp = Color.FromArgb(225, 255, 0);          // the power display's dots
+        public static readonly Color Info = Color.FromArgb(80, 150, 255);         // the tray's "newer version" dot
+        public static readonly Color LampOff = Color.FromArgb(46, 48, 30);        // a lamp that is off
+        public static readonly Color LampRing = Color.FromArgb(120, 242, 243, 245);   // its rim, so the off lamp is seen (3 : 1 on the screen)
+        public static readonly Color Label = Color.FromArgb(200, 203, 210);       // settings text at rest
+        public static readonly Color LabelDim = Color.FromArgb(165, 168, 176);    // a choice not made (languages, modes, animations)
+        public static readonly Color[] HeatStops = { Color.FromArgb(14, 15, 8), Color.FromArgb(52, 56, 10), Color.FromArgb(128, 134, 14), Color.FromArgb(200, 208, 18), Accent };   // the ISK grid: near black -> the accent
     }
 
     // Orbitron (screen) and Space Grotesk (body markings), OFL, embedded in the exe (native\res\fonts)
@@ -520,7 +530,7 @@ namespace TheNorns
             string head = spot == "page:stats" ? L.T("Statistics") : spot == "page:about" ? L.T("About") : spot == "stats:calendar" ? L.T("Calendar") : spot == "stats:readlogs" ? L.T("Read logs")
                 : spot == "stats:titans" ? L.T("Titans") : spot == "stats:dreads" ? L.T("Pirate dreadnoughts") : spot == "stats:stars" ? L.T("Faction NPCs and commanders") : null;
             var headKey = head != null ? spots.First(s => s.Item1 == spot).Item2 : RectangleF.Empty;
-            tipText = hn ? L.T("Settings") : hc ? L.T("Close") : hm ? L.T("Minimize") : hmo ? L.T(Compact ? "Full mode" : "Compact mode") : head ?? warn;
+            tipText = hn ? L.T("Settings") : hc ? L.T("Close") : hm ? L.T("Hide") : hmo ? L.T(Compact ? "Full mode" : "Compact mode") : head ?? warn;
             tipAt = hn ? new Point((int)NameRect.Left, (int)(NameRect.Bottom + U(4))) : hc ? new Point((int)CloseRect.Left, (int)(CloseRect.Bottom + U(4))) : hm ? new Point((int)MinRect.Left, (int)(MinRect.Bottom + U(4))) : hmo ? new Point((int)ModeRect.Left, (int)(ModeRect.Bottom + U(4)))
                 : head != null ? new Point((int)headKey.Left, (int)(headKey.Bottom + U(4))) : warn != null ? new Point(e.X - (int)U(60), e.Y + (int)U(12)) : Point.Empty;
             tipDue = Clock + TipDelay;
@@ -822,8 +832,9 @@ namespace TheNorns
             return Math.Max(0, w - spacing);
         }
 
-        // printed markings on the bottom edge: left NRN-01 / PASSIVE · READ ONLY · NO INPUT, right the warning
-        // triangle, three ticks, the version plate (a yellow box) and MOD 1.0
+        // printed markings on the bottom edge: left NRN-01 / PASSIVE · READ ONLY · NO INPUT, right three ticks and the
+        // version plate (a yellow box). The warning triangle and "MOD 1.0" went in 1.5.2 (owner: a warning with nothing
+        // behind it, a second number next to the version)
         void PaintBand(Graphics g)
         {
             Func<float, float> V = v => U(v * 1.1f);   // the markings 10 % larger than the sketch
@@ -845,15 +856,11 @@ namespace TheNorns
                 Spaced(g, "PASSIVE · READ ONLY · NO INPUT", f, silk, x, ty, sp);
 
                 float rx = r.Right;
-                float w = SpacedWidth(g, "MOD 1.0", f, sp);
-                Spaced(g, "MOD 1.0", f, silk, rx - w, ty, sp); rx -= w + V(6);
                 float kw = SpacedWidth(g, PlateText, f, sp) + V(6);
                 var box = new RectangleF(rx - kw, cy - V(4.5f), kw, V(9));
                 updateMark = box;   // the version plate, drawn per frame (it can blink)
                 rx = box.Left - V(6);
                 for (int i = 2; i >= 0; i--) g.FillRectangle(silk, rx - V(0.75f) - i * V(1.75f), cy - V(2.25f), V(0.75f), V(4.5f));
-                rx -= V(5.25f) + V(6);
-                WarnTriangle(g, rx - V(3), cy, V(1), BodyTheme.Accent2Light);
             }
         }
 
@@ -928,7 +935,7 @@ namespace TheNorns
 
         // no EVE client found: the lamp flashes red (the Close key's red) in bursts of 6, from very fast to one last slow
         // flash - flash i lasts 0.07 + 0.8 * ln(1 + i) / ln 6 s - then 1.4 s dark before the next burst
-        internal static readonly Color AlarmRed = Color.FromArgb(232, 22, 14);
+        internal static readonly Color AlarmRed = BodyTheme.Alarm;   // one red (owner, 1.5.2): the Lightning rod's, 232 22 14 is gone
         internal static double AlarmLevel(double secs)
         {
             double total = 0;
@@ -1077,7 +1084,7 @@ namespace TheNorns
                 }
                 else if (fleet == null || !fleet.Preview.Shown)   // under the live picture nothing needs drawing
                 {
-                    var dotColor = noClients ? Mix(Color.FromArgb(12, 13, 16), AlarmRed, shortLevel) : Color.FromArgb(225, 255, 0);
+                    var dotColor = noClients ? Mix(Color.FromArgb(12, 13, 16), AlarmRed, shortLevel) : BodyTheme.Lamp;
                     if (!noClients || shortLevel > 0)
                         // it runs while a log is followed - and always while the client module is on (owner, 29.10.2026: with
                         // the live picture turned off the animation stood still)
@@ -1188,32 +1195,35 @@ namespace TheNorns
             return bmp;
         }
 
-        // Close: a pale grey anodised key in a dark casing, red under the mouse
+        // Close: a pale grey anodised key in a dark casing, red under the mouse. Each key carries a small dark Material
+        // mark (owner, 1.5.2: three alike keys told apart only under the mouse): remove, unfold_less / unfold_more, close
         void PaintClose(Graphics g, bool hover, bool down)
         {
             if (!Standalone) return;
             CloseKey(g, CloseRect, hover, down, U(1));
         }
 
-        // Minimize: the same key, yellow under the mouse in the close key's red's tone (owner, 04.11.2026)
+        // Minimize: the same key, the dread tone under the mouse (owner, 04.11.2026: a yellow; 1.5.2: the one yellow)
         void PaintMinimize(Graphics g, bool hover, bool down)
         {
             if (!Standalone) return;
-            Key(g, MinRect, hover, down, U(1), MinYellow, Color.FromArgb(160, 124, 10));
+            Key(g, MinRect, hover, down, U(1), MinYellow, MaterialIcon.Remove);
         }
-        internal static readonly Color MinYellow = Color.FromArgb(232, 184, 14);   // AlarmRed's saturation and value at a yellow hue
+        internal static readonly Color MinYellow = BodyTheme.Dread;
         // the mode key (compact / full): green under the mouse, the same tone (owner, 04.11.2026)
         void PaintModeKey(Graphics g, bool hover, bool down)
         {
             if (!Standalone) return;
-            Key(g, ModeRect, hover, down, U(1), ModeGreen, Color.FromArgb(50, 104, 32));
+            Key(g, ModeRect, hover, down, U(1), ModeGreen, Compact ? MaterialIcon.UnfoldMore : MaterialIcon.UnfoldLess);
         }
         internal static readonly Color ModeGreen = Color.FromArgb(86, 168, 56);   // softer and darker, a touch of yellow (owner, 04.11.2026)
 
         // u = one logical px (U(1)) of the window that draws it
-        internal static void CloseKey(Graphics g, RectangleF r, bool hover, bool down, float u) { Key(g, r, hover, down, u, AlarmRed, Color.FromArgb(160, 14, 10)); }
-        static void Key(Graphics g, RectangleF r, bool hover, bool down, float u, Color hot, Color pressed)
+        internal static void CloseKey(Graphics g, RectangleF r, bool hover, bool down, float u) { Key(g, r, hover, down, u, AlarmRed, MaterialIcon.Close); }
+        static readonly Color KeyMark = Color.FromArgb(150, BodyTheme.KeyRim);   // the mark on the key's face: dark, so it reads on the pale face and on the lit one
+        static void Key(Graphics g, RectangleF r, bool hover, bool down, float u, Color hot, string icon)
         {
+            var pressed = Mix(hot, Color.Black, 0.36);
             Func<RectangleF, float, GraphicsPath> round = (rr, lr) => Theme.Round(rr, u * lr * 0.6f, 0.6f);
             using (var cp = round(r, 5))
             using (var lg = new LinearGradientBrush(r, Color.FromArgb(44, 46, 49), Color.FromArgb(23, 24, 26), 90f))
@@ -1234,6 +1244,11 @@ namespace TheNorns
                 }
                 using (var lg = new LinearGradientBrush(face, Color.FromArgb(31, 255, 255, 255), Color.FromArgb(38, 0, 0, 0), 90f)) g.FillPath(lg, fp);
             }
+            if (icon != null)
+            {
+                float ic = Math.Min(face.Width, face.Height) * 0.82f;
+                using (var b = new SolidBrush(KeyMark)) MaterialIcon.Draw(g, icon, new RectangleF(face.Left + (face.Width - ic) / 2, face.Top + (face.Height - ic) / 2, ic, ic), b);
+            }
         }
 
         // ---------------- titan / dreadnought alarm ----------------
@@ -1245,8 +1260,9 @@ namespace TheNorns
         DateTime dreadDemo = DateTime.MinValue; bool dreadDemoHot;
         // --preview-dread: a dreadnought on grid for 6 s, then gone, every 16 s
         public void StartDreadDemo() { dreadDemo = DateTime.UtcNow; }
-        static readonly Color[] HotRed = { Color.FromArgb(150, 16, 10), Color.FromArgb(205, 26, 12), Color.FromArgb(235, 52, 20), Color.FromArgb(255, 110, 40) };
-        static readonly Color[] HotYellow = { Color.FromArgb(175, 120, 8), Color.FromArgb(225, 165, 14), Color.FromArgb(250, 200, 36), Color.FromArgb(255, 214, 80) };
+        // the heat's stops from the one alarm and dread tokens (owner, 1.5.2): dark, deep, the tone, and white-hot
+        static readonly Color[] HotRed = HeatRamp(BodyTheme.Alarm), HotYellow = HeatRamp(BodyTheme.Dread);
+        static Color[] HeatRamp(Color c) { return new[] { Mix(c, Color.Black, 0.42), Mix(c, Color.Black, 0.16), c, Mix(c, Color.White, 0.3) }; }
         void PaintHeat(Graphics g, DateTime now)
         {
             double t = Clock, dt = heatClock < 0 ? 0 : Math.Min(0.5, t - heatClock);
@@ -1428,7 +1444,8 @@ namespace TheNorns
                 var c = RectangleF.FromLTRB(glassR.Left + U(10), glassR.Top + U(9), glassR.Right - U(10), glassR.Bottom - U(8));
                 float gap = U(6), line = Math.Max(1f, U(0.5f));
                 float avail = c.Height - 4 * gap - 2 * line;
-                float h1 = avail * 1.1f / 3.7f, h2 = avail * 0.9f / 3.7f, h3 = avail * 1.7f / 3.7f;
+                // the Vorton graph the tallest block, the ISK grid a third lower than in 1.5.1 (owner, 1.5.2); it was 1.1 / 0.9 / 1.7
+                float h1 = avail * 1.7f / 3.7f, h2 = avail * 0.9f / 3.7f, h3 = avail * 1.1f / 3.7f;
                 if (Compact) { h1 = U(60.8f); h2 = U(49.7f); h3 = avail - h1 - h2; }   // the graphs as tall as in the full body
                 float y = c.Top;
                 if (settingsOpen) PaintSettings(g, c);
@@ -1594,6 +1611,7 @@ namespace TheNorns
             using (var pen = new Pen(Color.FromArgb(46, BodyTheme.Ink), 1f)) g.DrawLine(pen, plot.Left, plot.Bottom, plot.Right, plot.Bottom);
             StepQuiet(now);
             PaintAnomalyTimer(g, plot, now);
+            PaintNoClient(g, plot, state.VisualTotal);
             float lift = 1 - quiet * quiet * (3 - 2 * quiet);   // the lines sink and fade after a warp
             var st = g.Save();
             g.SetClip(RectangleF.Inflate(plot, U(1), U(1)));
@@ -1613,6 +1631,21 @@ namespace TheNorns
                     g.DrawCurve(pen, pts, 0.5f);
             }
             g.Restore(st);
+        }
+
+        // no EVE client and nothing on the graph (owner, 1.5.2): the empty plot says so, two lines mid-graph, quiet,
+        // smaller than the anomaly timer
+        void PaintNoClient(Graphics g, RectangleF plot, double total)
+        {
+            if (!(DemoNoClients ?? clients == 0) || total >= 1) return;
+            string a = L.T("No EVE client running"), b = L.T("Start EVE — The Norns finds it by itself");
+            var fa = TextFont(a, U(7.5f)); var fb = TextFont(b, U(6.6f));
+            float ha = fa.GetHeight(g), hb = fb.GetHeight(g), y = plot.Top + (plot.Height - ha - hb - U(2)) / 2;
+            using (var ba = new SolidBrush(Color.FromArgb(150, BodyTheme.Ink))) using (var bb = new SolidBrush(Color.FromArgb(95, BodyTheme.Ink)))
+            {
+                g.DrawString(a, fa, ba, plot.Left + (plot.Width - g.MeasureString(a, fa, 1000, StringFormat.GenericTypographic).Width) / 2, y, StringFormat.GenericTypographic);
+                g.DrawString(b, fb, bb, plot.Left + (plot.Width - g.MeasureString(b, fb, 1000, StringFormat.GenericTypographic).Width) / 2, y + ha + U(2), StringFormat.GenericTypographic);
+            }
         }
 
         // a section title and, right of it, a badge with the Material "function" symbol: a click opens the formula window
@@ -1762,12 +1795,13 @@ namespace TheNorns
             float sx = x;
             x = Badge(g, stats.Spawns.Count.ToString(CultureInfo.InvariantCulture), bf, x, r.Top, bh, hoverSpawns || ShowHoverSpawns, null, null, MaterialIcon.Star) + U(4);
             spawnChip = RectangleF.FromLTRB(sx, r.Top, x - U(4), r.Top + bh);
-            x = Badge(g, FormatIsk(tr.TotalSessionIsk), bf, x, r.Top, bh, true, "Σ") + U(4);
+            x = Badge(g, FormatIsk(tr.TotalSessionIsk), bf, x, r.Top, bh, false, "Σ") + U(4);   // outlined like the two before it (owner, 1.5.2)
             Glow(g, FormatIsk(tr.CurrentAnomalyIsk), NornsFonts.Screen(U(8.8f)), BodyTheme.Ink, r.Right, r.Top, true);
 
             if (Compact) { PaintIskRow(g, RectangleF.FromLTRB(r.Left, r.Top + bh + U(5), r.Right, r.Bottom)); return; }
-            // the heat grid: every bounty tick of the anomaly (all clients), filled column by column, 10 rows
-            const int Rows = 10, Cols = 26;
+            // the heat grid: every bounty tick of the anomaly (all clients), filled column by column. 6 rows and only the
+            // newest tick glows (owner, 1.5.2: the grid drew the eye before the DPS; it was 10 rows, every cell lit)
+            const int Rows = GridRows, Cols = GridCols;
             var grid = RectangleF.FromLTRB(r.Left, r.Top + bh + U(5), r.Right, r.Bottom);
             float gap = U(1.5f), cw = (grid.Width - gap * (Cols - 1)) / Cols, ch = (grid.Height - gap * (Rows - 1)) / Rows, d = Math.Min(cw, ch);
             var ticks = tr.Bounties;
@@ -1813,10 +1847,11 @@ namespace TheNorns
                 if (lit < 0.999) using (var b = new SolidBrush(Color.FromArgb((int)(89 * (1 - lit)), 30, 32, 20))) g.FillEllipse(b, cell);
                 if (lit < 0.01) continue;
                 var c = HeatColor(t);
-                SoftGlow(g, new PointF(cx, cy), d / 2 + U(3 + (float)t * 7), c, (int)(t * t * 255 * lit * 0.3));
+                bool newest = i == count - 1;
+                if (newest) SoftGlow(g, new PointF(cx, cy), d / 2 + U(3 + (float)t * 7), c, (int)(t * t * 255 * lit * 0.3));
                 using (var b = new SolidBrush(Color.FromArgb((int)((0.6 + t * 0.4) * 255 * lit), c))) g.FillEllipse(b, cell);
                 if (!Potato) using (var lg = new LinearGradientBrush(cell, Color.FromArgb((int)(56 * lit), 255, 255, 255), Color.FromArgb((int)(71 * lit), 0, 0, 0), 90f)) g.FillEllipse(lg, cell);
-                if (i == count - 1) using (var pen = new Pen(BodyTheme.Ink, Math.Max(1f, U(0.5f)))) g.DrawEllipse(pen, cell);
+                if (newest) using (var pen = new Pen(BodyTheme.Ink, Math.Max(1f, U(0.5f)))) g.DrawEllipse(pen, cell);
             }
             // the spawns on grid without their bounty yet: in the cells after the last tick (the last cells when it is full)
             var pending = PendingSpawns();
@@ -1832,9 +1867,10 @@ namespace TheNorns
         // compact: the grid folded into one row - each dot is one column of the full grid (10 ticks), at their average
         // ISK. A column with a commander's or a titan's tick takes its colour outright, full and a little larger, drawn
         // over its neighbours (owner, 28.10.2026)
+        const int GridRows = 6, GridCols = 26;
         void PaintIskRow(Graphics g, RectangleF r)
         {
-            const int Rows = 10, Cols = 26;
+            const int Rows = GridRows, Cols = GridCols;
             var tr = stats.Tracker; var ticks = tr.Bounties;
             float gap = U(1.5f), cw = (r.Width - gap * (Cols - 1)) / Cols, d = Math.Min(cw, r.Height);
             int first = Math.Max(0, ticks.Count - Rows * Cols), count = ticks.Count - first;
@@ -1856,7 +1892,7 @@ namespace TheNorns
                 double t = Math.Max(0, Math.Min(1, (Math.Log(Math.Max(1, avg)) - Math.Log(3000)) / (Math.Log(270000) - Math.Log(3000))));
                 if (kind != 0) { marked.Add(Tuple.Create(cell, kind, b == count)); continue; }
                 var c = HeatColor(t);
-                SoftGlow(g, new PointF(cx, cy), d / 2 + U(3 + (float)t * 7), c, (int)(t * t * 255 * 0.3));
+                if (b == count) SoftGlow(g, new PointF(cx, cy), d / 2 + U(3 + (float)t * 7), c, (int)(t * t * 255 * 0.3));
                 using (var br = new SolidBrush(Color.FromArgb((int)((0.6 + t * 0.4) * 255), c))) g.FillEllipse(br, cell);
                 if (!Potato) using (var lg = new LinearGradientBrush(cell, Color.FromArgb(56, 255, 255, 255), Color.FromArgb(71, 0, 0, 0), 90f)) g.FillEllipse(lg, cell);
                 if (b == count) using (var pen = new Pen(BodyTheme.Ink, Math.Max(1f, U(0.5f)))) g.DrawEllipse(pen, cell);
@@ -1876,8 +1912,7 @@ namespace TheNorns
         // the accent as a scale: almost black -> saturated acid yellow
         // a rare spawn's colour on the grid: a faction NPC or commander in the second accent, a titan in the alarm red,
         // a pirate dreadnought in orange (the hull's yellow would sink into the grid's yellow)
-        static Color SpawnColor(int kind) { return kind == 2 ? AlarmRed : kind == 3 ? DreadOrange : BodyTheme.Accent2Light; }
-        static readonly Color DreadOrange = Color.FromArgb(255, 146, 24);   // apart from the grid's acid yellow
+        static Color SpawnColor(int kind) { return kind == 2 ? AlarmRed : kind == 3 ? BodyTheme.Dread : BodyTheme.Accent2Light; }
 
         // the spawns on grid now that have no bounty tick yet (owner, 31.10.2026: shown as soon as they are seen, on top
         // of everything): hit in the last 90 s, no tick of their kind since they came; at most 3, the highest kind first
@@ -1911,7 +1946,7 @@ namespace TheNorns
 
         static Color HeatColor(double t)
         {
-            var stops = new[] { Color.FromArgb(14, 15, 8), Color.FromArgb(52, 56, 10), Color.FromArgb(128, 134, 14), Color.FromArgb(200, 208, 18), Color.FromArgb(247, 255, 20) };
+            var stops = BodyTheme.HeatStops;
             double x = Math.Max(0, Math.Min(0.999, t)) * (stops.Length - 1);
             int j = (int)x;
             return Mix(stops[j], stops[j + 1], x - j);
@@ -2413,7 +2448,7 @@ namespace TheNorns
                     for (int i = 0; i < 500; i++) using (var b = new SolidBrush(Color.FromArgb(rnd.Next(60, 230), 255, 255, 255))) pg.FillEllipse(b, rnd.Next(1600), rnd.Next(900), 3, 3);
                     using (var b = new SolidBrush(Color.FromArgb(196, 116, 64))) pg.FillEllipse(b, 900, 200, 460, 460);
                     using (var b = new SolidBrush(Color.FromArgb(170, 22, 26, 32))) { pg.FillRectangle(b, 30, 70, 380, 760); pg.FillRectangle(b, 1200, 560, 370, 300); }
-                    using (var b = new SolidBrush(Color.FromArgb(225, 255, 0))) pg.FillRectangle(b, 0, 0, 1600, 16);   // cut away with the top
+                    using (var b = new SolidBrush(BodyTheme.Lamp)) pg.FillRectangle(b, 0, 0, 1600, 16);   // cut away with the top
                 }
                 Action<Bitmap, Rectangle, string> zoom = (fr, r, name) =>
                 {
