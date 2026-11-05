@@ -866,16 +866,19 @@ namespace TheNorns
                 if (TestLabel != null)
                 {
                     float room = rx - V(5.25f) - V(6) - x;
+                    var tf = NornsFonts.Body(V(5) + U(2));   // 2 px larger than the band's markings (owner, 06.11.2026)
+                    float tty = cy - tf.GetHeight(g) / 2;
                     var t = ("TEST BUILD · " + TestLabel).ToUpperInvariant();
-                    if (SpacedWidth(g, t, f, sp) > room)
+                    if (SpacedWidth(g, t, tf, sp) > room)
                     {
-                        while (t.Length > 1 && SpacedWidth(g, t + "…", f, sp) > room) t = t.Substring(0, t.Length - 1).TrimEnd();
+                        while (t.Length > 1 && SpacedWidth(g, t + "…", tf, sp) > room) t = t.Substring(0, t.Length - 1).TrimEnd();
                         t += "…";
                     }
                     // on a dark plate (owner, 06.11.2026: on the hull it was 3.4 : 1, unreadable; on the plate 8.8 : 1)
-                    var plate = new RectangleF(x - V(3), cy - V(4.5f), SpacedWidth(g, t, f, sp) + V(6), V(9));
+                    float ph = tf.GetHeight(g) + V(3);
+                    var plate = new RectangleF(x - V(3), cy - ph / 2, SpacedWidth(g, t, tf, sp) + V(6), ph);
                     using (var p = Round(plate, 3)) using (var pb = new SolidBrush(BodyTheme.KeyRim)) g.FillPath(pb, p);
-                    using (var tb = new SolidBrush(BodyTheme.Dread)) Spaced(g, t, f, tb, x, ty, sp);
+                    using (var tb = new SolidBrush(BodyTheme.Dread)) Spaced(g, t, tf, tb, x, tty, sp);
                 }
             }
         }
