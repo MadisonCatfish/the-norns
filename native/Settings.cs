@@ -153,6 +153,8 @@ namespace TheNorns
             }
             if (id == "spawnsound") { SpawnSound = !SpawnSound; SaveApp("spawn_sound", SpawnSound); if (SpawnSound) PlayAlert(); }
             if (id == "playalert") PlayAlert();
+            if (id == "closetray") { CloseToTray = !CloseToTray; SaveApp("close_to_tray", CloseToTray); }
+            if (id == "starttray") { StartInTray = !StartInTray; SaveApp("start_in_tray", StartInTray); }
             if (id.StartsWith("anim:") && PowerAnims.Known(id.Substring(5))) { PowerAnimName = id.Substring(5); SaveApp("power_anim", PowerAnimName); }
             if (id == "remember") { RememberPos = !RememberPos; SaveApp("remember_position", RememberPos); if (RememberPos) SavePos(); }
         }
@@ -609,6 +611,16 @@ namespace TheNorns
                 float ic2 = U(9);
                 using (var b = new SolidBrush(BodyTheme.Ink)) MaterialIcon.Draw(g, MaterialIcon.Play, new RectangleF(pk.Left + (pk.Width - ic2) / 2, pk.Top + (pk.Height - ic2) / 2, ic2, ic2), b);
                 AddKey("playalert", pk);
+                y += U(19) - 3;
+                y += U(6);
+                // the tray icon (Tray.cs; owner, 04.11.2026): the close key hides to it; the app starts hidden in it
+                var trayT = L.T("Tray");
+                Glow(g, trayT, TitleFont(trayT, U(7.2f)), Muted, c.Left, y);
+                y += U(11);
+                LampRow(g, c, y, "closetray", CloseToTray, L.T("Close to tray"));
+                y += U(19) - 3;
+                LampRow(g, c, y, "starttray", StartInTray, L.T("Start in the tray"));
+                y += U(19) - 3;
             }
             else if (page == "display")
             {

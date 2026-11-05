@@ -420,7 +420,9 @@ namespace TheNorns
                     }
                     catch { }
                     Follow();
+                    UpdateTray();   // the tray icon's state and tip (Tray.cs)
                 }
+                if (!Visible) return;   // hidden in the tray: nothing to draw
                 // the glass light follows the mouse (polled, so it also follows while dragging)
                 var mp = PointToClient(Cursor.Position);
                 glare = GlassRect.Contains(mp) ? (Point?)mp : null;
@@ -578,7 +580,7 @@ namespace TheNorns
                 int which = downFx; downFx = 0;
                 if (left && (which == 1 ? vortonFx : sbFx).Contains(e.Location)) FormulaWindow.Open(this, which == 1 ? FormulaWindow.Vorton : Competition ? RodFormula : FormulaWindow.Smartbombs);
             }
-            if (downClose) { downClose = false; Render(); if (left && Standalone && CloseRect.Contains(e.Location)) { SavePos(); Close(); } }
+            if (downClose) { downClose = false; Render(); if (left && Standalone && CloseRect.Contains(e.Location)) { if (CloseToTray && tray != null) HideToTray(); else { SavePos(); Close(); } } }
             // to the tray icon (Tray.cs)
             if (downMin) { downMin = false; hoverMin = false; Render(); if (left && Standalone && MinRect.Contains(e.Location)) HideToTray(); }
             // the mode key: compact <> full, as the switch in Settings -> Display (saved)
@@ -1477,6 +1479,7 @@ namespace TheNorns
         public float? DemoQuiet, DemoTimerA, DemoCount;   // selftest
         public bool? DemoRewarp;                            // selftest
         double countStart = -1;            // when the count-up began (the timer's fade-in)
+        DateTime countWarp;                // the warp the count belongs to
         const double CountSecs = 1.4;
         public float TimerThin = 1.4f;          // how much of the stroke is eaten (both edges together; owner, 27.10.2026)
         void StepQuiet(DateTime now)
@@ -1499,6 +1502,8 @@ namespace TheNorns
                 timerA = Math.Max(0, timerA - (float)(dt / 0.15));                                   // out fast
                 if (timerA <= 0) quiet = Math.Max(0, quiet - (float)(dt / 0.6));                      // then the lines back
             }
+            // a new warp while the timer is out (re-warps one after another): its count starts again
+            if (warp != countWarp) { countWarp = warp; if (timerA > 0) countStart = t; }
             if (DemoQuiet != null) quiet = DemoQuiet.Value;
             if (DemoTimerA != null) timerA = DemoTimerA.Value;
         }
@@ -1507,16 +1512,25 @@ namespace TheNorns
             var tr = stats.Tracker;
             if (timerA <= 0 || tr.LastWarpTime == DateTime.MinValue || tr.PrevWarpTime == DateTime.MinValue) return;
             double a = timerA * timerA * (3 - 2 * timerA);
-            // counts up from 00:00 to the clear time, slowing down at the end. A re-warp (no hit on an NPC between the two
-            // warps: the site was taken; owner, 27.10.2026) shows in red the time it took and counts it down to 00:00
+            // counts up from 00:00 to the clear time, slowing down at the end. A false re-warp (no hit on an NPC between the two
+            // warps: the site was taken) is not a clear time: in red, a random time under a minute counted down to 00:00 in a
+            // rush (owner, 05.11.2026; before: the re-warp's own time in real seconds). No hit and more than 2 minutes between
+            // the warps: the pack was not active (a dock-up, a break, a new session) - nothing is shown, the glass stays black
             bool rewarp = DemoRewarp ?? stats.LastNpcHit < tr.PrevWarpTime;
             double secs = Math.Min(99 * 60 + 59, (tr.LastWarpTime - tr.PrevWarpTime).TotalSeconds);
+            if (rewarp && secs > IdleGap && DemoRewarp == null) return;
             int total;
             if (rewarp)
             {
-                // the re-warp's time at once, held for 1 s, then counting down second by second to 00:00 (owner, 28.10.2026)
-                double since = DemoCount.HasValue ? DemoCount.Value * (secs + 1) : countStart < 0 ? 0 : Clock - countStart;
-                total = (int)Math.Ceiling(Math.Max(0, secs - Math.Max(0, since - 1)));
+                // the start and the rush's length drawn from the warp's own time: the same for the whole re-warp, new at the next
+                long seed = tr.LastWarpTime.Ticks / TimeSpan.TicksPerSecond;
+                double r1 = RewarpHash(seed), r2 = RewarpHash(seed + 7919);
+                int start = 1 + (int)(r1 * 59);                 // 00:01 .. 00:59
+                double rush = 0.9 + r2 * 0.9;                   // 0.9 .. 1.8 s, a different pace each time
+                double since = DemoCount.HasValue ? DemoCount.Value * (rush + 0.15) : countStart < 0 ? 0 : Clock - countStart;
+                double p = Math.Max(0, Math.Min(1, (since - 0.15) / rush));   // a blink on the start number, then the rush
+                p = 1 - Math.Pow(1 - p, 3);                     // fast at first, settling onto 00:00
+                total = (int)Math.Ceiling(start * (1 - p));
             }
             else
             {
@@ -1545,6 +1559,8 @@ namespace TheNorns
         }
 
         const string SbKey = "\0smartbombs";
+        const double IdleGap = 120;   // s between two warps with no hit: the pack was not active (owner, 05.11.2026)
+        static double RewarpHash(long n) { double t = Math.Sin(n * 12.9898 + 78.233) * 43758.5453; return t - Math.Floor(t); }
         static readonly Color SbLineColor = Color.FromArgb(242, 243, 245);   // the smartbomb line: dotted, in the pilots' white (owner, 27.10.2026)
         void PaintDpsOut(Graphics g, RectangleF r, DateTime now)
         {
@@ -2213,6 +2229,19 @@ namespace TheNorns
                 f.DemoAboutView = "legal"; save(f, "dps_settings_about_legal.png"); f.DemoAboutView = "news";
                 f.DemoSettings(false, null, false);
                 f.ShowHoverClose = true; save(f, "dps_hover_close.png"); f.ShowHoverClose = false;
+                // the tray: the menu, and the icon in each state (Tray.cs)
+                using (var tm = f.DemoTrayMenu()) tm.Save(Path.Combine(dir, "tray_menu.png"), ImageFormat.Png);
+                {
+                    var keys = new[] { "plain", "follow", "noclient", "update", "alarm-red", "alarm-yellow" };
+                    int s0 = SystemInformation.SmallIconSize.Width, z = 4;
+                    using (var strip = new Bitmap(keys.Length * (s0 * z + 12), s0 * z + 12))
+                    using (var sg = Graphics.FromImage(strip))
+                    {
+                        sg.Clear(Color.FromArgb(32, 32, 36)); sg.InterpolationMode = InterpolationMode.NearestNeighbor; sg.PixelOffsetMode = PixelOffsetMode.Half;
+                        for (int i = 0; i < keys.Length; i++) using (var ib = TrayIcon(keys[i]).ToBitmap()) sg.DrawImage(ib, new Rectangle(6 + i * (s0 * z + 12), 6, s0 * z, s0 * z));
+                        strip.Save(Path.Combine(dir, "tray_icons.png"), ImageFormat.Png);
+                    }
+                }
                 f.ShowHoverMin = true; save(f, "dps_hover_minimize.png"); f.ShowHoverMin = false;
                 f.ShowHoverMode = true; save(f, "dps_hover_mode.png"); f.ShowHoverMode = false;
                 f.ShowHoverFx = true; save(f, "dps_hover_formula.png"); f.ShowHoverFx = false;

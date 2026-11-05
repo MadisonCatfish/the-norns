@@ -19,7 +19,7 @@ namespace TheNorns
     {
         const int AnimFps = 25;   // the live timer's rate: the easing steps are per frame at 25 fps
 
-        static readonly string[] AnimScenes = { "live", "glass", "spawns", "timer", "competition", "settings", "language", "stats", "formula", "update", "noclient", "compact" };
+        static readonly string[] AnimScenes = { "live", "glass", "spawns", "timer", "competition", "settings", "language", "stats", "formula", "update", "noclient", "compact", "rewarp" };
 
         public static void Anim(string dir, string only)
         {
@@ -154,6 +154,15 @@ namespace TheNorns
                     r.Site(Five, 16, 40, 16);
                     r.Spawn(3.5, "Shadow Serpentis Vice Admiral", 3);
                     r.Wait(9);
+                    break;
+                case "rewarp":
+                    // a site, the warp out (the clear time), then two false re-warps: a random time rushing down to 00:00 each
+                    r.Site(Five, 2.0, 60, 2.0);
+                    f.stats.Tracker.PrevWarpTime = r.T0.AddSeconds(-402);
+                    r.At(2.3, () => { f.stats.Tracker.LastWarpTime = r.Now; });
+                    r.At(6.0, () => { var tr = f.stats.Tracker; tr.PrevWarpTime = tr.LastWarpTime; tr.LastWarpTime = r.Now; });
+                    r.At(9.5, () => { var tr = f.stats.Tracker; tr.PrevWarpTime = tr.LastWarpTime; tr.LastWarpTime = r.Now; });
+                    r.Wait(12.5);
                     break;
                 case "noclient":
                     // no EVE client: the lamp and the power display fail now and then
