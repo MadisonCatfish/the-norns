@@ -70,12 +70,12 @@ Whether you are just training skills for your Skybreakers / Stormbringers or fin
 - Three keys at the top right: minimize (yellow) hides the body to the tray, the mode key (green) switches compact and full mode, and Close.
 - **Tray:** The Norns lives in the notification area instead of the taskbar. Click the icon to hide or show the body; its menu opens Settings and Statistics, toggles Compact and Potato mode and checks for updates. A dot on the icon shows the state, it flashes red or yellow when a titan or a dreadnought lands, and hovering it shows the fleet's DPS and the site's ISK. "Close to tray" and "Start in the tray" are in Settings → General.
 - **Power display animations:** pick the small display's animation in Settings → Display, each with a live preview: Working (the sphere), Cube wave, ノルン and Flow field.
-- Hardware LOG lamp indicates active log tailing; when no EVE client is found, the small power display flickers red like a short circuit.
+- Hardware LOG lamp indicates active log tailing; when no EVE client is found, the small power display flickers red like a short circuit and the empty graph says so.
 - The version plate on the bottom band blinks when a newer release is out; a click opens About, where **Update to …** downloads the release's installer from GitHub, checks its SHA-256 and starts it in one click.
 - **Compact mode:** a shorter body for many-client screens — no power display or printed band, and the ISK grid folded into one row of column averages.
 - **Potato mode:** 5 fps, no glow or shimmer, a plain hull: about 3.5 % of one CPU core instead of about 30 %.
 - Click the **ノルン** badge to open in-place settings: UI scaling (100% / 125% / 150%), log directory detection, and update checks.
-- **Statistics** (a key in the settings' header): every session with its sites, rare spawns, titans, dreadnoughts and ISK, kept on your PC across updates; a calendar picks a day or a period. **Read logs** goes through your existing combat logs (read-only) and adds the faction commanders, titans and pirate dreadnoughts found there to the sessions you already have, each spawn counted once.
+- **Statistics** (a key in the settings' header): every session with its sites, rare spawns, titans, dreadnoughts and ISK, kept on your PC across updates, in columns: the session, its length, the mean time per site, sites, rare spawns and ISK; a calendar picks a day or a period. **Read logs** goes through your existing combat logs (read-only) and adds the faction commanders, titans and pirate dreadnoughts found there to the sessions you already have, each spawn counted once.
 
 ### 7. Competition Mode
 - For several fleet packs in one system: the anchor is a fast frigate runner instead of a smartbombing battleship. The Thunderchilds' Vorton projectors hit the runner and the lightning arcs on to the NPCs.
@@ -112,9 +112,9 @@ Available in 7 languages, auto-detected or selectable:
 
 ## Install
 
-Run `TheNorns-Setup-1.5.1.exe`. It installs for your Windows user profile, requires no administrator privileges, and can be cleanly uninstalled from Windows Settings → Apps. 
+Run `TheNorns-Setup-1.5.2.exe`. It installs for your Windows user profile, requires no administrator privileges, and can be cleanly uninstalled from Windows Settings → Apps. 
 
-Alternatively, extract `TheNorns-1.5.1-portable.zip` and run `TheNorns.exe` directly.
+Alternatively, extract `TheNorns-1.5.2-portable.zip` and run `TheNorns.exe` directly.
 
 Your settings and session statistics are stored in `%LOCALAPPDATA%\The Norns`.
 
@@ -129,7 +129,7 @@ powershell -ExecutionPolicy Bypass -File native\build.ps1 -Out <folder> -Setup  
 
 The release files are built the same way by GitHub Actions (`.github/workflows/build.yml`, Visual Studio 2022 on a Windows runner) on every pushed `v*` tag, and can be started by hand from the Actions tab.
 
-Self-tests: `TheNorns.exe --selftest-dps <folder>` and `TheNorns-Setup-1.5.1.exe --selftest <folder>`.
+Self-tests: `TheNorns.exe --selftest-dps <folder>` and `TheNorns-Setup-1.5.2.exe --selftest <folder>`.
 
 ## Credits
 

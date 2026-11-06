@@ -1,13 +1,15 @@
 # Changelog
 
-## 1.5.2 — unreleased
+## 1.5.2 — 2026-11-06
 
-- The body's three keys carry a mark each (remove, unfold, close) and the minimize key's tip says Hide; the bottom band lost the warning triangle and "MOD 1.0".
-- With no EVE client the empty Vorton graph says so.
+- Statistics: columns with headings — Session, Length (the session's length), Per site (the mean clear time of its sites), Anom, the rare spawns and ISK. A zero count stays blank in the rows; the totals keep all three.
+- With no EVE client the empty Vorton graph says so ("No EVE client running"). After 5 s without a client the anomaly timer fades out and the lines sink; the site it belonged to is not shown again when a client comes back.
+- The body's three keys carry a mark each (remove, unfold, close); the minimize key's tip says Hide. The bottom band lost the warning triangle and "MOD 1.0".
 - The session ISK badge is outlined like the two next to it.
 - One red (the Lightning rod's) and one dread tone for the hull's heat, the grid dot, the tray and the minimize key; every colour is a token.
-- Settings: the off lamps have a rim; one row step for lamps and choices; the Carousel bar sits 8 px off the fields; the hotkey field's "none" is in the keys' font; Data shows a warning triangle when no logs are found and a check once the anomaly counter is reset; What's new scrolls by whole points.
-- Statistics: a zero count stays blank in the rows; the totals keep all three.
+- Settings: the off lamps have a rim; one row step for lamps and choices; the Carousel bar sits 8 px off the fields; the hotkey field's "none" is in the keys' font.
+- Settings → Data: a warning triangle when no combat logs are found; the reset key says what it clears ("Reset anomalies, ISK and grid") and shows a check once done.
+- What's new scrolls by whole points, with no line cut at the bottom.
 
 ## 1.5.1 — 2026-11-05
 
