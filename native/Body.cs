@@ -147,6 +147,8 @@ namespace TheNorns
         // texel is lit by a diffuse part and a highlight off its normal (Blinn-Phong), over a wide soft falloff
         static byte[] dirtMap; static int dirtSide;
         static Bitmap dirtLight;
+        // the light of the last frame and what it was worked out for: a resting mouse costs one copy, not ~68 000 pixels
+        static PointF lightM = new PointF(float.NaN, float.NaN); static float lightU; static PointF lightGlass;
         // glass: the glass in g's coordinates (the map is fixed to its corner); m: the mouse; u: one sketch unit in px
         public static void Paint(Graphics g, RectangleF glass, PointF m, float u)
         {
@@ -170,8 +172,10 @@ namespace TheNorns
             if (dirtMap.Length == 0) return;
             float rad = 130 * u, height = 48 * u;
             int side = (int)Math.Ceiling(2 * rad);
-            if (dirtLight == null || dirtLight.Width != side) { if (dirtLight != null) dirtLight.Dispose(); dirtLight = new Bitmap(side, side, PixelFormat.Format32bppPArgb); }
+            if (dirtLight == null || dirtLight.Width != side) { if (dirtLight != null) dirtLight.Dispose(); dirtLight = new Bitmap(side, side, PixelFormat.Format32bppPArgb); lightM = new PointF(float.NaN, float.NaN); }
             int x0 = (int)(m.X - rad), y0 = (int)(m.Y - rad), gx = (int)glass.Left, gy = (int)glass.Top;
+            if (m == lightM && u == lightU && glass.Location == lightGlass) { g.DrawImageUnscaled(dirtLight, x0, y0); return; }
+            lightM = m; lightU = u; lightGlass = glass.Location;
             var data = dirtLight.LockBits(new Rectangle(0, 0, side, side), ImageLockMode.WriteOnly, PixelFormat.Format32bppPArgb);
             var line = new int[side];
             const float Bump = 3f, Gain = 0.196f;   // 0.28 less 30 % (owner, 31.10.2026)
@@ -257,9 +261,18 @@ namespace TheNorns
             foreach (var o in dots.OrderBy(x => x.Z))
             {
                 float r = o.R * (float)Particle * 0.28f * k;   // the demo's px at size 420 -> the mini screen
-                using (var b = new SolidBrush(Color.FromArgb((int)(Math.Max(0, Math.Min(1, o.A)) * 255), color)))
-                    g.FillEllipse(b, o.X - r, o.Y - r, 2 * r, 2 * r);
+                g.FillEllipse(Brush(color, (int)(Math.Max(0, Math.Min(1, o.A)) * 255)), o.X - r, o.Y - r, 2 * r, 2 * r);
             }
+        }
+
+        // one brush per colour and exact alpha (0..255), kept: the same pixels as a new brush per dot, ~420 dots a frame
+        static readonly Dictionary<long, SolidBrush> brushes = new Dictionary<long, SolidBrush>();
+        static SolidBrush Brush(Color c, int alpha)
+        {
+            long key = ((long)(uint)c.ToArgb() << 8) | (uint)alpha;
+            SolidBrush b;
+            if (!brushes.TryGetValue(key, out b)) brushes[key] = b = new SolidBrush(Color.FromArgb(alpha, c));
+            return b;
         }
 
         static double[] Norm(double[] v) { double l = Math.Sqrt(v[0] * v[0] + v[1] * v[1] + v[2] * v[2]); if (l == 0) l = 1; return new[] { v[0] / l, v[1] / l, v[2] / l }; }
@@ -665,7 +678,10 @@ namespace TheNorns
         void Render()
         {
             if (!IsHandleCreated) return;
-            using (var bmp = Draw())
+            // one frame buffer kept while the size holds (a new 1.3 MB bitmap 25 times a second before); every frame
+            // starts with a full copy of the shell, so nothing of the frame before stays
+            if (frame == null || frame.Size != Size) { if (frame != null) frame.Dispose(); frame = new Bitmap(Width, Height, PixelFormat.Format32bppArgb); }
+            var bmp = DrawTo(frame);
             {
                 AppChrome.PresentLayered(this, bmp);
                 if (fleet != null)
@@ -691,11 +707,13 @@ namespace TheNorns
 
         // ================= drawing =================
 
-        public Bitmap Draw()
+        Bitmap frame;
+        // a new bitmap of the frame (self-tests, recordings); the window itself draws into its kept one
+        public Bitmap Draw() { return DrawTo(new Bitmap(Width, Height, PixelFormat.Format32bppArgb)); }
+        Bitmap DrawTo(Bitmap bmp)
         {
             if (shell == null || shell.Size != Size) { if (shell != null) shell.Dispose(); shell = DrawShell(); }
             var now = DemoNow ?? DateTime.UtcNow;
-            var bmp = new Bitmap(Width, Height, PixelFormat.Format32bppArgb);
             using (var g = Graphics.FromImage(bmp))
             {
                 g.CompositingMode = CompositingMode.SourceCopy; g.DrawImageUnscaled(shell, 0, 0); g.CompositingMode = CompositingMode.SourceOver;
@@ -1623,6 +1641,13 @@ namespace TheNorns
         const double IdleGap = 120;   // s between two warps with no hit: the pack was not active (owner, 05.11.2026)
         static double RewarpHash(long n) { double t = Math.Sin(n * 12.9898 + 78.233) * 43758.5453; return t - Math.Floor(t); }
         static readonly Color SbLineColor = Color.FromArgb(242, 243, 245);   // the smartbomb line: dotted, in the pilots' white (owner, 27.10.2026)
+        // a line's points on the plot, into one buffer kept for every line of every frame (drawn at once, never kept)
+        readonly PointF[] curvePts = new PointF[DpsStats.N];
+        PointF[] CurvePoints(float[] s, RectangleF plot, double vmax, float lift)
+        {
+            for (int j = 0; j < curvePts.Length; j++) curvePts[j] = new PointF(plot.Left + plot.Width * j / (DpsStats.N - 1), Math.Max(plot.Top, plot.Bottom - (float)(plot.Height * (s[j] / vmax)) * lift));
+            return curvePts;
+        }
         void PaintDpsOut(Graphics g, RectangleF r, DateTime now)
         {
             var label = NornsFonts.Screen(U(8.8f));
@@ -1663,13 +1688,13 @@ namespace TheNorns
             {
                 float[] s;
                 if (!state.VisualSeries.TryGetValue(pilots[i], out s)) continue;
-                var pts = s.Select((v, j) => new PointF(plot.Left + plot.Width * j / (DpsStats.N - 1), Math.Max(plot.Top, plot.Bottom - (float)(plot.Height * (v / state.VisualMax)) * lift))).ToArray();
+                var pts = CurvePoints(s, plot, state.VisualMax, lift);
                 using (var pen = new Pen(Color.FromArgb((int)(255 * lift), PilotGrey(i, pilots.Count)), U(0.8f)) { LineJoin = LineJoin.Round }) g.DrawCurve(pen, pts, 0.5f);
             }
             float[] sbs;
             if (state.VisualSeries.TryGetValue(SbKey, out sbs))
             {
-                var pts = sbs.Select((v, j) => new PointF(plot.Left + plot.Width * j / (DpsStats.N - 1), Math.Max(plot.Top, plot.Bottom - (float)(plot.Height * (v / state.VisualMax)) * lift))).ToArray();
+                var pts = CurvePoints(sbs, plot, state.VisualMax, lift);
                 // as quiet as the pilots' lines, dotted (owner, 27.10.2026: the solid blue drew too much attention)
                 using (var pen = new Pen(Color.FromArgb((int)(SbLineColor.A * lift), SbLineColor), U(0.8f)) { LineJoin = LineJoin.Round, DashCap = DashCap.Round, DashPattern = new[] { 0.01f, 2.7f } })
                     g.DrawCurve(pen, pts, 0.5f);
@@ -2047,7 +2072,7 @@ namespace TheNorns
             finally { if (pf != null) pf.Dispose(); }
         }
 
-        protected override void Dispose(bool disposing) { if (disposing) { timer.Dispose(); tip.Dispose(); if (shell != null) shell.Dispose(); if (fleet != null) fleet.Dispose(); StopTray(); } base.Dispose(disposing); }
+        protected override void Dispose(bool disposing) { if (disposing) { timer.Dispose(); tip.Dispose(); if (shell != null) shell.Dispose(); if (frame != null) frame.Dispose(); if (fleet != null) fleet.Dispose(); StopTray(); } base.Dispose(disposing); }
 
         // ================= self-test =================
 

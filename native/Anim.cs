@@ -469,5 +469,39 @@ namespace TheNorns
                 T += 1.0 / AnimFps;
             }
         }
+    
+        // --bench <file>: ms a frame, the whole body drawn as in the app (8 pilots, a filled grid, the mouse on the glass);
+        // the Display page's first frame (its animations start cold) and its frames after that
+        public static void Bench(string file)
+        {
+            SelfTesting = true;
+            var sb = new System.Text.StringBuilder();
+            var now = DateTime.UtcNow;
+            var pls = new[] { "Pilot-1", "Pilot-2", "Pilot-3", "Pilot-4", "Pilot-5", "Pilot-6", "Pilot-7", "Pilot-8" };
+            var rnd = new Random(3); var ev = new List<DmgEvent>();
+            for (int sec = 60; sec >= 0; sec--) foreach (var p in pls) if (rnd.NextDouble() < 0.8) ev.Add(new DmgEvent { T = now.AddSeconds(-sec), Pilot = p, Out = true, Quality = "Hits", Other = "Sleepless Warden", Weapon = "Large Vorton Projector II", Amount = 2000 + rnd.Next(2000) });
+            using (var f = new DpsForm(pls, () => null, true) { DemoNow = now, DemoFollowing = true, DemoLive = true })
+            {
+                f.AddDemo(ev);
+                for (int i = 0; i < 200; i++) f.Stats.Tracker.Bounties.Add(20000 + rnd.Next(200000));
+                Func<int, double> time = n => { var sw = System.Diagnostics.Stopwatch.StartNew(); for (int i = 0; i < n; i++) using (f.Draw()) { } return sw.Elapsed.TotalMilliseconds / n; };
+                time(5);
+                sb.AppendLine("body, 8 pilots: " + time(100).ToString("0.00") + " ms a frame");
+                f.DemoMouse = new Point(f.Width / 2, f.Height / 2);
+                time(3);
+                sb.AppendLine("body, mouse resting on the glass: " + time(100).ToString("0.00") + " ms a frame");
+                f.DemoMouse = null;
+                using (var bb = new Bitmap(80, 44)) using (var bg = Graphics.FromImage(bb))
+                    foreach (var an in PowerAnims.Names)
+                    {
+                        var sw = System.Diagnostics.Stopwatch.StartNew(); PowerAnims.Draw(an, "cold", bg, new RectangleF(0, 0, 80, 44), 1, BodyTheme.Accent);
+                        sb.AppendLine("  first draw of " + an + ": " + sw.Elapsed.TotalMilliseconds.ToString("0.0") + " ms");
+                    }
+                f.DemoSettings(true, null, false, "display");
+                sb.AppendLine("Display page, first frame (cold): " + time(1).ToString("0.0") + " ms");
+                sb.AppendLine("Display page, frames after: " + time(100).ToString("0.00") + " ms a frame");
+            }
+            File.WriteAllText(file, sb.ToString());
+        }
     }
 }

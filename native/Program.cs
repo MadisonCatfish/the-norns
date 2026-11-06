@@ -40,6 +40,9 @@ namespace TheNorns
             // --scan-logs <sessions dir>: "Read logs" (LogScan.cs) into that folder, the result on the console
             int scan = Array.IndexOf(args, "--scan-logs");
             if (scan >= 0 && args.Length > scan + 1) { Console.WriteLine(DpsForm.ScanLogsInto(args[scan + 1])); return; }
+            // --bench <file>: frame times (the body, the Display page cold and warm) written to the file
+            int bench = Array.IndexOf(args, "--bench");
+            if (bench >= 0 && args.Length > bench + 1) { DpsForm.Bench(args[bench + 1]); return; }
             int anim = Array.IndexOf(args, "--demo-anim");
             if (anim >= 0 && args.Length > anim + 1) { DpsForm.Anim(args[anim + 1], args.Length > anim + 2 ? args[anim + 2] : null); return; }
 

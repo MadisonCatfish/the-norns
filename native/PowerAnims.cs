@@ -19,8 +19,6 @@ namespace TheNorns
         static double Hash(double e) { double t = Math.Sin(e * 12.9898 + 78.233) * 43758.5453; return t - Math.Floor(t); }
         static double Ease(double x) { return x < 0.5 ? 4 * x * x * x : 1 - Math.Pow(-2 * x + 2, 3) / 2; }
         static double Clamp(double x, double a, double b) { return Math.Max(a, Math.Min(b, x)); }
-        static double[] RotY(double x, double y, double z, double a) { double c = Math.Cos(a), s = Math.Sin(a); return new[] { x * c - z * s, y, x * s + z * c }; }
-        static double[] RotX(double[] p, double a) { double c = Math.Cos(a), s = Math.Sin(a); return new[] { p[0], p[1] * c - p[2] * s, p[1] * s + p[2] * c }; }
 
         // brushes by colour and alpha (32 steps): a frame draws up to ~1000 dots
         static readonly Dictionary<long, SolidBrush> brushes = new Dictionary<long, SolidBrush>();
@@ -62,10 +60,14 @@ namespace TheNorns
 
         // ---- Cube wave (after Bees & Bombs): columns of dots rising and sinking in a wave from the centre; drawn large,
         // its corners may leave the glass (owner, 04.11.2026) ----
+        struct CubeDot { public double X, Y, Z, H; public bool Top; public int Order; }
+        static readonly CubeDot[] cubePts = new CubeDot[11 * 11 * 6];
+        static readonly IComparer<CubeDot> CubeOrder = Comparer<CubeDot>.Create((a, b) => { int c = a.Z.CompareTo(b.Z); return c != 0 ? c : a.Order.CompareTo(b.Order); });
         static void CubeWave(Graphics g, RectangleF f, double t, Color c, double k)
         {
             const int n = 11;
-            var pts = new List<double[]>(n * n * 6);
+            var pts = cubePts; int count = 0;
+            double ry = Math.PI / 4, cyr = Math.Cos(ry), syr = Math.Sin(ry), cxr = Math.Cos(0.6), sxr = Math.Sin(0.6);
             for (int i = 0; i < n; i++)
                 for (int j = 0; j < n; j++)
                 {
@@ -73,14 +75,18 @@ namespace TheNorns
                     double hh = 0.25 + 0.55 * (0.5 + 0.5 * Math.Sin(t * 2.2 - d * 4.5));
                     for (int s = 0; s <= 5; s++)
                     {
-                        var q = RotX(RotY(x, -0.6 + hh * s / 5, z, Math.PI / 4), 0.6);
-                        pts.Add(new[] { q[0], q[1], q[2], s == 5 ? 1 : 0, hh });
+                        // RotY by pi/4, then RotX by 0.6 (as RotY / RotX, without their arrays)
+                        double y = -0.6 + hh * s / 5, x1 = x * cyr - z * syr, z1 = x * syr + z * cyr;
+                        pts[count] = new CubeDot { X = x1, Y = y * cxr - z1 * sxr, Z = y * sxr + z1 * cxr, Top = s == 5, H = hh, Order = count };
+                        count++;
                     }
                 }
-            foreach (var q in pts.OrderBy(v => v[2]))
+            // far to near; equal depths keep their order (as OrderBy did), so the frame is the same pixel for pixel
+            Array.Sort(pts, 0, count, CubeOrder);
+            for (int i = 0; i < count; i++)
             {
-                bool top = q[3] > 0;
-                Dot(g, f.Left + f.Width / 2 + q[0] * f.Height * 0.84, f.Top + f.Height * 0.58 - q[1] * f.Height * 0.84, q[2], (top ? 0.42 : 0.19) * k, top ? 0.5 + q[4] * 0.5 : 0.3, c);
+                var q = pts[i];
+                Dot(g, f.Left + f.Width / 2 + q.X * f.Height * 0.84, f.Top + f.Height * 0.58 - q.Y * f.Height * 0.84, q.Z, (q.Top ? 0.42 : 0.19) * k, q.Top ? 0.5 + q.H * 0.5 : 0.3, c);
             }
         }
 
@@ -134,10 +140,14 @@ namespace TheNorns
                 {
                     if (path != null)
                     {
+                        // which grid points fall inside the name: the path flattened once into a region (its hit test is
+                        // ~100x faster than the path's own, which flattened the curves at every point: the Display tab
+                        // froze for ~0.45 s on its first frame)
                         var b = path.GetBounds(); double half = b.Width / 2;
-                        for (float y = b.Top; y <= b.Bottom; y += 2.8f)
-                            for (float x = b.Left; x <= b.Right; x += 2.8f)
-                                if (path.IsVisible(x, y)) list.Add(new[] { (x - b.Left - half) / half * 0.8, (y - b.Top - b.Height / 2) / half * 0.8 });
+                        using (var inside = new Region(path))
+                            for (float y = b.Top; y <= b.Bottom; y += 2.8f)
+                                for (float x = b.Left; x <= b.Right; x += 2.8f)
+                                    if (inside.IsVisible(x, y)) list.Add(new[] { (x - b.Left - half) / half * 0.8, (y - b.Top - b.Height / 2) / half * 0.8 });
                     }
                 }
                 nornsTargets = list.ToArray();

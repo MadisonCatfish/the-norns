@@ -54,6 +54,12 @@ namespace TheNorns
                         while ((line = r.ReadLine()) != null)
                         {
                             if (line.IndexOf("(combat)", StringComparison.Ordinal) < 0) continue;
+                            // only a line that may name a rare NPC goes to the parser: every name SpecialKind / IsDread know
+                            // holds one of these words (a titan, a commander, a faction NPC, a pirate dreadnought)
+                            if (line.IndexOf("Titan", StringComparison.OrdinalIgnoreCase) < 0 && line.IndexOf("Commander", StringComparison.OrdinalIgnoreCase) < 0
+                                && line.IndexOf("Dreadnought", StringComparison.OrdinalIgnoreCase) < 0 && line.IndexOf("Shadow Serpentis", StringComparison.OrdinalIgnoreCase) < 0
+                                && line.IndexOf("Dread Guristas", StringComparison.OrdinalIgnoreCase) < 0 && line.IndexOf("Dark Blood", StringComparison.OrdinalIgnoreCase) < 0
+                                && line.IndexOf("True Sansha", StringComparison.OrdinalIgnoreCase) < 0 && line.IndexOf("Domination", StringComparison.OrdinalIgnoreCase) < 0) continue;
                             var e = GameLogParser.Parse(line, "");
                             if (e == null || string.IsNullOrEmpty(e.Other) || DpsStats.IsPlayerOrFriendly(e.Other)) continue;
                             int sk = DpsStats.SpecialKind(e.Other);
