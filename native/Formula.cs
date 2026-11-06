@@ -438,11 +438,7 @@ namespace TheNorns
             g.Restore(st);
             if (max > 0)
             {
-                // the bar: its length is the part shown, its place where that part is
-                float trackH = area.Height, barH = Math.Max(U(12), trackH * area.Height / (area.Height + max)), barY = area.Top + (trackH - barH) * scroll / max;
-                using (var b = new SolidBrush(Color.FromArgb(22, BodyTheme.Ink))) g.FillRectangle(b, area.Right - U(2), area.Top, U(1.5f), trackH);
-                using (var p = Theme.Round(new RectangleF(area.Right - U(2.5f), barY, U(2.5f), barH), U(1.25f), 1f))
-                using (var b = new SolidBrush(Color.FromArgb(150, BodyTheme.Ink))) g.FillPath(b, p);
+                DpsForm.PaintScrollBar(g, area, area.Right, scroll, max, U(1));
             }
             if (!latin && L.TextCovered) head.Dispose();   // the embedded fonts are shared
             return max;

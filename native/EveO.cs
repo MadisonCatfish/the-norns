@@ -204,12 +204,8 @@ namespace TheNorns
             if (eveoScroll > max) { eveoScroll = max; Invalidate(); }
             if (max > 0)
             {
-                // the bar: its length is the part shown, its place where that part is (as on the scrolling formula cards)
-                float trackH = eveoView.Height, barH = Math.Max(U(12), trackH * trackH / (trackH + max)), barY = eveoView.Top + (trackH - barH) * eveoScroll / max;
+                float barH = PaintScrollBar(g, eveoView, c.Right, eveoScroll, max, U(1));
                 AddBar(eveoView, c.Right, barH, max, () => eveoScroll, v => eveoScroll = v);
-                using (var b = new SolidBrush(Color.FromArgb(22, BodyTheme.Ink))) g.FillRectangle(b, c.Right - U(2), eveoView.Top, U(1.5f), trackH);
-                using (var p = Theme.Round(new RectangleF(c.Right - U(2.5f), barY, U(2.5f), barH), U(1.25f), 1f))
-                using (var b = new SolidBrush(Color.FromArgb(150, BodyTheme.Ink))) g.FillPath(b, p);
             }
         }
 

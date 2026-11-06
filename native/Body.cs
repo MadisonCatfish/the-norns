@@ -2053,6 +2053,9 @@ namespace TheNorns
 
         // --selftest-dps <dir>: the parser on sample log lines, the smartbomb module count, and the window drawn with
         // made-up combat for 3, 5 and 8 pilots plus its states
+        // self-test: the body in compact or full mode, resized and its shell redrawn
+        static void TestCompact(DpsForm f, bool on) { Compact = on; f.Size = new Size(f.DesiredWidth, f.DesiredHeight); if (f.shell != null) { f.shell.Dispose(); f.shell = null; } }
+
         public static void SelfTest(string dir)
         {
             SelfTesting = true;
@@ -2154,11 +2157,11 @@ namespace TheNorns
                 save(f, "dps_potato.png");
                 f.DemoSettings(true, null, false, "general"); save(f, "dps_potato_general.png"); f.DemoSettings(false, null, false);
                 Potato = false; if (f.shell != null) { f.shell.Dispose(); f.shell = null; }
-                Compact = true; f.Size = new Size(f.DesiredWidth, f.DesiredHeight); if (f.shell != null) { f.shell.Dispose(); f.shell = null; }
+                TestCompact(f, true);
                 save(f, "dps_compact.png");
                 f.ShowHoverMode = true; save(f, "dps_compact_hover_mode.png"); f.ShowHoverMode = false;
                 f.DemoSettings(true, null, false, "general"); save(f, "dps_compact_general.png"); f.DemoSettings(false, null, false);
-                Compact = false; f.Size = new Size(f.DesiredWidth, f.DesiredHeight); if (f.shell != null) { f.shell.Dispose(); f.shell = null; }
+                TestCompact(f, false);
                 f.DemoUpdate("1.6.0");
                 var keepSecs = f.DemoSeconds;
                 f.DemoSeconds = 0; save(f, "dps_version_plate_new_bright.png");
@@ -2335,9 +2338,9 @@ namespace TheNorns
                     f.Stats.Sightings.Add(new DpsStats.Sighting { Name = "Serpentis Dreadnought", Kind = 3, First = dn.AddSeconds(-12), Last = dn.AddSeconds(-1) });
                     f.Stats.Sightings.Add(new DpsStats.Sighting { Name = "Dark Blood Titan", Kind = 2, First = dn.AddSeconds(-5), Last = dn });
                     save(f, "dps_spawns_pending.png");
-                    Compact = true; f.Size = new Size(f.DesiredWidth, f.DesiredHeight); if (f.shell != null) { f.shell.Dispose(); f.shell = null; }
+                    TestCompact(f, true);
                     save(f, "dps_compact_spawns_pending.png");
-                    Compact = false; f.Size = new Size(f.DesiredWidth, f.DesiredHeight); if (f.shell != null) { f.shell.Dispose(); f.shell = null; }
+                    TestCompact(f, false);
                     f.Stats.Sightings.Clear();
                     f.DemoHeat = 0.45; save(f, "dps_titan_heating.png");
                     f.DemoHeat = 1; save(f, "dps_titan_hot.png");
@@ -2355,10 +2358,10 @@ namespace TheNorns
                         if (t2 && keptT++ == 4) continue;
                         if (c1 || t2) f.Stats.Tracker.Bounties[qi] = med;
                     }
-                    Compact = true; f.Size = new Size(f.DesiredWidth, f.DesiredHeight); if (f.shell != null) { f.shell.Dispose(); f.shell = null; }
+                    TestCompact(f, true);
                     save(f, "dps_compact_commander_titan.png");
                     for (int qi = 0; qi < keepB.Count; qi++) f.Stats.Tracker.Bounties[qi] = keepB[qi];
-                    Compact = false; f.Size = new Size(f.DesiredWidth, f.DesiredHeight); if (f.shell != null) { f.shell.Dispose(); f.shell = null; }
+                    TestCompact(f, false);
                 }
                 // the damage display for other factions
                 foreach (var fa in new[] { "Guristas", "Sleepers", "Rogue Drones", "Angel Cartel" }) { f.Stats.DetectedFaction = fa; save(f, "dps_damage_" + fa.Replace(" ", "_").ToLowerInvariant() + ".png"); }
@@ -2428,9 +2431,9 @@ namespace TheNorns
                 save(f, "dps_competition.png");
                 Potato = true; if (f.shell != null) { f.shell.Dispose(); f.shell = null; } save(f, "dps_competition_potato.png");
                 Potato = false; if (f.shell != null) { f.shell.Dispose(); f.shell = null; }
-                Compact = true; f.Size = new Size(f.DesiredWidth, f.DesiredHeight); if (f.shell != null) { f.shell.Dispose(); f.shell = null; }
+                TestCompact(f, true);
                 save(f, "dps_competition_compact.png");
-                Compact = false; f.Size = new Size(f.DesiredWidth, f.DesiredHeight); if (f.shell != null) { f.shell.Dispose(); f.shell = null; }
+                TestCompact(f, false);
                 using (var b = f.Draw()) FormulaWindow.SaveDemo(b, RodFormula, 1, Path.Combine(dir, "dps_formula_lightning_rod.png"));
                 Competition = keepC; RunnerResists = keepR; RunnerRepair = keepRep; VortonShot = keepS;
             }

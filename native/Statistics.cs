@@ -287,11 +287,8 @@ namespace TheNorns
             g.Restore(st);
             if (max > 0)
             {
-                float trackH = statsView.Height, barH = Math.Max(U(12), trackH * trackH / (trackH + max)), barY = statsView.Top + (trackH - barH) * statsScroll / max;
+                float barH = PaintScrollBar(g, statsView, c.Right, statsScroll, max, U(1));
                 AddBar(statsView, c.Right, barH, max, () => statsScroll, v => statsScroll = v);
-                using (var b = new SolidBrush(Color.FromArgb(22, BodyTheme.Ink))) g.FillRectangle(b, c.Right - U(2), statsView.Top, U(1.5f), trackH);
-                using (var p = Theme.Round(new RectangleF(c.Right - U(2.5f), barY, U(2.5f), barH), U(1.25f), 1f))
-                using (var b = new SolidBrush(Color.FromArgb(150, BodyTheme.Ink))) g.FillPath(b, p);
             }
             string empty = statFrom != null && all.Count == 0 ? L.T("No sessions in this period.")
                 : statFrom == null && all.Count == 1 && all[0].Sites == 0 ? L.T("No sites done yet. Every session is kept here from now on.") : null;

@@ -78,6 +78,16 @@ namespace TheNorns
         sealed class ScrollBar { public RectangleF Track; public float BarH, Max; public Func<float> Get; public Action<float> Set; }
         readonly List<ScrollBar> bars = new List<ScrollBar>();
         ScrollBar dragBar; float dragGrip;
+        // a thin scroll bar on the screen at `right` beside `view`: its length is the part shown, its place where that part
+        // is (Carousel, Statistics, the formula cards); u = one logical px of the window that draws it; returns its length
+        internal static float PaintScrollBar(Graphics g, RectangleF view, float right, float scroll, float max, float u)
+        {
+            float trackH = view.Height, barH = Math.Max(12 * u, trackH * trackH / (trackH + max)), barY = view.Top + (trackH - barH) * scroll / max;
+            using (var b = new SolidBrush(Color.FromArgb(22, BodyTheme.Ink))) g.FillRectangle(b, right - 2 * u, view.Top, 1.5f * u, trackH);
+            using (var p = Theme.Round(new RectangleF(right - 2.5f * u, barY, 2.5f * u, barH), 1.25f * u, 1f))
+            using (var b = new SolidBrush(Color.FromArgb(150, BodyTheme.Ink))) g.FillPath(b, p);
+            return barH;
+        }
         void AddBar(RectangleF view, float right, float barH, float max, Func<float> get, Action<float> set)
         {
             bars.Add(new ScrollBar { Track = RectangleF.FromLTRB(right - U(7), view.Top, right + U(2), view.Bottom), BarH = barH, Max = max, Get = get, Set = set });
@@ -164,40 +174,26 @@ namespace TheNorns
         {
             if (!L.Known(code) || code == L.Code) return;
             L.Init(code);
-            if (SelfTesting) return;
-            try
-            {
-                Directory.CreateDirectory(AppInfo.DataDir);
-                var root = File.Exists(AppInfo.ConfigPath) ? ConfigStore.Load(AppInfo.ConfigPath) : new Dictionary<string, object>();
-                ConfigStore.Obj(root, "app")["language"] = code;
-                ConfigStore.Save(AppInfo.ConfigPath, root);
-            }
-            catch { }
+            SaveConfig("app", "language", code);
         }
 
         // "" = found by itself (GameLogTail.Detect); kept in config.json "logs": { "dir": ... }; the next scan reads it
         void SetLogDir(string dir)
         {
             GameLogTail.Chosen = dir;
-            if (SelfTesting) return;
-            try
-            {
-                Directory.CreateDirectory(AppInfo.DataDir);
-                var root = File.Exists(AppInfo.ConfigPath) ? ConfigStore.Load(AppInfo.ConfigPath) : new Dictionary<string, object>();
-                ConfigStore.Obj(root, "logs")["dir"] = dir;
-                ConfigStore.Save(AppInfo.ConfigPath, root);
-            }
-            catch { }
+            SaveConfig("logs", "dir", dir);
         }
 
-        void SaveApp(string key, object value)
+        void SaveApp(string key, object value) { SaveConfig("app", key, value); }
+        // one value into config.json (section -> key), read-modify-write; never during a self-test
+        static void SaveConfig(string section, string key, object value)
         {
             if (SelfTesting) return;
             try
             {
                 Directory.CreateDirectory(AppInfo.DataDir);
                 var root = File.Exists(AppInfo.ConfigPath) ? ConfigStore.Load(AppInfo.ConfigPath) : new Dictionary<string, object>();
-                ConfigStore.Obj(root, "app")[key] = value;
+                ConfigStore.Obj(root, section)[key] = value;
                 ConfigStore.Save(AppInfo.ConfigPath, root);
             }
             catch { }

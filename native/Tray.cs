@@ -47,7 +47,7 @@ namespace TheNorns
             menu.Items.Add(new ToolStripSeparator());
             menu.Items.Add(new ToolStripMenuItem(L.T("Check for updates"), null, (s, e) => { OpenPageFromTray("about"); CheckForUpdates(false); }));
             menu.Items.Add(new ToolStripSeparator());
-            menu.Items.Add(new ToolStripMenuItem(L.T("Exit"), null, (s, e) => { ShowFromTray(); SavePos(); exiting = true; Close(); }));
+            menu.Items.Add(new ToolStripMenuItem(L.T("Exit"), null, (s, e) => { ShowFromTray(); SavePos(); Close(); }));
             // the texts and checks as they are now (the language may have changed since)
             menu.Opening += (s, e) =>
             {
@@ -60,7 +60,6 @@ namespace TheNorns
             return menu;
         }
 
-        bool exiting;   // the menu's Exit: the close goes through even with "Close to tray" on
 
         void ToggleTray() { if (Visible) HideToTray(); else ShowFromTray(); }
 
