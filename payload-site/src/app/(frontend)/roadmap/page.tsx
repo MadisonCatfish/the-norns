@@ -45,9 +45,9 @@ export default async function RoadmapPage() {
     console.error('Roadmap page payload fetch error:', err)
   }
 
-  const installerUrl = latestRelease?.installerUrl || 'https://github.com/MadisonCatfish/the-norns/releases/download/v1.5.1/TheNorns-Setup-1.5.1.exe'
-  const portableUrl = latestRelease?.portableUrl || 'https://github.com/MadisonCatfish/the-norns/releases/download/v1.5.1/TheNorns-1.5.1-portable.zip'
-  const versionTag = latestRelease?.version || 'v1.5.1'
+  const installerUrl = latestRelease?.installerUrl || 'https://github.com/MadisonCatfish/the-norns/releases/download/v1.5.3/TheNorns-Setup-1.5.3.exe'
+  const portableUrl = latestRelease?.portableUrl || 'https://github.com/MadisonCatfish/the-norns/releases/download/v1.5.3/TheNorns-1.5.3-portable.zip'
+  const versionTag = latestRelease?.version || 'v1.5.3'
 
   return (
     <>

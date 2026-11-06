@@ -32,3 +32,4 @@ payload-site/.next/
 payload-site/*.db*
 payload-site/.env
 payload-site/.env*.local
+playground/

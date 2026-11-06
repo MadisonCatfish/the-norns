@@ -23,7 +23,7 @@ export const Releases: CollectionConfig = {
       name: 'version',
       type: 'text',
       required: true,
-      label: 'Version Tag (e.g. v1.5.1)',
+      label: 'Version Tag (e.g. v1.5.3)',
     },
     {
       name: 'isLatest',
