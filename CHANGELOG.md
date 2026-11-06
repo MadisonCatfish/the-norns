@@ -1,5 +1,12 @@
 # Changelog
 
+## 1.5.3 — 2026-11-06
+
+- Fix: Settings → Display froze for about half a second the first time it opened (the ノルン animation worked out its dots the slow way); it now opens at once.
+- Lighter on the CPU: the glass light is not worked out again while the mouse rests on it, and the window reuses one frame buffer instead of a new one 25 times a second.
+- Statistics → Read logs reads the combat logs faster.
+- Leaner code: the 1.0 look's unused parts removed (about 1 300 lines). Nothing changes on screen.
+
 ## 1.5.2 — 2026-11-06
 
 - Statistics: columns with headings — Session, Length (the session's length), Per site (the mean clear time of its sites), Anom, the rare spawns and ISK. A zero count stays blank in the rows; the totals keep all three.
