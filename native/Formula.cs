@@ -482,7 +482,6 @@ namespace TheNorns
         // --demo-anim: the card's size and its close key (card px)
         public static Size DemoCardSize(Size main, FormulaText t) { var c = CardSize(main, t); return new Size((int)c.Width, (int)c.Height); }
         public static RectangleF DemoCloseRect(Size main, FormulaText t) { return CloseIn(DemoCardSize(main, t)); }
-        public static float DemoMaxScroll(Size main, FormulaText t) { float m; using (DrawCard(DemoCardSize(main, t), t, false, false, 0, out m)) { } return m; }
         // where the main window lies in Demo's picture
         public static int DemoInset { get { return (int)U(30); } }
 

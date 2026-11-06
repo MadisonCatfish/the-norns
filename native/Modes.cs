@@ -76,12 +76,6 @@ namespace TheNorns
             return false;
         }
 
-        double FieldValue(string id)
-        {
-            if (id.StartsWith("res")) return RunnerResists[id[3] - '0'];
-            if (id == "repair") return RunnerRepair;
-            return VortonShot[id[4] - '0'];
-        }
 
         // the limits (owner, 29.10.2026): resists whole % up to 99, repair up to 300 hp/s with a decimal point, a Vorton
         // shot up to 2500 HP whole; only digits (and the repair's point) can be typed

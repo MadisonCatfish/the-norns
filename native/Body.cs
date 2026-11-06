@@ -28,7 +28,6 @@ namespace TheNorns
     static class BodyTheme
     {
         public static readonly Color Hull = Color.FromArgb(78, 87, 104);          // #4E5768 Mordu's Legion steel blue
-        public static readonly Color Plate = Color.FromArgb(64, 71, 85);          // the hull 18 % darker: anodised key plate
         public static readonly Color KeyTop = Color.FromArgb(44, 46, 50), KeyBottom = Color.FromArgb(25, 26, 29);
         public static readonly Color KeyRim = Color.FromArgb(12, 13, 15);
         public static readonly Color Icon = Color.FromArgb(126, 129, 136), IconHover = Color.FromArgb(190, 193, 200);
@@ -655,7 +654,6 @@ namespace TheNorns
             timer.Start();
             if (UpdateAtStart && !SelfTesting && Standalone && updateState == 0) CheckForUpdates(true);
         }
-        public void HideDps() { timer.Stop(); Hide(); }
 
         void Follow()
         {

@@ -107,33 +107,6 @@ namespace TheNorns
             return shown;
         }
 
-        // a row of buttons / switches laid out at their English widths: the space left up to `right` goes to the ones whose
-        // translation is cut, each up to its full width (player 25.10.2026: "stretch them, there is room")
-        public static void SpreadRow(IList<Control> row, int right, int gap)
-        {
-            if (Code == "en" || row.Count == 0) return;
-            int spare = right - row[row.Count - 1].Right;
-            List<int> need;
-            using (var g = row[0].CreateGraphics()) using (var f = new Font("Segoe UI", Theme.FControl))
-            {
-                Func<Control, int> full = c =>
-                {
-                    var pb = c as PillButton; if (pb == null) return c.Width;
-                    int pad = (int)((c is TogglePill ? 68 : 34) * Theme.K);
-                    return (int)Math.Ceiling(g.MeasureString((pb.Icon != "" ? pb.Icon + "  " : "") + pb.Text, f).Width) + pad;
-                };
-                need = row.Select(c => Math.Max(0, full(c) - c.Width)).ToList();
-            }
-            int total = need.Sum();
-            if (spare <= 0 || total == 0) return;
-            int x = row[0].Left;
-            for (int i = 0; i < row.Count; i++)
-            {
-                int add = (int)Math.Min(need[i], (long)spare * need[i] / total);
-                row[i].SetBounds(x, row[i].Top, row[i].Width + add, row[i].Height);
-                x = row[i].Right + gap;
-            }
-        }
 
         // ---- tooltip with the full text of a trimmed control ----
         // Shown by hand on hover (player 25.10.2026: WinForms' automatic tooltips often never came - they need the window

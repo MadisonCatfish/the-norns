@@ -41,28 +41,4 @@ namespace TheNorns
         }
     }
 
-    // Glass card panel that hosts real controls (setup steps, settings): "● title" inside the glass, 8 px glass rim,
-    // inner panel in Theme.Card (the hosted labels / pills use it as their background)
-    class Panel2 : Panel
-    {
-        public string Title = ""; public Color Dot = Theme.Text;
-        readonly Glass.Cache glass = new Glass.Cache { Header = 38 * Theme.K, InnerColor = Theme.Card };
-        public Panel2()
-        {
-            DoubleBuffered = true; BackColor = Theme.Card; ResizeRedraw = true;
-            SetStyle(ControlStyles.AllPaintingInWmPaint | ControlStyles.Opaque, true);
-            Glass.Track(this);
-        }
-        protected override void Dispose(bool disposing) { if (disposing) glass.Dispose(); base.Dispose(disposing); }
-        protected override void OnPaint(PaintEventArgs e)
-        {
-            var g = e.Graphics;
-            g.CompositingMode = System.Drawing.Drawing2D.CompositingMode.SourceCopy;
-            g.DrawImageUnscaled(glass.Get(this), 0, 0);
-            g.CompositingMode = System.Drawing.Drawing2D.CompositingMode.SourceOver;
-            Theme.Smooth(g);
-            Glass.PaintPointerGlow(g, this, glass.Header);
-            if (Title != "") Glass.PaintHeader(g, Title, Dot, glass.Header, Width);
-        }
-    }
 }

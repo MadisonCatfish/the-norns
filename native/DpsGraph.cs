@@ -453,26 +453,7 @@ namespace TheNorns
         // what the runner takes per second: the Vorton shots after its resists and signature (as logged), and the NPCs
         public double RunnerVortonTaken(DateTime now, double window = 10) { return RodHits.Where(h => h.T <= now && (now - h.T).TotalSeconds < window).Sum(h => h.Amount) / window; }
         public double RunnerNpcTaken(DateTime now, double window = 10) { return taken.Where(h => OnRunner(h) && h.T <= now && (now - h.T).TotalSeconds < window).Sum(h => h.Amount) / window; }
-        // per second over the last `seconds` (oldest first): the rod's damage (shots x shot) and the NPCs' on the runner
-        public double[] RodSeries(DateTime now, double shot, int seconds = Seconds)
-        {
-            var r = new double[seconds];
-            foreach (var h in RodHits) { int i = seconds - 1 - (int)(now - h.T).TotalSeconds; if (i >= 0 && i < seconds) r[i] += shot; }
-            return r;
-        }
-        public double[] RunnerVortonSeries(DateTime now, int seconds = Seconds)
-        {
-            var r = new double[seconds];
-            foreach (var h in RodHits) { int i = seconds - 1 - (int)(now - h.T).TotalSeconds; if (i >= 0 && i < seconds) r[i] += h.Amount; }
-            return r;
-        }
         public IEnumerable<DmgEvent> RunnerNpcHits { get { return taken.Where(OnRunner); } }
-        public double[] RunnerNpcSeries(DateTime now, int seconds = Seconds)
-        {
-            var r = new double[seconds];
-            foreach (var h in taken) if (OnRunner(h)) { int i = seconds - 1 - (int)(now - h.T).TotalSeconds; if (i >= 0 && i < seconds) r[i] += h.Amount; }
-            return r;
-        }
         // outgoing DPS counts only this weapon (the Norns body shows "EFF. DPS · VORTON PROJECTOR"); null = every weapon
         public string OutWeapon = "Vorton";
         public DpsStats(IEnumerable<string> pilots) { Pilots = (pilots ?? Enumerable.Empty<string>()).ToList(); }

@@ -55,7 +55,6 @@ namespace TheNorns
                 while (acc >= every) { acc -= every; Array.Copy(Rec, 1, Rec, 0, M - 1); Rec[M - 1] = pen; }
                 Rec[M - 1] = pen;
             }
-            public bool Calm { get { return Math.Abs(pen) + Math.Abs(penV) < 1e-3 && Rec.All(v => Math.Abs(v) < 1e-3) && Wave.All(v => Math.Abs(v) < 1e-3); } }
         }
 
         readonly RodTrace rodVorton = new RodTrace(), rodNpc = new RodTrace();
