@@ -824,7 +824,21 @@ namespace TheNorns
                 box.Inflate(-U(6), -U(5));
                 var st2 = g.Save();
                 g.SetClip(box);
-                if (aboutView == "news") PaintNews(g, box);
+                if (aboutView == "news")
+                {
+                    // What's new: the text left of a scroll bar, as on the other pages (owner, 12.11.2026: the 1.6.0 notes
+                    // ran past the box with nothing telling that it scrolls); the bar can be pulled, it stops on a point's top
+                    PaintNews(g, RectangleF.FromLTRB(box.Left, box.Top, box.Right - U(8), box.Bottom));
+                    float max = Math.Max(0, newsHeight - newsBox);
+                    if (max > 0)
+                    {
+                        g.Restore(st2); st2 = g.Save();
+                        float barH = PaintScrollBar(g, box, box.Right + U(2), Math.Min(newsScroll, max), max, U(1));
+                        // pulled to the end: the first point's top at or past the end (as the wheel stops); else the point above
+                        AddBar(box, box.Right + U(2), barH, max, () => Math.Min(newsScroll, max), v =>
+                            newsScroll = v >= max - 0.5f ? newsTops.Where(t => t >= max - 0.5f).DefaultIfEmpty(max).First() : Math.Max(0, newsTops.LastOrDefault(t => t <= v + 0.5f)));
+                    }
+                }
                 else
                 {
                     var text = aboutView == "credits" ? CreditsText() : LegalText();

@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.6.1 — 2026-11-12
+
+- Fix: About → What's new had no scroll bar, so the longer notes ran past the box with nothing telling that they scroll. It now has one, which the mouse can pull too.
+- Fix: in the installer, the privacy text on the folder page was cut off under the "Check for updates at start" switch when Windows shows text larger; the switch now goes below the whole text.
+
 ## 1.6.0 — 2026-11-12
 
 - Settings → Display → Colours: Eye comfort, a muted scheme for long sessions. The body's accent and lamps go softer, the glow goes and the white text dims a little, so the game stays in front and the numbers still read. Carousel's squares beside the body keep their colours.

@@ -112,9 +112,9 @@ Available in 7 languages, auto-detected or selectable:
 
 ## Install
 
-Run `TheNorns-Setup-1.6.0.exe`. It installs for your Windows user profile, requires no administrator privileges, and can be cleanly uninstalled from Windows Settings → Apps. 
+Run `TheNorns-Setup-1.6.1.exe`. It installs for your Windows user profile, requires no administrator privileges, and can be cleanly uninstalled from Windows Settings → Apps. 
 
-Alternatively, extract `TheNorns-1.6.0-portable.zip` and run `TheNorns.exe` directly.
+Alternatively, extract `TheNorns-1.6.1-portable.zip` and run `TheNorns.exe` directly.
 
 Your settings and session statistics are stored in `%LOCALAPPDATA%\The Norns`.
 
@@ -129,7 +129,7 @@ powershell -ExecutionPolicy Bypass -File native\build.ps1 -Out <folder> -Setup  
 
 The release files are built the same way by GitHub Actions (`.github/workflows/build.yml`, Visual Studio 2022 on a Windows runner) on every pushed `v*` tag, and can be started by hand from the Actions tab.
 
-Self-tests: `TheNorns.exe --selftest-dps <folder>` and `TheNorns-Setup-1.6.0.exe --selftest <folder>`.
+Self-tests: `TheNorns.exe --selftest-dps <folder>` and `TheNorns-Setup-1.6.1.exe --selftest <folder>`.
 
 ## Credits
 

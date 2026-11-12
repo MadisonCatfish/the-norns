@@ -564,9 +564,14 @@ namespace TheNorns
             page.Controls.AddRange(new Control[] { folder, browse, desktop, start });
             page.Controls.Add(Text_(L.T("Space needed: about 1 MB.  Uninstall later from Windows Settings → Apps."), Color.FromArgb(118, 121, 128), 0, P(124), page.Width, P(24), SmallFont));
             Section(L.T("Privacy"), P(156));
-            page.Controls.Add(Text_(L.T("No account, no telemetry. The app goes to the network only for updates: the check for a newer release on GitHub, and the installer's download when you press Update. Nothing about you or your game is sent."),
-                Color.FromArgb(214, 216, 221), 0, P(182), page.Width, P(42)));
-            updates.SetBounds(0, P(226), updates.PreferredWidth(), P(30));
+            // the privacy text as tall as its lines (owner, 12.11.2026: at a larger Windows text scale it wrapped to a
+            // third line, cut under the switch below); the switch goes under it
+            var priv = L.T("No account, no telemetry. The app goes to the network only for updates: the check for a newer release on GitHub, and the installer's download when you press Update. Nothing about you or your game is sent.");
+            int ph;
+            using (var mg = page.CreateGraphics()) { mg.TextRenderingHint = TextRenderingHint.AntiAlias; ph = (int)Math.Ceiling(mg.MeasureString(priv, TextFont, page.Width).Height) + P(2); }
+            ph = Math.Max(P(42), ph);
+            page.Controls.Add(Text_(priv, Color.FromArgb(214, 216, 221), 0, P(182), page.Width, ph));
+            updates.SetBounds(0, P(182) + ph + P(2), updates.PreferredWidth(), P(30));
             page.Controls.Add(updates);
         }
 
