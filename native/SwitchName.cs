@@ -27,12 +27,17 @@ namespace TheNorns
             bool first = switchSeen == IntPtr.Zero;
             switchSeen = h;
             if (first || a == null || a.Character == null) return;
-            // switches one after another (owner, 12.11.2026): the blur is already there, so it is not started again from a
-            // sharp picture (that jerked) - it goes on from where it is (full, or partly gone while fading out), the name is
-            // the new one and its 5 s start again
+            SwitchTo(a.Character);
+        }
+
+        // switches one after another (owner, 12.11.2026): the blur is already there, so it is not started again from a
+        // sharp picture (that jerked) - it goes on from where it is (full, or partly gone while fading out), the name is
+        // the new one and its 5 s start again. Also --demo-anim's "switchname" clip (Anim.cs)
+        void SwitchTo(string name)
+        {
             string old; double level = SwitchLevel(out old);
             double t = 1 - Math.Sqrt(Math.Max(0, 1 - level));   // the fade-in's own point at this level
-            switchName = a.Character;
+            switchName = name;
             switchAt = Clock - t * SwitchNameIn;
         }
 

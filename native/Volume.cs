@@ -21,7 +21,7 @@ namespace TheNorns
         {
             try
             {
-                if (SoundVolume <= 0) return;
+                if (SoundVolume <= 0 || SelfTesting) return;
                 if (playersAt != SoundVolume) { foreach (var p in players.Values) p.Dispose(); players.Clear(); playersAt = SoundVolume; }
                 System.Media.SoundPlayer pl;
                 if (!players.TryGetValue(name, out pl))

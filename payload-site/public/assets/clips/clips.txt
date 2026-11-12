@@ -26,3 +26,20 @@ Description: When a new release is out, About offers "Update to …". Press it a
 Title: A Timer That Knows a Re-Warp
 Feature: Anomaly timer, re-warp aware
 Description: Warp out and the clear time counts up. Warp again without a shot fired and the timer flashes red, rushes a random time down to zero and waits for the next site; after a long idle break it simply stays dark.
+
+# 1.6.0 (12.11.2026): eyecomfort, switchname, alerts
+
+[eyecomfort]  eyecomfort.webm / eyecomfort-poster.jpg
+Title: Easy on the Eyes
+Feature: Eye comfort and hull colour sliders
+Description: Settings → Display → Colours: drag Hull brightness from near-black graphite to light steel and Hull saturation from grey to full colour, 0 being the familiar steel. Then turn on Eye comfort: the accent and lamps go muted and the glow goes, so the game stays in front.
+
+[switchname]  switchname.webm / switchname-poster.jpg
+Title: Who's in Front
+Feature: Carousel — the pilot's name on a client switch
+Description: With the live picture off, switching to another EVE client blurs the power display's animation and shows that pilot's name for five seconds. Switch several times in a row and the blur stays, only the name changes.
+
+[alerts]  alerts.webm / alerts-poster.jpg
+Title: Sounds You Choose
+Feature: Optional alert sounds and app volume
+Description: Settings → General → Alerts: a sound for a faction spawn and one for a re-warp with no damage, both off by default with a play key to preview, and one Volume slider for every sound of the app. (The clip is silent.)

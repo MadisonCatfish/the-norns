@@ -19,7 +19,7 @@ namespace TheNorns
     {
         const int AnimFps = 25;   // the live timer's rate: the easing steps are per frame at 25 fps
 
-        static readonly string[] AnimScenes = { "live", "glass", "spawns", "timer", "competition", "settings", "language", "stats", "formula", "update", "noclient", "compact", "rewarp", "keys", "displaypick", "readlogs", "oneclick" };
+        static readonly string[] AnimScenes = { "live", "glass", "spawns", "timer", "competition", "settings", "language", "stats", "formula", "update", "noclient", "compact", "rewarp", "keys", "displaypick", "readlogs", "oneclick", "eyecomfort", "switchname", "alerts" };
 
         public static void Anim(string dir, string only)
         {
@@ -27,6 +27,7 @@ namespace TheNorns
             L.Init("en");
             UiScale = 1.25f; Compact = false; Potato = false; SpawnSound = false; FleetOn = false; FleetPreview = false;
             Competition = false; UpdateAtStart = false; PowerAnimName = "working"; CloseToTray = false;
+            EyeComfort = false; HullSaturation = 50; HullBrightness = 50; SoundVolume = 100; FactionSound = false; RewarpSound = false; ApplyTheme();
             foreach (var s in AnimScenes)
             {
                 if (only != null && only != s) continue;
@@ -36,7 +37,11 @@ namespace TheNorns
                 L.Init("en");
                 var rec = new AnimRec(sd);
                 try { Scene(s, rec); }
-                finally { rec.Dispose(); FormulaWindow.DemoOpen = null; Compact = false; }
+                finally
+                {
+                    rec.Dispose(); FormulaWindow.DemoOpen = null; Compact = false;
+                    EyeComfort = false; HullSaturation = 50; HullBrightness = 50; SoundVolume = 100; FactionSound = false; RewarpSound = false; ApplyTheme();
+                }
                 Console.WriteLine(s + ": " + rec.N + " frames");
             }
         }
@@ -210,6 +215,53 @@ namespace TheNorns
                     r.At(9.5, () => { var tr = f.stats.Tracker; tr.PrevWarpTime = tr.LastWarpTime; tr.LastWarpTime = r.Now; });
                     r.Wait(12.5);
                     break;
+                case "eyecomfort":
+                    // 1.6.0, Settings -> Display -> Colours: the hull's brightness down to graphite and up, its saturation
+                    // down and up, then Eye comfort on (the muted scheme, no glow)
+                    r.Site(Five, 30, 70);
+                    f.DemoSettings(true, null, false, "display");
+                    r.Mouse = r.MainAt(f.GlassRect, 0.55f, 0.35f);
+                    r.Wait(1.0);
+                    { float m; f.pageMax.TryGetValue("display", out m); r.Ease(1.2, p => f.pageScroll["display"] = (float)(p * m)); }
+                    r.Wait(0.5);
+                    r.MoveTo(r.SliderAt("hull:bright", 50), 0.8); r.Press();
+                    r.MoveTo(r.SliderAt("hull:bright", 0), 1.4); r.Wait(0.7);
+                    r.MoveTo(r.SliderAt("hull:bright", 100), 1.8); r.Wait(0.5);
+                    r.MoveTo(r.SliderAt("hull:bright", 50), 0.9); r.Release(); r.Wait(0.5);
+                    r.MoveTo(r.SliderAt("hull:sat", 50), 0.6); r.Press();
+                    r.MoveTo(r.SliderAt("hull:sat", 0), 1.1); r.Wait(0.5);
+                    r.MoveTo(r.SliderAt("hull:sat", 100), 1.5); r.Wait(0.5);
+                    r.MoveTo(r.SliderAt("hull:sat", 50), 0.8); r.Release(); r.Wait(0.6);
+                    r.MoveToSpot("eyecomfort", 0.8); r.Click(); r.Wait(3.0);
+                    break;
+                case "switchname":
+                    // 1.6.0, Carousel without the live picture: a switch blurs the power display and shows the pilot's name
+                    // for 5 s; three switches in a row keep the blur and change only the name
+                    r.Site(Five, 20, 70);
+                    r.Wait(1.2);
+                    f.SwitchTo("Pilot-2"); r.Wait(6.0);
+                    f.SwitchTo("Pilot-3"); r.Wait(1.3);
+                    f.SwitchTo("Pilot-4"); r.Wait(1.3);
+                    f.SwitchTo("Pilot-5"); r.Wait(6.0);
+                    break;
+                case "alerts":
+                    // 1.6.0, Settings -> General -> Alerts: the two sounds switched on, one played, the app's volume set
+                    r.Site(Five, 20, 70);
+                    f.DemoSettings(true, null, false, "general");
+                    r.Mouse = r.MainAt(f.GlassRect, 0.5f, 0.3f);
+                    r.Wait(1.0);
+                    {
+                        float m, now0; f.pageMax.TryGetValue("general", out m); f.pageScroll.TryGetValue("general", out now0);
+                        float to = Math.Max(0, Math.Min(m, now0 + f.sliderTracks["volume"].Top - f.pageView.Top - f.U(16)));
+                        r.Ease(1.0, p => f.pageScroll["general"] = (float)(now0 + (to - now0) * p));
+                    }
+                    r.Wait(0.5);
+                    r.MoveToSpot("factionsound", 0.8); r.Click(); r.Wait(0.9);
+                    r.MoveToSpot("rewarpsound", 0.5); r.Click(); r.Wait(0.9);
+                    r.MoveToSpot("playfaction", 0.6); r.Click(); r.Wait(0.8);
+                    r.MoveTo(r.SliderAt("volume", 100), 0.8); r.Press();
+                    r.MoveTo(r.SliderAt("volume", 55), 1.2); r.Release(); r.Wait(2.0);
+                    break;
                 case "noclient":
                     // no EVE client: the lamp and the power display fail now and then
                     f.DemoNoClients = true; f.DemoFollowing = false;
@@ -380,6 +432,23 @@ namespace TheNorns
             {
                 var c = FormulaWindow.DemoCloseRect(F.Size, card);
                 MoveTo(new PointF(cardAt.X + c.Left + c.Width / 2, cardAt.Y + c.Top + c.Height / 2), secs);
+            }
+
+            // a slider's place for a value 0..100 (Palette.cs, Volume.cs); a press and a release where the mouse is, the
+            // moves between them a drag
+            public PointF SliderAt(string id, int v) { return MainAt(F.sliderTracks[id], v / 100f, 0.5f); }
+            public void Press()
+            {
+                var at = Point.Round(MainPoint().Value);
+                F.OnMouseDown(new MouseEventArgs(MouseButtons.Left, 1, at.X, at.Y, 0));
+                down = true;
+            }
+            public void Release()
+            {
+                var at = Point.Round(MainPoint().Value);
+                down = false;
+                F.OnMouseUp(new MouseEventArgs(MouseButtons.Left, 1, at.X, at.Y, 0));
+                Frame();
             }
 
             // a click where the mouse is: on the card (its content, its close key) or on the window
