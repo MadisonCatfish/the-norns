@@ -700,7 +700,6 @@
     .col-7 { grid-column: span 7; }
     .col-5 { grid-column: span 5; }
     .col-6 { grid-column: span 6; }
-    .col-4 { grid-column: span 4; }
     .col-12 { grid-column: span 12; }
 
     .bento-content {
@@ -765,6 +764,11 @@
       border: none;
       filter: drop-shadow(0 14px 28px rgba(0, 0, 0, 0.75)) drop-shadow(0 2px 8px rgba(0, 0, 0, 0.45));
       transition: transform 0.25s ease, filter 0.25s ease;
+    }
+
+    .bento-box.col-12 .bento-image-frame img,
+    .bento-box.col-12 .bento-image-frame video {
+      max-width: 560px;
     }
 
     .bento-box:hover .bento-image-frame img,
@@ -1131,7 +1135,7 @@
     }
 
     @media (max-width: 900px) {
-      .col-7, .col-5, .col-6, .col-4 { grid-column: span 12; }
+      .col-7, .col-5, .col-6 { grid-column: span 12; }
       .metric-grid { grid-template-columns: repeat(2, 1fr); }
       .metric-cell:nth-child(2) { border-right: none; }
       .metric-cell:nth-child(1),
