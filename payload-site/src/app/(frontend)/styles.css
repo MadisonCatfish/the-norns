@@ -749,6 +749,12 @@
       align-items: center;
     }
 
+    .hero-card picture,
+    .bento-image-frame picture {
+      width: 100%;
+      display: block;
+    }
+
     .bento-image-frame img,
     .bento-image-frame video {
       width: 100%;

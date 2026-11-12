@@ -215,7 +215,7 @@ export default async function HomePage() {
                       <source type="image/avif" srcSet={imgSrc.replace(/\.png$/, '.avif')} />
                       <source type="image/webp" srcSet={imgSrc.replace(/\.png$/, '.webp')} />
                       <img
-                        loading="lazy"
+                        loading="eager"
                         decoding="async"
                         width={538}
                         height={617}

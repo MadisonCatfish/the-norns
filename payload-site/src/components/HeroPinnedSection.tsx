@@ -284,7 +284,7 @@ export function HeroPinnedSection({
               alt="The Norns Competition Mode Runner Lead"
               width={538}
               height={617}
-              loading="lazy"
+              loading="eager"
               decoding="async"
               fetchPriority="low"
             />
@@ -299,7 +299,7 @@ export function HeroPinnedSection({
               alt="The Norns Tactical Settings"
               width={538}
               height={617}
-              loading="lazy"
+              loading="eager"
               decoding="async"
               fetchPriority="low"
             />
@@ -314,7 +314,7 @@ export function HeroPinnedSection({
               alt="The Norns Dual Doctrine Smartbomb & Bounty Grid"
               width={538}
               height={617}
-              loading="lazy"
+              loading="eager"
               decoding="async"
               fetchPriority="low"
             />
