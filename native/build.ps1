@@ -34,7 +34,7 @@ $common = "/nologo", "/target:winexe", "/platform:x64", "/optimize+", "/unsafe",
 $common += Get-ChildItem "$here\lang" -Filter *.json | ForEach-Object { "/resource:$($_.FullName),TheNorns.lang.$($_.BaseName).json" }
 # the body's fonts (OFL) and the power display's glass texture (Body.cs)
 $common += "/resource:$here\res\fonts\Orbitron.ttf,TheNorns.font.Orbitron.ttf", "/resource:$here\res\fonts\NotoSans.ttf,TheNorns.font.NotoSans.ttf", "/resource:$here\res\fonts\NotoSansSC-Regular.ttf,TheNorns.font.NotoSansSC-Regular.ttf", "/resource:$here\res\fonts\NotoSansSC-Bold.ttf,TheNorns.font.NotoSansSC-Bold.ttf",
-    "/resource:$here\res\power_glass.png,TheNorns.power_glass.png", "/resource:$here\res\glass_smudge.png,TheNorns.glass_smudge.png","/resource:$here\res\spawn_alert.wav,TheNorns.spawn_alert.wav", "/resource:$here\res\name_path.txt,TheNorns.name_path.txt", "/resource:$root\CHANGELOG.md,TheNorns.CHANGELOG.md"
+    "/resource:$here\res\power_glass.png,TheNorns.power_glass.png", "/resource:$here\res\glass_smudge.png,TheNorns.glass_smudge.png","/resource:$here\res\spawn_alert.wav,TheNorns.spawn_alert.wav", "/resource:$here\res\spawn_faction_toggle.wav,TheNorns.spawn_faction_toggle.wav", "/resource:$here\res\rewarp_breaker.wav,TheNorns.rewarp_breaker.wav", "/resource:$here\res\name_path.txt,TheNorns.name_path.txt", "/resource:$root\CHANGELOG.md,TheNorns.CHANGELOG.md"
 # a test build's label, embedded as TheNorns.testbuild.txt (Body.cs PaintBand); a release build has none
 $testRes = @()
 if ($Test) {

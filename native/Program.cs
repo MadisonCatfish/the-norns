@@ -33,6 +33,7 @@ namespace TheNorns
             int lang = Array.IndexOf(args, "--lang");
             if (lang >= 0 && args.Length > lang + 1) L.Init(args[lang + 1]);
             L.AutoFit();
+            DpsForm.ApplyTheme();   // the chosen accent and hull (Palette.cs)
 
             int sdps = Array.IndexOf(args, "--selftest-dps");
             if (sdps >= 0 && args.Length > sdps + 1) { DpsForm.SelfTest(args[sdps + 1]); return; }

@@ -139,7 +139,7 @@ namespace TheNorns
             Render();
         }
 
-        void PaintModes(Graphics g, RectangleF c, float y)
+        float PaintModes(Graphics g, RectangleF c, float y)
         {
             // the mode: two lamps, as the languages
             var mt = L.T("Mode");
@@ -168,7 +168,7 @@ namespace TheNorns
             var ah = g.MeasureString(about, af, (int)c.Width).Height;
             using (var b = new SolidBrush(Color.FromArgb(150, BodyTheme.Ink))) g.DrawString(about, af, b, new RectangleF(c.Left, y, c.Width, ah + U(2)));
             y += ah + U(9);
-            if (!Competition) return;
+            if (!Competition) return y;
 
             // the runner's window: a dark box on the screen, its numbers in key-like fields
             var box = RectangleF.FromLTRB(c.Left, y, c.Right, Math.Min(c.Bottom - U(10), y + U(100)));
@@ -197,6 +197,7 @@ namespace TheNorns
             RowLabel(g, L.T("One shot"), inner.Left, yy, fh);
             NumberField(g, new RectangleF(fx, yy, 2 * fw4 + gap, fh), "shot0", VortonShot[0], "HP", DamageIcon(Dmg.EM), DamageColor(Dmg.EM));
             NumberField(g, new RectangleF(fx + 2 * (fw4 + gap), yy, 2 * fw4 + gap, fh), "shot1", VortonShot[1], "HP", DamageIcon(Dmg.Kinetic), DamageColor(Dmg.Kinetic));
+            return box.Bottom;
         }
 
         void RowLabel(Graphics g, string text, float x, float y, float h)

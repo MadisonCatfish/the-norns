@@ -27,16 +27,18 @@ namespace TheNorns
     // the body's colours (sketch tokens); the screen is pure black like an OLED panel
     static class BodyTheme
     {
-        public static readonly Color Hull = Color.FromArgb(78, 87, 104);          // #4E5768 Mordu's Legion steel blue
+        public static Color Hull = Color.FromArgb(78, 87, 104);                   // #4E5768 Mordu's Legion steel blue; its saturation and brightness a choice (Palette.cs)
         public static readonly Color KeyTop = Color.FromArgb(44, 46, 50), KeyBottom = Color.FromArgb(25, 26, 29);
         public static readonly Color KeyRim = Color.FromArgb(12, 13, 15);
         public static readonly Color Icon = Color.FromArgb(126, 129, 136), IconHover = Color.FromArgb(190, 193, 200);
         public static readonly Color Silk = Color.FromArgb(222, 224, 228);       // printed markings
         public static readonly Color Name = Color.FromArgb(236, 235, 228);
-        public static readonly Color Accent = Color.FromArgb(247, 255, 20);       // #F7FF14 acid yellow
-        public static readonly Color Accent2 = Color.FromArgb(61, 43, 255);       // #3D2BFF its complement
-        public static readonly Color Accent2Light = Color.FromArgb(140, 128, 255);
-        public static readonly Color Ink = Color.FromArgb(242, 243, 245);         // the screen's white
+        // the accent family is a choice (Settings -> Display -> Colours, Palette.cs); these are the shipped values
+        public static Color Accent = Color.FromArgb(247, 255, 20);                // #F7FF14 acid yellow
+        public static Color Accent2 = Color.FromArgb(61, 43, 255);                // #3D2BFF its complement (the smartbomb bars)
+        public static Color Accent2Hi = Color.FromArgb(175, 166, 255), Accent2Lo = Color.FromArgb(28, 18, 150);   // the bars' weak and full ends
+        public static readonly Color Faction = Color.FromArgb(140, 128, 255);   // faction spawns: a meaning, it never changes with the accent
+        public static Color Ink = Color.FromArgb(242, 243, 245);                  // the screen's white (a soft grey with eye comfort, Palette.cs)
         public static readonly Color BadgeFill = Color.FromArgb(32, 34, 38);
         public static readonly Color Pointer = Color.FromArgb(43, 123, 255);      // the app's arrow pointer in electric blue
         public static readonly Color PointerOutline = Color.FromArgb(150, 0, 18, 48);
@@ -44,13 +46,15 @@ namespace TheNorns
         // 1.5.2 (owner): every colour a token, one red, one dread tone
         public static readonly Color Alarm = Color.FromArgb(236, 28, 48);         // titans, the close key, errors, the runner losing (the former RodRed)
         public static readonly Color Dread = Color.FromArgb(255, 152, 24);        // pirate dreadnoughts everywhere: the hull's heat, the grid dot, the tray, the minimize key
-        public static readonly Color Lamp = Color.FromArgb(225, 255, 0);          // the power display's dots
+        public static Color Lamp = Color.FromArgb(225, 255, 0);                   // the power display's dots
         public static readonly Color Info = Color.FromArgb(80, 150, 255);         // the tray's "newer version" dot
-        public static readonly Color LampOff = Color.FromArgb(46, 48, 30);        // a lamp that is off
+        public static Color LampOff = Color.FromArgb(46, 48, 30);                 // a lamp that is off
+        public static Color LampCoreOff = Color.FromArgb(70, 72, 20), LampCoreOn = Color.FromArgb(255, 255, 200);   // the LOG lamp's gradient
+        public static Color LampEdgeOff = Color.FromArgb(40, 42, 12), LampEdgeOn = Color.FromArgb(225, 240, 0);
         public static readonly Color LampRing = Color.FromArgb(120, 242, 243, 245);   // its rim, so the off lamp is seen (3 : 1 on the screen)
         public static readonly Color Label = Color.FromArgb(200, 203, 210);       // settings text at rest
         public static readonly Color LabelDim = Color.FromArgb(165, 168, 176);    // a choice not made (languages, modes, animations)
-        public static readonly Color[] HeatStops = { Color.FromArgb(14, 15, 8), Color.FromArgb(52, 56, 10), Color.FromArgb(128, 134, 14), Color.FromArgb(200, 208, 18), Accent };   // the ISK grid: near black -> the accent
+        public static Color[] HeatStops = { Color.FromArgb(14, 15, 8), Color.FromArgb(52, 56, 10), Color.FromArgb(128, 134, 14), Color.FromArgb(200, 208, 18), Accent };   // the ISK grid: near black -> the accent
     }
 
     // Orbitron (screen) and Space Grotesk (body markings), OFL, embedded in the exe (native\res\fonts)
@@ -293,18 +297,13 @@ namespace TheNorns
         // the power display's animation (PowerAnims.cs; Settings -> Display): config.json "app": { "power_anim" }
         public static string PowerAnimName = PowerAnims.Known(AppSetting("power_anim") as string) ? (string)AppSetting("power_anim") : "working";
         // the spawn alert sound (owner, 28.10.2026; config.json "app": { "spawn_sound" }, off by default): three short
-        // pulses (synthesized, res\spawn_alert.wav) when a titan or a dreadnought spawns; no sound for the other spawns
+        // pulses (synthesized, res\spawn_alert.wav) when a titan or a dreadnought spawns; no sound for the other spawns.
+        // 12.11.2026 (owner): a lever thrown before them (dragged over its detents, a clunk), the faction Lever's own front
         public static bool SpawnSound = AppSetting("spawn_sound") is bool && (bool)AppSetting("spawn_sound");
-        static System.Media.SoundPlayer alertPlayer;
         int loudHeard;
         public static void PlayAlert()
         {
-            try
-            {
-                if (alertPlayer == null) { alertPlayer = new System.Media.SoundPlayer(Assembly.GetExecutingAssembly().GetManifestResourceStream("TheNorns.spawn_alert.wav")); alertPlayer.Load(); }
-                alertPlayer.Play();   // async
-            }
-            catch { }
+            PlaySound("spawn_alert");   // at the app's volume (Volume.cs)
         }
         // a new titan / dreadnought: the alert, unless it is an old one read back from the log at start
         void SoundSpawns(DateTime now)
@@ -435,6 +434,7 @@ namespace TheNorns
                     lastPoll = now;
                     if (replay != null) ReplayStep(now); else stats.Add(tail.Poll(stats), now);
                     SoundSpawns(now);
+                    SoundFactionSpawns(now);
                     try
                     {
                         if (fleet != null) { fleet.Poll(); clients = fleet.Clients.CharacterCount; }   // one look at the windows serves both
@@ -524,7 +524,7 @@ namespace TheNorns
         protected override void OnMouseMove(MouseEventArgs e)
         {
             base.OnMouseMove(e);
-            if (MoveRowDrag(e.Y) || MoveBarDrag(e.Y)) return;
+            if (MoveRowDrag(e.Y) || MoveBarDrag(e.Y) || MoveHullDrag(e.X)) return;
             bool hn = NameRect.Contains(e.Location), hc = Standalone && CloseRect.Contains(e.Location), hm = Standalone && MinRect.Contains(e.Location), hmo = Standalone && ModeRect.Contains(e.Location);
             bool hv = !settingsOpen && vortonFx.Contains(e.Location), hs = !settingsOpen && sbFx.Contains(e.Location);
             bool hsp = !settingsOpen && spawnChip.Contains(e.Location);
@@ -576,6 +576,7 @@ namespace TheNorns
                 downSpot = SpotAt(e.Location);
                 if (focusField != null && downSpot != "field:" + focusField) CommitField();   // a click elsewhere keeps the number
                 if (BeginRowDrag(downSpot, e.Y)) downSpot = null;   // Settings -> Carousel: a client's row is dragged (EveO.cs)
+                else if (BeginHullDrag(downSpot, e.Location, e.Clicks)) downSpot = null;   // Settings -> Display: the hull's saturation (Palette.cs)
             }
             else if (vortonFx.Contains(e.Location)) downFx = 1;
             else if (sbFx.Contains(e.Location)) downFx = 2;
@@ -586,7 +587,7 @@ namespace TheNorns
         protected override void OnMouseUp(MouseEventArgs e)
         {
             base.OnMouseUp(e);
-            if (EndRowDrag() | EndBarDrag()) { Render(); return; }
+            if (EndRowDrag() | EndBarDrag() | EndHullDrag()) { Render(); return; }
             bool left = e.Button == MouseButtons.Left;
             if (downName) { downName = false; if (left && NameRect.Contains(e.Location)) ToggleSettings(); Render(); }
             if (downUpdate) { downUpdate = false; if (left && updateMark.Contains(e.Location)) { if (!settingsOpen) ToggleSettings(); page = "about"; } Render(); }
@@ -973,8 +974,8 @@ namespace TheNorns
                 path.AddEllipse(x, y, d, d);
                 using (var pb = new PathGradientBrush(path))
                 {
-                    pb.CenterColor = Mix(Color.FromArgb(70, 72, 20), Color.FromArgb(255, 255, 200), level);
-                    pb.SurroundColors = new[] { Mix(Color.FromArgb(40, 42, 12), Color.FromArgb(225, 240, 0), level) };
+                    pb.CenterColor = Mix(BodyTheme.LampCoreOff, BodyTheme.LampCoreOn, level);
+                    pb.SurroundColors = new[] { Mix(BodyTheme.LampEdgeOff, BodyTheme.LampEdgeOn, level) };
                     g.FillPath(pb, path);
                 }
             }
@@ -1020,7 +1021,7 @@ namespace TheNorns
         // a soft, blurred halo: a radial gradient with a bell-shaped falloff (GDI+ has no blur)
         internal static void SoftGlow(Graphics g, PointF c, float radius, Color col, int alpha)
         {
-            if (alpha <= 2 || radius <= 0 || Potato) return;
+            if (alpha <= 2 || radius <= 0 || Potato || EyeComfort) return;   // eye comfort: no glow (Palette.cs)
             using (var path = new GraphicsPath())
             {
                 path.AddEllipse(c.X - radius, c.Y - radius, 2 * radius, 2 * radius);
@@ -1136,7 +1137,12 @@ namespace TheNorns
                     if (!noClients || shortLevel > 0)
                         // it runs while a log is followed - and always while the client module is on (owner, 29.10.2026: with
                         // the live picture turned off the animation stood still)
-                        PowerAnims.Draw(PowerAnimName, "body", g, face, following || noClients || fleet != null ? animSecs : 0, dotColor);
+                    {
+                        double at = following || noClients || fleet != null ? animSecs : 0;
+                        // Carousel on, the live picture off: a switch blurs it and shows the character's name (SwitchName.cs)
+                        if (!noClients) { WatchSwitch(); PaintAnimWithSwitch(g, face, (ag, af) => PowerAnims.Draw(PowerAnimName, "body", ag, af, at, dotColor)); }
+                        else PowerAnims.Draw(PowerAnimName, "body", g, face, at, dotColor);
+                    }
                     var line = noClients ? ShortLine(secs) : null;
                     if (line != null)
                     {
@@ -1157,19 +1163,21 @@ namespace TheNorns
 
         // the active client's character over its live picture (owner, 29.10.2026): at the glass's foot in the module
         // titles' Orbitron caps, on a dark fade; a name too long for the glass runs by quickly (Potato: cut with "…")
-        void PaintPreviewName(Graphics g, RectangleF face, string name, double secs)
+        void PaintPreviewName(Graphics g, RectangleF face, string name, double secs, double alpha = 1)
         {
+            if (alpha <= 0.004) return;
+            int a8 = (int)(255 * Math.Min(1, alpha));
             if (string.IsNullOrEmpty(name)) return;
             var text = name.ToUpperInvariant();
             var f = NornsFonts.Screen(U(7));   // 25 % larger than at first (owner, 29.10.2026)
             float th = f.GetHeight(g), bandH = th + U(5.5f);
             var band = RectangleF.FromLTRB(face.Left, face.Bottom - bandH, face.Right, face.Bottom);
-            using (var lg = new LinearGradientBrush(RectangleF.Inflate(band, 0, 1), Color.FromArgb(0, 0, 0, 0), Color.FromArgb(200, 0, 0, 0), 90f)) g.FillRectangle(lg, band);
+            using (var lg = new LinearGradientBrush(RectangleF.Inflate(band, 0, 1), Color.FromArgb(0, 0, 0, 0), Color.FromArgb(200 * a8 / 255, 0, 0, 0), 90f)) g.FillRectangle(lg, band);
             float pad = U(5), avail = face.Width - 2 * pad, ty = face.Bottom - U(2.5f) - th;
             float tw = g.MeasureString(text, f, 10000, StringFormat.GenericTypographic).Width;
             var st = g.Save();
             g.IntersectClip(RectangleF.FromLTRB(face.Left + U(2), band.Top, face.Right - U(2), face.Bottom));
-            using (var b = new SolidBrush(BodyTheme.Ink))
+            using (var b = new SolidBrush(Color.FromArgb(a8, BodyTheme.Ink)))
             {
                 if (tw <= avail) g.DrawString(text, f, b, face.Left + (face.Width - tw) / 2, ty, StringFormat.GenericTypographic);
                 else if (Potato)
@@ -1525,7 +1533,7 @@ namespace TheNorns
         {
             text = text.ToUpperInvariant();
             if (rightAligned) x -= g.MeasureString(text, f, 1000, StringFormat.GenericTypographic).Width;
-            if (!Potato)
+            if (!Potato && !EyeComfort)
             using (var halo = new SolidBrush(Color.FromArgb(28, c)))
                 foreach (var o in new[] { new PointF(-0.6f, 0), new PointF(0.6f, 0), new PointF(0, -0.6f), new PointF(0, 0.6f) })
                     g.DrawString(text, f, halo, x + o.X * K, y + o.Y * K, StringFormat.GenericTypographic);
@@ -1598,6 +1606,7 @@ namespace TheNorns
             bool rewarp = DemoRewarp ?? stats.LastNpcHit < tr.PrevWarpTime;
             double secs = Math.Min(99 * 60 + 59, (tr.LastWarpTime - tr.PrevWarpTime).TotalSeconds);
             if (rewarp && secs > IdleGap && DemoRewarp == null) return;
+            if (rewarp) SoundRewarp(tr.LastWarpTime);   // the red count-down is up: its sound, if it is on (SpawnSounds.cs)
             int total;
             if (rewarp)
             {
@@ -1640,7 +1649,7 @@ namespace TheNorns
         const string SbKey = "\0smartbombs";
         const double IdleGap = 120;   // s between two warps with no hit: the pack was not active (owner, 05.11.2026)
         static double RewarpHash(long n) { double t = Math.Sin(n * 12.9898 + 78.233) * 43758.5453; return t - Math.Floor(t); }
-        static readonly Color SbLineColor = Color.FromArgb(242, 243, 245);   // the smartbomb line: dotted, in the pilots' white (owner, 27.10.2026)
+        static Color SbLineColor { get { return BodyTheme.Ink; } }   // the smartbomb line: dotted, in the pilots' white (owner, 27.10.2026)
         // a line's points on the plot, into one buffer kept for every line of every frame (drawn at once, never kept)
         readonly PointF[] curvePts = new PointF[DpsStats.N];
         PointF[] CurvePoints(float[] s, RectangleF plot, double vmax, float lift)
@@ -1741,7 +1750,7 @@ namespace TheNorns
         static Color PilotGrey(int i, int n)
         {
             double t = n <= 1 ? 0 : (double)i / (n - 1);
-            return Mix(Color.FromArgb(242, 243, 245), Color.FromArgb(78, 81, 88), t);
+            return Mix(BodyTheme.Ink, Color.FromArgb(78, 81, 88), t);
         }
 
         void PaintSmartbombs(Graphics g, RectangleF r, DateTime now)
@@ -1810,7 +1819,7 @@ namespace TheNorns
         // light violet for a weak module -> the second accent -> deep blue at full damage (owner, 26.10.2026)
         static Color SbColor(double t)
         {
-            return t < 0.5 ? Mix(Color.FromArgb(175, 166, 255), BodyTheme.Accent2, t * 2) : Mix(BodyTheme.Accent2, Color.FromArgb(28, 18, 150), (t - 0.5) * 2);
+            return t < 0.5 ? Mix(BodyTheme.Accent2Hi, BodyTheme.Accent2, t * 2) : Mix(BodyTheme.Accent2, BodyTheme.Accent2Lo, (t - 0.5) * 2);
         }
 
         public RectangleF IskRect { get; private set; }
@@ -1980,7 +1989,7 @@ namespace TheNorns
         // the accent as a scale: almost black -> saturated acid yellow
         // a rare spawn's colour on the grid: a faction NPC or commander in the second accent, a titan in the alarm red,
         // a pirate dreadnought in orange (the hull's yellow would sink into the grid's yellow)
-        static Color SpawnColor(int kind) { return kind == 2 ? AlarmRed : kind == 3 ? BodyTheme.Dread : BodyTheme.Accent2Light; }
+        static Color SpawnColor(int kind) { return kind == 2 ? AlarmRed : kind == 3 ? BodyTheme.Dread : BodyTheme.Faction; }
 
         // the spawns on grid now that have no bounty tick yet (owner, 31.10.2026: shown as soon as they are seen, on top
         // of everything): hit in the last 90 s, no tick of their kind since they came; at most 3, the highest kind first
@@ -2085,6 +2094,7 @@ namespace TheNorns
         {
             SelfTesting = true;
             Directory.CreateDirectory(dir);
+            EyeComfort = false; HullSaturation = 50; HullBrightness = 50; FactionSound = false; ApplyTheme();   // the shipped colours, not this PC's choice
             var sb = new StringBuilder();
             var samples = new[]
             {
@@ -2174,6 +2184,13 @@ namespace TheNorns
                 f.Stats.Spawns.Add(Tuple.Create(now.AddMinutes(-62), "Shadow Serpentis Vice Admiral"));
                 f.Stats.Spawns.Add(Tuple.Create(now.AddMinutes(-24), "Shadow Serpentis Flotilla Admiral"));
                 save(f, "dps_window.png");
+                // the palette (Palette.cs): the window in every accent, the hull at 0 / 100 %; then back to the shipped colours
+                foreach (var ec in new[] { false, true }) { EyeComfort = ec; f.ThemeChanged(); save(f, ec ? "palette_eye_comfort.png" : "palette_shipped.png"); }
+                EyeComfort = false;
+                foreach (var hs in new[] { 0, 100 }) { HullSaturation = hs; f.ThemeChanged(); save(f, "palette_hull_" + hs + ".png"); }
+                HullSaturation = 50;
+                foreach (var hb in new[] { 0, 100 }) { HullBrightness = hb; f.ThemeChanged(); save(f, "palette_bright_" + hb + ".png"); }
+                HullBrightness = 50; f.ThemeChanged();
                 f.ShowHoverSpawns = true; save(f, "dps_spawns_hover.png"); f.ShowHoverSpawns = false;
                 // the version plate as it is, then blinking for a newer version (bright, dim, under the mouse); the General
                 // switch; About with the download key
@@ -2229,6 +2246,7 @@ namespace TheNorns
                 }
                 // the settings in place of the meter: as opened, a language row under the mouse, after a reset
                 f.DemoSettings(true, null, false); save(f, "dps_settings.png");
+                FactionSound = true; RewarpSound = true; f.DemoSettings(true, "rewarpsound", false); save(f, "palette_settings_general_sound.png"); FactionSound = false; RewarpSound = false;
                 // Settings -> Modes: standard, then competition with the owner's runner (29.10.2026)
                 {
                     bool keepC = Competition; var keepR = RunnerResists; double keepRep = RunnerRepair; var keepS = VortonShot;
@@ -2314,6 +2332,13 @@ namespace TheNorns
                 f.DemoStatFrom = f.DemoStatTo = null; f.statFrom = f.statTo = null;
                 f.DemoSessions = null;
                 f.DemoSettings(true, "page:about", false, "display"); save(f, "dps_settings_display.png");
+                EyeComfort = true; HullSaturation = 50; f.ThemeChanged(); f.DemoSettings(true, "eyecomfort", false, "display"); save(f, "palette_settings_display_comfort.png");
+                EyeComfort = false; HullSaturation = 30; HullBrightness = 65; f.ThemeChanged(); f.DemoSettings(true, "hull:bright", false, "display"); f.Draw().Dispose();
+                f.pageScroll["display"] = 1000; f.DemoSettings(true, "hull:bright", false, "display"); save(f, "palette_settings_display_scrolled.png"); f.pageScroll.Clear(); HullSaturation = 50; HullBrightness = 50; f.ThemeChanged();
+                FactionSound = true; f.DemoSettings(true, null, false); f.Draw().Dispose();
+                f.pageScroll["general"] = 1000; f.DemoSettings(true, null, false); save(f, "palette_settings_general_scrolled.png"); f.pageScroll.Clear(); FactionSound = false;
+                foreach (var hb in new[] { 0, 100 }) { EyeComfort = false; HullSaturation = 50; HullBrightness = hb; f.ThemeChanged(); f.DemoSettings(true, "page:about", false, "display"); save(f, "palette_bright_settings_" + hb + ".png"); }
+                EyeComfort = false; HullSaturation = 50; HullBrightness = 50; f.ThemeChanged(); f.DemoSettings(true, "page:about", false, "display");
                 {
                     var keepA = PowerAnimName;
                     f.DemoSettings(false, null, false);
@@ -2560,6 +2585,24 @@ namespace TheNorns
                         strip.Save(Path.Combine(dir, "dps_fleet_name_running.png"), ImageFormat.Png);
                     }
                     f.DemoSeconds = 0; f.DemoPreviewName = null;
+                    // Carousel without the live picture: the switch to Pilot-4 (SwitchName.cs) at 0.08 / 0.6 / 4.7 / 5.2 s
+                    var keepPic = f.DemoPreview; f.DemoPreview = null; f.DemoSwitchName = "Pilot-4";
+                    var ages = new[] { 0.08, 0.6, 4.7, 5.2 };
+                    using (var strip = new Bitmap(pr.Width * 3, pr.Height * 3 * ages.Length))
+                    {
+                        using (var sg = Graphics.FromImage(strip))
+                        {
+                            sg.InterpolationMode = InterpolationMode.NearestNeighbor; sg.PixelOffsetMode = PixelOffsetMode.Half;
+                            for (int i = 0; i < ages.Length; i++)
+                            {
+                                f.DemoSwitchAge = ages[i]; f.DemoSeconds = 2 + ages[i];
+                                using (var fr = f.Draw()) sg.DrawImage(fr, new Rectangle(0, i * pr.Height * 3, pr.Width * 3, pr.Height * 3), pr, GraphicsUnit.Pixel);
+                            }
+                        }
+                        strip.Save(Path.Combine(dir, "dps_switch_name.png"), ImageFormat.Png);
+                    }
+                    f.DemoSwitchAge = 0.6; f.DemoSwitchName = "Pilot-8 With A Long Name"; save(f, "dps_switch_name_long.png");
+                    f.DemoSwitchName = null; f.DemoSwitchAge = null; f.DemoPreview = keepPic; f.DemoSeconds = 0;
                     // the client squares right of the body (Dock.cs): five clients, the second in front; eight, the first
                     f.DemoPreviewName = "Pilot-2";
                     f.DemoDock = Enumerable.Range(1, 5).Select(i => "Pilot-" + i).ToList(); f.DemoDockActive = 1;

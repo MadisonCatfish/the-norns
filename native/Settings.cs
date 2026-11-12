@@ -111,6 +111,235 @@ namespace TheNorns
         }
         bool EndBarDrag() { if (dragBar == null) return false; dragBar = null; return true; }
 
+        // General, Display, Modes and Data (owner, 12.11.2026: any page that outgrows the screen): the page scrolls with the
+        // wheel and a thin bar on the right, as Carousel does; each page keeps its own place
+        readonly System.Collections.Generic.Dictionary<string, float> pageScroll = new System.Collections.Generic.Dictionary<string, float>();
+        readonly System.Collections.Generic.Dictionary<string, float> pageMax = new System.Collections.Generic.Dictionary<string, float>();
+        RectangleF pageView;
+        void PaintScrolled(Graphics g, RectangleF c, float top, Func<Graphics, RectangleF, float, float> content)
+        {
+            string key = page;
+            float scroll, known; pageScroll.TryGetValue(key, out scroll);
+            if (pageMax.TryGetValue(key, out known) && scroll > known) { scroll = known; pageScroll[key] = scroll; }   // clamped before it is drawn
+            pageView = RectangleF.FromLTRB(c.Left, top - U(2), c.Right, c.Bottom - U(10));
+            var st = g.Save();
+            g.SetClip(pageView);
+            int firstSpot = spots.Count;
+            var inner = RectangleF.FromLTRB(c.Left, c.Top, c.Right - U(10.5f), c.Bottom);
+            float end = content(g, inner, top - scroll);
+            g.Restore(st);
+            for (int i = spots.Count - 1; i >= firstSpot; i--)
+            {
+                var r = RectangleF.Intersect(spots[i].Item2, pageView);
+                if (r.Width <= 0 || r.Height <= 0) spots.RemoveAt(i); else spots[i] = Tuple.Create(spots[i].Item1, r);
+            }
+            float max = Math.Max(0, end + scroll - pageView.Bottom + U(4));
+            pageMax[key] = max;
+            if (scroll > max) { pageScroll[key] = max; Invalidate(); }
+            if (max > 0)
+            {
+                float barH = PaintScrollBar(g, pageView, c.Right, Math.Min(scroll, max), max, U(1));
+                AddBar(pageView, c.Right, barH, max, () => { float v; pageScroll.TryGetValue(key, out v); return v; }, v => pageScroll[key] = v);
+            }
+        }
+        bool ScrollPage(Point p, int delta)
+        {
+            if (!settingsOpen || (page != "general" && page != "display" && page != "modes" && page != "data") || !pageView.Contains(p)) return false;
+            float v; pageScroll.TryGetValue(page, out v);
+            pageScroll[page] = Math.Max(0, v - Math.Sign(delta) * U(24));   // the next frame clamps it
+            return true;
+        }
+        float PaintGeneralContent(Graphics g, RectangleF c, float y)
+        {
+            // language: the seven, four columns of two (owner, 28.10.2026: three columns; 29.10.2026: four, for
+            // Chinese), a lamp lit at the one in use
+            var lt = L.T("Language");
+            Glow(g, lt, TitleFont(lt, U(7.2f)), Muted, c.Left, y);
+            y += U(11);
+            float colW = c.Width / 4, rowH = U(16);
+            for (int i = 0; i < L.Languages.Length; i++)
+            {
+                string code = L.Languages[i][0], name = L.Languages[i][1];
+                var row = new RectangleF(c.Left + (i / 2) * colW, y + (i % 2) * rowH, colW - U(4), rowH - U(2));
+                string id = "lang:" + code;
+                bool hot = hotSpot == id, cur = L.Code == code;
+                if (hot) using (var p = Round(row, 6)) using (var b = new SolidBrush(Color.FromArgb(22, BodyTheme.Ink))) g.FillPath(b, p);
+                float d = U(5.5f), lx = row.Left + U(5), ly = row.Top + row.Height / 2;
+                Lamp(g, lx, ly, d, cur);
+                var nf = TextFont(name, U(7.5f));
+                using (var b = new SolidBrush(cur || hot ? BodyTheme.Ink : BodyTheme.LabelDim))
+                    g.DrawString(name, nf, b, lx + d + U(6), ly - nf.GetHeight(g) / 2, StringFormat.GenericTypographic);
+                spots.Add(Tuple.Create(id, row));
+            }
+            y += 2 * rowH + U(6);
+
+            var updatesT = L.T("Updates");
+            Glow(g, updatesT, TitleFont(updatesT, U(7.2f)), Muted, c.Left, y);
+            y += U(11);
+            LampRow(g, c, y, "updatestart", UpdateAtStart, L.T("Check for updates at start"));
+            y += RowStep;
+            y += U(6);
+            var alertsT = L.T("Alerts");
+            Glow(g, alertsT, TitleFont(alertsT, U(7.2f)), Muted, c.Left, y);
+            PaintVolume(g, c, y - U(2));   // the app's sound level on the title's row (Volume.cs)
+            y += U(11);
+            // the sound when a titan or a dreadnought spawns (off by default), and a key to hear it
+            var pk = new RectangleF(c.Right - U(29), y, U(29), U(15));
+            var sr = new RectangleF(c.Left, y, pk.Left - U(4) - c.Left, U(15));
+            bool sh = hotSpot == "spawnsound";
+            if (sh) using (var p = Round(sr, 6)) using (var b = new SolidBrush(Color.FromArgb(22, BodyTheme.Ink))) g.FillPath(b, p);
+            float sd = U(5.5f), sx = sr.Left + U(5), sy = sr.Top + sr.Height / 2;
+            Lamp(g, sx, sy, sd, SpawnSound);
+            var sl2 = L.T("Sound on a titan or dreadnought");
+            var sf3 = TextFont(sl2, U(7.5f));
+            using (var b = new SolidBrush(sh ? BodyTheme.Ink : BodyTheme.Label)) g.DrawString(sl2, sf3, b, sx + sd + U(6), sy - sf3.GetHeight(g) / 2, StringFormat.GenericTypographic);
+            spots.Add(Tuple.Create("spawnsound", sr));
+            // the play key, like the size keys (Material play_arrow)
+            bool ph2 = hotSpot == "playalert";
+            using (var p = Round(pk, 5))
+            {
+                using (var b = new SolidBrush(ph2 ? Color.FromArgb(26, BodyTheme.Ink) : Color.FromArgb(12, BodyTheme.Ink))) g.FillPath(b, p);
+                using (var pen = new Pen(Color.FromArgb(50, BodyTheme.Ink), 1f)) g.DrawPath(pen, p);
+            }
+            float ic2 = U(9);
+            using (var b = new SolidBrush(BodyTheme.Ink)) MaterialIcon.Draw(g, MaterialIcon.Play, new RectangleF(pk.Left + (pk.Width - ic2) / 2, pk.Top + (pk.Height - ic2) / 2, ic2, ic2), b);
+            AddKey("playalert", pk);
+            y += RowStep;
+            y = PaintAlertSounds(g, c, y);   // a faction spawn's and a dry re-warp's sounds (SpawnSounds.cs)
+            y += U(6);
+            // the tray icon (Tray.cs; owner, 04.11.2026): the close key hides to it; the app starts hidden in it
+            var trayT = L.T("Tray");
+            Glow(g, trayT, TitleFont(trayT, U(7.2f)), Muted, c.Left, y);
+            y += U(11);
+            LampRow(g, c, y, "closetray", CloseToTray, L.T("Close to tray"));
+            y += RowStep;
+            LampRow(g, c, y, "starttray", StartInTray, L.T("Start in the tray"));
+            y += RowStep;
+            return y;
+        }
+
+        float PaintDataContent(Graphics g, RectangleF c, float y)
+        {
+            // the combat log folder: its path (from Documents on: no user name on screen), a mark whether logs are
+            // there, Select / Detect / Open; then the app's own folder with its size, Open, and the anomaly reset
+            bool resetShown = demoResetShown || Clock < resetShownUntil;
+            var lt = L.T("Combat log folder");
+            Glow(g, lt, TitleFont(lt, U(7.2f)), Muted, c.Left, y);
+            y += U(11);
+            var dir = GameLogTail.Dir; var docs = Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments).TrimEnd('\\');
+            bool ok = false;
+            try { ok = Directory.Exists(dir) && Directory.EnumerateFiles(dir, "*.txt").Any(); } catch { }
+            if (DemoLogDirOk != null) ok = DemoLogDirOk.Value;
+            if (dir.StartsWith(docs + "\\", StringComparison.OrdinalIgnoreCase)) dir = "Documents" + dir.Substring(docs.Length);
+            var field = new RectangleF(c.Left, y, c.Width - U(16), U(17));
+            using (var p = Round(field, 5)) using (var b = new SolidBrush(Color.FromArgb(16, 17, 20))) using (var pen = new Pen(Color.FromArgb(40, BodyTheme.Ink), 1f)) { g.FillPath(b, p); g.DrawPath(pen, p); }
+            var df = TextFont(dir, U(7.2f));   // a user folder may be named in Cyrillic or Chinese
+            using (var b = new SolidBrush(BodyTheme.Label))
+                g.DrawString(dir, df, b, new RectangleF(field.Left + U(5), field.Top + (field.Height - df.GetHeight(g)) / 2, field.Width - U(10), df.GetHeight(g) + U(1)),
+                    new StringFormat { Trimming = StringTrimming.EllipsisPath, FormatFlags = StringFormatFlags.NoWrap });
+            var mr = new RectangleF(field.Right + U(4), field.Top + (field.Height - U(11)) / 2, U(11), U(11));
+            // logs found: a check; none: the warning triangle in the alarm red (owner, 1.5.2; it was a cross)
+            if (ok) using (var b = new SolidBrush(BodyTheme.Accent)) MaterialIcon.Draw(g, MaterialIcon.Check, mr, b);
+            else WarnTriangle(g, mr.Left + mr.Width / 2, mr.Top + mr.Height / 2 + U(0.5f), U(1.5f), AlarmRed);
+            y += U(21);
+            float tw3 = (c.Width - 2 * U(4)) / 3;
+            PaintWideKey(g, new RectangleF(c.Left, y, tw3, U(19)), MaterialIcon.Folder, L.T("Select"), "dir:select", false);
+            PaintWideKey(g, new RectangleF(c.Left + tw3 + U(4), y, tw3, U(19)), MaterialIcon.Search, L.T("Detect"), "dir:detect", false);
+            PaintWideKey(g, new RectangleF(c.Left + 2 * (tw3 + U(4)), y, tw3, U(19)), MaterialIcon.Description, L.T("Open"), "logs", false);
+            y += U(23);
+            var note = ok ? L.T("Combat logs found.") : L.T("No combat logs here yet. They appear once a pilot is in space; or pick the folder.");
+            var notef = TextFont(note, U(7.2f));
+            float noteh = g.MeasureString(note, notef, (int)c.Width).Height;   // the "no logs" note takes two lines: the next title moves down (1.5.2)
+            using (var b = new SolidBrush(ok ? Color.FromArgb(120, BodyTheme.Ink) : Color.FromArgb(220, 255, 120, 110)))
+                g.DrawString(note, notef, b, new RectangleF(c.Left, y, c.Width, noteh + U(2)));
+            y += Math.Max(U(18), noteh + U(6));
+            if (storage == null) storage = ReadStorage();
+            var dt = L.T("App data");
+            Glow(g, dt, TitleFont(dt, U(7.2f)), Muted, c.Left, y);
+            var total = storage.FirstOrDefault(r => r.Item3);
+            if (total != null)
+            {
+                var nf3 = NornsFonts.Screen(U(6.5f));
+                using (var b = new SolidBrush(BodyTheme.Accent)) g.DrawString(total.Item2, nf3, b, c.Right - g.MeasureString(total.Item2, nf3, 1000, StringFormat.GenericTypographic).Width, y, StringFormat.GenericTypographic);
+            }
+            y += U(11);
+            var pf2 = TextFont(AppInfo.DataDir, U(7.2f));
+            using (var b = new SolidBrush(Color.FromArgb(150, BodyTheme.Ink)))
+                g.DrawString(Shown(AppInfo.DataDir), pf2, b, new RectangleF(c.Left, y, c.Width, pf2.GetHeight(g) + U(1)), new StringFormat { Trimming = StringTrimming.EllipsisPath, FormatFlags = StringFormatFlags.NoWrap });
+            y += U(13);
+            PaintWideKey(g, new RectangleF(c.Left, y, c.Width, U(19)), MaterialIcon.Folder, L.T("Open app data folder"), "data", false);
+            y += U(23);
+            // done: a check for the 2.5 s the key is lit (owner, 1.5.2: the refresh icon looked pressable again)
+            PaintWideKey(g, new RectangleF(c.Left, y, c.Width, U(19)), resetShown ? MaterialIcon.Check : MaterialIcon.Refresh, resetShown ? L.T("Anomalies, ISK and grid reset") : L.T("Reset anomalies, ISK and grid"), "reset", resetShown);
+            return y + U(23);
+        }
+
+        float PaintDisplayContent(Graphics g, RectangleF c, float y)
+        {
+            // window: the body's size and whether it comes back where it was
+            var wt = L.T("Window");
+            Glow(g, wt, TitleFont(wt, U(7.2f)), Muted, c.Left, y);
+            y += U(11);
+            var sl = L.T("Size");
+            var sf2 = TextFont(sl, U(7.5f));
+            using (var b = new SolidBrush(BodyTheme.Label)) g.DrawString(sl, sf2, b, c.Left, y + (U(15) - sf2.GetHeight(g)) / 2, StringFormat.GenericTypographic);
+            float bx = c.Right - 3 * U(32);
+            foreach (var sc in new[] { 1f, 1.25f, 1.5f })
+            {
+                string id = "scale:" + sc.ToString(CultureInfo.InvariantCulture);
+                var br = new RectangleF(bx, y, U(29), U(15)); bx += U(32);
+                bool cur = Math.Abs(UiScale - sc) < 0.01f, hot = hotSpot == id;
+                using (var p = Round(br, 5))
+                {
+                    using (var b = new SolidBrush(cur ? Color.FromArgb(40, BodyTheme.Accent) : hot ? Color.FromArgb(26, BodyTheme.Ink) : Color.FromArgb(12, BodyTheme.Ink))) g.FillPath(b, p);
+                    using (var pen = new Pen(cur ? BodyTheme.Accent : Color.FromArgb(50, BodyTheme.Ink), 1f)) g.DrawPath(pen, p);
+                }
+                var lab = (int)Math.Round(sc * 100) + "%";
+                var lf = NornsFonts.Screen(U(6.5f));
+                var ls = g.MeasureString(lab, lf, 1000, StringFormat.GenericTypographic);
+                using (var b = new SolidBrush(cur ? BodyTheme.Accent : BodyTheme.Ink)) g.DrawString(lab, lf, b, br.Left + (br.Width - ls.Width) / 2, br.Top + (br.Height - ls.Height) / 2, StringFormat.GenericTypographic);
+                AddKey(id, br);
+            }
+            y += U(20);
+            LampRow(g, c, y, "remember", RememberPos, L.T("Remember window position"));
+            y += RowStep;
+            LampRow(g, c, y, "compact", Compact, L.T("Compact mode"));
+            y += RowStep;
+            LampRow(g, c, y, "potato", Potato, L.T("Potato mode: low CPU, no effects"));
+            y += RowStep;
+            y += U(4);
+            // the power display's animation: a live preview of each in one row, about the display's own size; the chosen one
+            // framed in the accent (owner, 04.11.2026)
+            var at = L.T("Power display");
+            Glow(g, at, TitleFont(at, U(7.2f)), Muted, c.Left, y);
+            y += U(11);
+            int cols = PowerAnims.Names.Length; float gap = U(5), tileW = (c.Width - (cols - 1) * gap) / cols, tileH = tileW * 28 / 53, lh = U(10);
+            for (int i = 0; i < PowerAnims.Names.Length; i++)
+            {
+                string an = PowerAnims.Names[i], id = "anim:" + an;
+                var tile = new RectangleF(c.Left + (i % cols) * (tileW + gap), y + (i / cols) * (tileH + lh + U(4)), tileW, tileH);
+                bool cur = PowerAnimName == an, hot = hotSpot == id;
+                using (var p = Round(tile, 5))
+                {
+                    using (var b = new SolidBrush(Color.FromArgb(4, 4, 5))) g.FillPath(b, p);
+                    var st2 = g.Save(); g.SetClip(p);
+                    PowerAnims.Draw(an, "tile", g, tile, Potato ? 0 : Clock, BodyTheme.Accent);
+                    g.Restore(st2);
+                    using (var pen = new Pen(cur ? BodyTheme.Accent : hot ? Color.FromArgb(120, BodyTheme.Ink) : Color.FromArgb(40, BodyTheme.Ink), cur ? 1.5f : 1f)) g.DrawPath(pen, p);
+                }
+                var name = L.T(PowerAnims.Titles[i]);
+                var nf2 = TextFont(name, U(6.6f));
+                var ns = g.MeasureString(name, nf2, 1000, StringFormat.GenericTypographic);
+                using (var b = new SolidBrush(cur ? BodyTheme.Accent : hot ? BodyTheme.Ink : BodyTheme.LabelDim))
+                    g.DrawString(name, nf2, b, tile.Left + (tile.Width - ns.Width) / 2, tile.Bottom + U(2), StringFormat.GenericTypographic);
+                AddKey(id, RectangleF.FromLTRB(tile.Left, tile.Top, tile.Right, tile.Bottom + lh));
+            }
+            y += tileH + lh + U(4);
+            y += U(6);
+            y = PaintColours(g, c, y);
+            return y;
+        }
+
         string SpotAt(Point p)
         {
             foreach (var s in spots) if (s.Item2.Contains(p)) return s.Item1;
@@ -165,6 +394,7 @@ namespace TheNorns
             if (id == "playalert") PlayAlert();
             if (id == "closetray") { CloseToTray = !CloseToTray; SaveApp("close_to_tray", CloseToTray); }
             if (id == "starttray") { StartInTray = !StartInTray; SaveApp("start_in_tray", StartInTray); }
+            if (ActivateColour(id) || ActivateFactionSound(id)) return;   // Settings -> Display -> Colours (Palette.cs)
             if (id.StartsWith("anim:") && PowerAnims.Known(id.Substring(5))) { PowerAnimName = id.Substring(5); SaveApp("power_anim", PowerAnimName); }
             if (id == "remember") { RememberPos = !RememberPos; SaveApp("remember_position", RememberPos); if (RememberPos) SavePos(); }
         }
@@ -340,6 +570,7 @@ namespace TheNorns
             base.OnMouseWheel(e);
             if (fleet != null && !Compact && PowerRect.Contains(e.Location)) { fleet.Wheel(e.Delta); return; }   // the client module: the wheel flips clients
             if (ScrollEveO(e.Location, e.Delta)) { Render(); return; }   // Settings -> Carousel scrolls (EveO.cs)
+            if (ScrollPage(e.Location, e.Delta)) { Render(); return; }   // General / Display / Modes / Data scroll
             if (ScrollStats(e.Location, e.Delta)) { Render(); return; }  // the Statistics list (Statistics.cs)
             if (settingsOpen && tabRow.Contains(e.Location)) { ScrollTabs(-Math.Sign(e.Delta)); Render(); return; }   // the wheel over the tabs scrolls them
             if (!settingsOpen || page != "about" || aboutView != "news") return;
@@ -567,189 +798,11 @@ namespace TheNorns
             y += U(16);
             line(y); y += U(8);
 
-            if (page == "general")
-            {
-                // language: the seven, four columns of two (owner, 28.10.2026: three columns; 29.10.2026: four, for
-                // Chinese), a lamp lit at the one in use
-                var lt = L.T("Language");
-                Glow(g, lt, TitleFont(lt, U(7.2f)), Muted, c.Left, y);
-                y += U(11);
-                float colW = c.Width / 4, rowH = U(16);
-                for (int i = 0; i < L.Languages.Length; i++)
-                {
-                    string code = L.Languages[i][0], name = L.Languages[i][1];
-                    var row = new RectangleF(c.Left + (i / 2) * colW, y + (i % 2) * rowH, colW - U(4), rowH - U(2));
-                    string id = "lang:" + code;
-                    bool hot = hotSpot == id, cur = L.Code == code;
-                    if (hot) using (var p = Round(row, 6)) using (var b = new SolidBrush(Color.FromArgb(22, BodyTheme.Ink))) g.FillPath(b, p);
-                    float d = U(5.5f), lx = row.Left + U(5), ly = row.Top + row.Height / 2;
-                    Lamp(g, lx, ly, d, cur);
-                    var nf = TextFont(name, U(7.5f));
-                    using (var b = new SolidBrush(cur || hot ? BodyTheme.Ink : BodyTheme.LabelDim))
-                        g.DrawString(name, nf, b, lx + d + U(6), ly - nf.GetHeight(g) / 2, StringFormat.GenericTypographic);
-                    spots.Add(Tuple.Create(id, row));
-                }
-                y += 2 * rowH + U(6);
-
-                var updatesT = L.T("Updates");
-                Glow(g, updatesT, TitleFont(updatesT, U(7.2f)), Muted, c.Left, y);
-                y += U(11);
-                LampRow(g, c, y, "updatestart", UpdateAtStart, L.T("Check for updates at start"));
-                y += RowStep;
-                y += U(6);
-                var alertsT = L.T("Alerts");
-                Glow(g, alertsT, TitleFont(alertsT, U(7.2f)), Muted, c.Left, y);
-                y += U(11);
-                // the sound when a titan or a dreadnought spawns (off by default), and a key to hear it
-                var pk = new RectangleF(c.Right - U(29), y, U(29), U(15));
-                var sr = new RectangleF(c.Left, y, pk.Left - U(4) - c.Left, U(15));
-                bool sh = hotSpot == "spawnsound";
-                if (sh) using (var p = Round(sr, 6)) using (var b = new SolidBrush(Color.FromArgb(22, BodyTheme.Ink))) g.FillPath(b, p);
-                float sd = U(5.5f), sx = sr.Left + U(5), sy = sr.Top + sr.Height / 2;
-                Lamp(g, sx, sy, sd, SpawnSound);
-                var sl2 = L.T("Sound on a titan or dreadnought");
-                var sf3 = TextFont(sl2, U(7.5f));
-                using (var b = new SolidBrush(sh ? BodyTheme.Ink : BodyTheme.Label)) g.DrawString(sl2, sf3, b, sx + sd + U(6), sy - sf3.GetHeight(g) / 2, StringFormat.GenericTypographic);
-                spots.Add(Tuple.Create("spawnsound", sr));
-                // the play key, like the size keys (Material play_arrow)
-                bool ph2 = hotSpot == "playalert";
-                using (var p = Round(pk, 5))
-                {
-                    using (var b = new SolidBrush(ph2 ? Color.FromArgb(26, BodyTheme.Ink) : Color.FromArgb(12, BodyTheme.Ink))) g.FillPath(b, p);
-                    using (var pen = new Pen(Color.FromArgb(50, BodyTheme.Ink), 1f)) g.DrawPath(pen, p);
-                }
-                float ic2 = U(9);
-                using (var b = new SolidBrush(BodyTheme.Ink)) MaterialIcon.Draw(g, MaterialIcon.Play, new RectangleF(pk.Left + (pk.Width - ic2) / 2, pk.Top + (pk.Height - ic2) / 2, ic2, ic2), b);
-                AddKey("playalert", pk);
-                y += RowStep;
-                y += U(6);
-                // the tray icon (Tray.cs; owner, 04.11.2026): the close key hides to it; the app starts hidden in it
-                var trayT = L.T("Tray");
-                Glow(g, trayT, TitleFont(trayT, U(7.2f)), Muted, c.Left, y);
-                y += U(11);
-                LampRow(g, c, y, "closetray", CloseToTray, L.T("Close to tray"));
-                y += RowStep;
-                LampRow(g, c, y, "starttray", StartInTray, L.T("Start in the tray"));
-                y += RowStep;
-            }
-            else if (page == "display")
-            {
-                // window: the body's size and whether it comes back where it was
-                var wt = L.T("Window");
-                Glow(g, wt, TitleFont(wt, U(7.2f)), Muted, c.Left, y);
-                y += U(11);
-                var sl = L.T("Size");
-                var sf2 = TextFont(sl, U(7.5f));
-                using (var b = new SolidBrush(BodyTheme.Label)) g.DrawString(sl, sf2, b, c.Left, y + (U(15) - sf2.GetHeight(g)) / 2, StringFormat.GenericTypographic);
-                float bx = c.Right - 3 * U(32);
-                foreach (var sc in new[] { 1f, 1.25f, 1.5f })
-                {
-                    string id = "scale:" + sc.ToString(CultureInfo.InvariantCulture);
-                    var br = new RectangleF(bx, y, U(29), U(15)); bx += U(32);
-                    bool cur = Math.Abs(UiScale - sc) < 0.01f, hot = hotSpot == id;
-                    using (var p = Round(br, 5))
-                    {
-                        using (var b = new SolidBrush(cur ? Color.FromArgb(40, BodyTheme.Accent) : hot ? Color.FromArgb(26, BodyTheme.Ink) : Color.FromArgb(12, BodyTheme.Ink))) g.FillPath(b, p);
-                        using (var pen = new Pen(cur ? BodyTheme.Accent : Color.FromArgb(50, BodyTheme.Ink), 1f)) g.DrawPath(pen, p);
-                    }
-                    var lab = (int)Math.Round(sc * 100) + "%";
-                    var lf = NornsFonts.Screen(U(6.5f));
-                    var ls = g.MeasureString(lab, lf, 1000, StringFormat.GenericTypographic);
-                    using (var b = new SolidBrush(cur ? BodyTheme.Accent : BodyTheme.Ink)) g.DrawString(lab, lf, b, br.Left + (br.Width - ls.Width) / 2, br.Top + (br.Height - ls.Height) / 2, StringFormat.GenericTypographic);
-                    AddKey(id, br);
-                }
-                y += U(20);
-                LampRow(g, c, y, "remember", RememberPos, L.T("Remember window position"));
-                y += RowStep;
-                LampRow(g, c, y, "compact", Compact, L.T("Compact mode"));
-                y += RowStep;
-                LampRow(g, c, y, "potato", Potato, L.T("Potato mode: low CPU, no effects"));
-                y += RowStep;
-                y += U(4);
-                // the power display's animation: a live preview of each in one row, about the display's own size; the chosen one
-                // framed in the accent (owner, 04.11.2026)
-                var at = L.T("Power display");
-                Glow(g, at, TitleFont(at, U(7.2f)), Muted, c.Left, y);
-                y += U(11);
-                int cols = PowerAnims.Names.Length; float gap = U(5), tileW = (c.Width - (cols - 1) * gap) / cols, tileH = tileW * 28 / 53, lh = U(10);
-                for (int i = 0; i < PowerAnims.Names.Length; i++)
-                {
-                    string an = PowerAnims.Names[i], id = "anim:" + an;
-                    var tile = new RectangleF(c.Left + (i % cols) * (tileW + gap), y + (i / cols) * (tileH + lh + U(4)), tileW, tileH);
-                    bool cur = PowerAnimName == an, hot = hotSpot == id;
-                    using (var p = Round(tile, 5))
-                    {
-                        using (var b = new SolidBrush(Color.FromArgb(4, 4, 5))) g.FillPath(b, p);
-                        var st2 = g.Save(); g.SetClip(p);
-                        PowerAnims.Draw(an, "tile", g, tile, Potato ? 0 : Clock, BodyTheme.Accent);
-                        g.Restore(st2);
-                        using (var pen = new Pen(cur ? BodyTheme.Accent : hot ? Color.FromArgb(120, BodyTheme.Ink) : Color.FromArgb(40, BodyTheme.Ink), cur ? 1.5f : 1f)) g.DrawPath(pen, p);
-                    }
-                    var name = L.T(PowerAnims.Titles[i]);
-                    var nf2 = TextFont(name, U(6.6f));
-                    var ns = g.MeasureString(name, nf2, 1000, StringFormat.GenericTypographic);
-                    using (var b = new SolidBrush(cur ? BodyTheme.Accent : hot ? BodyTheme.Ink : BodyTheme.LabelDim))
-                        g.DrawString(name, nf2, b, tile.Left + (tile.Width - ns.Width) / 2, tile.Bottom + U(2), StringFormat.GenericTypographic);
-                    AddKey(id, RectangleF.FromLTRB(tile.Left, tile.Top, tile.Right, tile.Bottom + lh));
-                }
-                y += tileH + lh + U(4);
-            }
-            else if (page == "modes") PaintModes(g, c, y);
+            if (page == "general") PaintScrolled(g, c, y, PaintGeneralContent);   // every page scrolls when it outgrows the screen (owner, 12.11.2026)
+            else if (page == "display") PaintScrolled(g, c, y, PaintDisplayContent);
+            else if (page == "modes") PaintScrolled(g, c, y, PaintModes);
             else if (page == "eveo") PaintEveO(g, c, y);
-            else if (page == "data")
-            {
-                // the combat log folder: its path (from Documents on: no user name on screen), a mark whether logs are
-                // there, Select / Detect / Open; then the app's own folder with its size, Open, and the anomaly reset
-                bool resetShown = demoResetShown || Clock < resetShownUntil;
-                var lt = L.T("Combat log folder");
-                Glow(g, lt, TitleFont(lt, U(7.2f)), Muted, c.Left, y);
-                y += U(11);
-                var dir = GameLogTail.Dir; var docs = Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments).TrimEnd('\\');
-                bool ok = false;
-                try { ok = Directory.Exists(dir) && Directory.EnumerateFiles(dir, "*.txt").Any(); } catch { }
-                if (DemoLogDirOk != null) ok = DemoLogDirOk.Value;
-                if (dir.StartsWith(docs + "\\", StringComparison.OrdinalIgnoreCase)) dir = "Documents" + dir.Substring(docs.Length);
-                var field = new RectangleF(c.Left, y, c.Width - U(16), U(17));
-                using (var p = Round(field, 5)) using (var b = new SolidBrush(Color.FromArgb(16, 17, 20))) using (var pen = new Pen(Color.FromArgb(40, BodyTheme.Ink), 1f)) { g.FillPath(b, p); g.DrawPath(pen, p); }
-                var df = TextFont(dir, U(7.2f));   // a user folder may be named in Cyrillic or Chinese
-                using (var b = new SolidBrush(BodyTheme.Label))
-                    g.DrawString(dir, df, b, new RectangleF(field.Left + U(5), field.Top + (field.Height - df.GetHeight(g)) / 2, field.Width - U(10), df.GetHeight(g) + U(1)),
-                        new StringFormat { Trimming = StringTrimming.EllipsisPath, FormatFlags = StringFormatFlags.NoWrap });
-                var mr = new RectangleF(field.Right + U(4), field.Top + (field.Height - U(11)) / 2, U(11), U(11));
-                // logs found: a check; none: the warning triangle in the alarm red (owner, 1.5.2; it was a cross)
-                if (ok) using (var b = new SolidBrush(BodyTheme.Accent)) MaterialIcon.Draw(g, MaterialIcon.Check, mr, b);
-                else WarnTriangle(g, mr.Left + mr.Width / 2, mr.Top + mr.Height / 2 + U(0.5f), U(1.5f), AlarmRed);
-                y += U(21);
-                float tw3 = (c.Width - 2 * U(4)) / 3;
-                PaintWideKey(g, new RectangleF(c.Left, y, tw3, U(19)), MaterialIcon.Folder, L.T("Select"), "dir:select", false);
-                PaintWideKey(g, new RectangleF(c.Left + tw3 + U(4), y, tw3, U(19)), MaterialIcon.Search, L.T("Detect"), "dir:detect", false);
-                PaintWideKey(g, new RectangleF(c.Left + 2 * (tw3 + U(4)), y, tw3, U(19)), MaterialIcon.Description, L.T("Open"), "logs", false);
-                y += U(23);
-                var note = ok ? L.T("Combat logs found.") : L.T("No combat logs here yet. They appear once a pilot is in space; or pick the folder.");
-                var notef = TextFont(note, U(7.2f));
-                float noteh = g.MeasureString(note, notef, (int)c.Width).Height;   // the "no logs" note takes two lines: the next title moves down (1.5.2)
-                using (var b = new SolidBrush(ok ? Color.FromArgb(120, BodyTheme.Ink) : Color.FromArgb(220, 255, 120, 110)))
-                    g.DrawString(note, notef, b, new RectangleF(c.Left, y, c.Width, noteh + U(2)));
-                y += Math.Max(U(18), noteh + U(6));
-                if (storage == null) storage = ReadStorage();
-                var dt = L.T("App data");
-                Glow(g, dt, TitleFont(dt, U(7.2f)), Muted, c.Left, y);
-                var total = storage.FirstOrDefault(r => r.Item3);
-                if (total != null)
-                {
-                    var nf3 = NornsFonts.Screen(U(6.5f));
-                    using (var b = new SolidBrush(BodyTheme.Accent)) g.DrawString(total.Item2, nf3, b, c.Right - g.MeasureString(total.Item2, nf3, 1000, StringFormat.GenericTypographic).Width, y, StringFormat.GenericTypographic);
-                }
-                y += U(11);
-                var pf2 = TextFont(AppInfo.DataDir, U(7.2f));
-                using (var b = new SolidBrush(Color.FromArgb(150, BodyTheme.Ink)))
-                    g.DrawString(Shown(AppInfo.DataDir), pf2, b, new RectangleF(c.Left, y, c.Width, pf2.GetHeight(g) + U(1)), new StringFormat { Trimming = StringTrimming.EllipsisPath, FormatFlags = StringFormatFlags.NoWrap });
-                y += U(13);
-                PaintWideKey(g, new RectangleF(c.Left, y, c.Width, U(19)), MaterialIcon.Folder, L.T("Open app data folder"), "data", false);
-                y += U(23);
-                // done: a check for the 2.5 s the key is lit (owner, 1.5.2: the refresh icon looked pressable again)
-                PaintWideKey(g, new RectangleF(c.Left, y, c.Width, U(19)), resetShown ? MaterialIcon.Check : MaterialIcon.Refresh, resetShown ? L.T("Anomalies, ISK and grid reset") : L.T("Reset anomalies, ISK and grid"), "reset", resetShown);
-            }
+            else if (page == "data") PaintScrolled(g, c, y, PaintDataContent);
             else if (page == "stats") PaintStats(g, c, y, line);
             else
             {

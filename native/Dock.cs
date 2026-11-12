@@ -129,7 +129,8 @@ namespace TheNorns
                 for (int i = 0; i < n; i++)
                 {
                     var r = DockCell(i);
-                    var fill = i == on ? BodyTheme.Accent : i == hot ? Mix(BodyTheme.Hull, Color.White, 0.18) : BodyTheme.Hull;
+                    // the accent as shipped: the squares sit beside the game, outside the body, and stay as they are with eye comfort
+                    var fill = i == on ? Palette.All[0].Accent : i == hot ? Mix(BodyTheme.Hull, Color.White, 0.18) : BodyTheme.Hull;
                     using (var p = Round(r, 6))
                     {
                         using (var b = new SolidBrush(fill)) g.FillPath(b, p);
