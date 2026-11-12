@@ -1,5 +1,15 @@
 # Changelog
 
+## 1.6.0 — 2026-11-12
+
+- Settings → Display → Colours: Eye comfort, a muted scheme for long sessions. The body's accent and lamps go softer, the glow goes and the white text dims a little, so the game stays in front and the numbers still read. Carousel's squares beside the body keep their colours.
+- Hull saturation and Hull brightness: two sliders from −50 to +50 with 0 in the middle, the steel hull of 1.5.3. Brightness goes down to near-black graphite and up to light steel, the texture always visible. A double click puts a slider back to 0.
+- The settings pages scroll with the wheel instead of squeezing their rows.
+- Settings → General → Alerts: two optional sounds, both off by default, each with a play key — "Sound on a faction spawn" (a toggle switch snapping over, then a short digital rise) for a faction NPC or commander, and "Sound on a re-warp with no damage" (a breaker thrown) when the red count-down comes up.
+- The titan and pirate dreadnought alert starts with the thud of a lever, and all three sounds are at one loudness (the alert was much louder than the rest).
+- Volume: one slider in the Alerts row sets the loudness of every sound of the app.
+- Carousel without the live picture: a switch to another client blurs the power display's animation and shows that character's name for 5 s, in the same size and place as over the live picture; then the animation is sharp again. Switching several times in a row keeps the blur and changes only the name.
+
 ## 1.5.3 — 2026-11-06
 
 - Fix: Settings → Display froze for about half a second the first time it opened (the ノルン animation worked out its dots the slow way); it now opens at once.
