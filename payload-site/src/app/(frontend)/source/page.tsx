@@ -47,9 +47,9 @@ export default async function SourcePage() {
     console.error('Source page payload fetch error:', err)
   }
 
-  const installerUrl = latestRelease?.installerUrl || 'https://github.com/MadisonCatfish/the-norns/releases/download/v1.5.3/TheNorns-Setup-1.5.3.exe'
-  const portableUrl = latestRelease?.portableUrl || 'https://github.com/MadisonCatfish/the-norns/releases/download/v1.5.3/TheNorns-1.5.3-portable.zip'
-  const versionTag = latestRelease?.version || 'v1.5.3'
+  const installerUrl = latestRelease?.installerUrl || 'https://github.com/MadisonCatfish/the-norns/releases/download/v1.6.0/TheNorns-Setup-1.6.0.exe'
+  const portableUrl = latestRelease?.portableUrl || 'https://github.com/MadisonCatfish/the-norns/releases/download/v1.6.0/TheNorns-1.6.0-portable.zip'
+  const versionTag = latestRelease?.version || 'v1.6.0'
   const githubUrl = sourceData?.githubRepoUrl || 'https://github.com/MadisonCatfish/the-norns'
   const showBtn1 = sourceData?.heroPrimaryShow ?? true
   const labelBtn1 = sourceData?.heroPrimaryLabel?.trim() ? sourceData.heroPrimaryLabel : 'Inspect GitHub Repo →'

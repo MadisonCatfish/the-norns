@@ -18,7 +18,7 @@ export const SiteSettings: GlobalConfig = {
       name: 'heroBadge',
       type: 'text',
       label: 'Hero Status Pill Text',
-      defaultValue: 'THE NORNS 1.5.3',
+      defaultValue: 'THE NORNS 1.6.0',
     },
     {
       name: 'heroTitlePrefix',

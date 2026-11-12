@@ -1,6 +1,66 @@
 [
   {
     "order": 1,
+    "title": "Release 1.6.0",
+    "status": "done",
+    "statusLabel": "12.11.2026",
+    "description": "Published 12.11.2026: https://github.com/MadisonCatfish/the-norns/releases/tag/v1.6.0",
+    "checklist": [
+      {
+        "text": "Eye comfort mode in Settings → Display → Colours: muted accents, zero glow, dimmed white text",
+        "note": "",
+        "completed": true
+      },
+      {
+        "text": "Hull tone sliders: Hull saturation and Hull brightness (−50..+50) with double-click reset to 0",
+        "note": "",
+        "completed": true
+      },
+      {
+        "text": "Settings pages scroll with the mouse wheel instead of squeezing rows",
+        "note": "",
+        "completed": true
+      },
+      {
+        "text": "Sci-fi audio alerts in Settings → General → Alerts: faction spawn and dry re-warp sounds, master volume slider",
+        "note": "",
+        "completed": true
+      },
+      {
+        "text": "Titan and pirate dreadnought alert: starts with a lever thud, normalized loudness",
+        "note": "",
+        "completed": true
+      },
+      {
+        "text": "Carousel: blur and active pilot name overlay for 5 s on client switch without live DWM video",
+        "note": "",
+        "completed": true
+      },
+      {
+        "text": "Full localization: UK, ES, DE, IT, FR, ZH strings complete",
+        "note": "",
+        "completed": true
+      },
+      {
+        "text": "Version, CHANGELOG, README; release build, self-tests; notes with SHA-256",
+        "note": "",
+        "completed": true
+      },
+      {
+        "text": "main + tag v1.6.0 pushed, release Latest; installer and portable packages verified",
+        "note": "",
+        "completed": true
+      },
+      {
+        "text": "Website update and press release materials (EN &amp; UK)",
+        "note": "",
+        "completed": true
+      }
+    ],
+    "_status": "published"
+  },
+  {
+    "order": 2,
     "title": "Release 1.5.3 · hotfix",
     "status": "done",
     "statusLabel": "06.11.2026",
@@ -40,7 +100,7 @@
     "_status": "published"
   },
   {
-    "order": 2,
+    "order": 3,
     "title": "Release 1.5.2",
     "status": "done",
     "statusLabel": "06.11.2026",
@@ -85,7 +145,7 @@
     "_status": "published"
   },
   {
-    "order": 3,
+    "order": 4,
     "title": "Release 1.5.1",
     "status": "done",
     "statusLabel": "05.11.2026",
@@ -140,7 +200,7 @@
     "_status": "published"
   },
   {
-    "order": 4,
+    "order": 5,
     "title": "Release 1.5.0",
     "status": "done",
     "statusLabel": "02.11.2026",
@@ -180,7 +240,7 @@
     "_status": "published"
   },
   {
-    "order": 5,
+    "order": 6,
     "title": "0 · Update check on start",
     "status": "done",
     "statusLabel": "1.4.0",
@@ -215,7 +275,7 @@
     "_status": "published"
   },
   {
-    "order": 6,
+    "order": 7,
     "title": "11 · Dreadnought spawn alert",
     "status": "done",
     "statusLabel": "1.3.0",
@@ -250,7 +310,7 @@
     "_status": "published"
   },
   {
-    "order": 7,
+    "order": 8,
     "title": "1 · Anomaly timer",
     "status": "wip",
     "statusLabel": "1.2.0 · rework the fade",
@@ -300,7 +360,7 @@
     "_status": "published"
   },
   {
-    "order": 8,
+    "order": 9,
     "title": "2 · Faction spawn statistics",
     "status": "done",
     "statusLabel": "1.3.0",
@@ -345,7 +405,7 @@
     "_status": "published"
   },
   {
-    "order": 9,
+    "order": 10,
     "title": "3 · Compact mode",
     "status": "done",
     "statusLabel": "1.4.0",
@@ -370,7 +430,7 @@
     "_status": "published"
   },
   {
-    "order": 10,
+    "order": 11,
     "title": "4 · Potato mode",
     "status": "done",
     "statusLabel": "1.4.0",
@@ -395,7 +455,7 @@
     "_status": "published"
   },
   {
-    "order": 11,
+    "order": 12,
     "title": "5 · Competition mode",
     "status": "wip",
     "statusLabel": "1.4.0 · more next",
@@ -440,7 +500,7 @@
     "_status": "published"
   },
   {
-    "order": 12,
+    "order": 13,
     "title": "6 · Classic mode",
     "status": "need",
     "statusLabel": "needs spec",
@@ -455,7 +515,7 @@
     "_status": "published"
   },
   {
-    "order": 13,
+    "order": 14,
     "title": "7 · Chinese (zh)",
     "status": "wip",
     "statusLabel": "1.5.0 · native check",
@@ -495,27 +555,27 @@
     "_status": "published"
   },
   {
-    "order": 14,
+    "order": 15,
     "title": "8 · Custom UI themes",
-    "status": "todo",
-    "statusLabel": "planned",
-    "description": "Player-selectable colourways; after compact mode.",
+    "status": "done",
+    "statusLabel": "1.6.0",
+    "description": "Player-selectable colourways and tunable hull tones.",
     "checklist": [
       {
-        "text": "Owner: which themes",
-        "note": "",
-        "completed": false
+        "text": "Eye comfort colour scheme: muted accents, zero glow, dimmed white text (Settings → Display → Colours)",
+        "note": "1.6.0",
+        "completed": true
       },
       {
-        "text": "Sketch → OK → code → release",
-        "note": "",
-        "completed": false
+        "text": "Hull saturation and Hull brightness sliders (−50..+50) with double-click reset",
+        "note": "1.6.0",
+        "completed": true
       }
     ],
     "_status": "published"
   },
   {
-    "order": 15,
+    "order": 16,
     "title": "9 · No-client alarm on the power display",
     "status": "done",
     "statusLabel": "1.3.0",
@@ -540,7 +600,7 @@
     "_status": "published"
   },
   {
-    "order": 16,
+    "order": 17,
     "title": "19 · ESS share: in hand against the bank",
     "status": "todo",
     "statusLabel": "planned",
@@ -570,7 +630,7 @@
     "_status": "published"
   },
   {
-    "order": 17,
+    "order": 18,
     "title": "20 · Minimize to the tray",
     "status": "done",
     "statusLabel": "1.5.1",
@@ -615,7 +675,7 @@
     "_status": "published"
   },
   {
-    "order": 18,
+    "order": 19,
     "title": "21 · Compact / full mode key",
     "status": "done",
     "statusLabel": "1.5.1",
@@ -640,7 +700,7 @@
     "_status": "published"
   },
   {
-    "order": 19,
+    "order": 20,
     "title": "10 · ESS Escrow Payment",
     "status": "cancelled",
     "statusLabel": "cancelled",
@@ -685,7 +745,7 @@
     "_status": "published"
   },
   {
-    "order": 20,
+    "order": 21,
     "title": "12 · Settings: room for more pages",
     "status": "cancelled",
     "statusLabel": "cancelled",
@@ -710,7 +770,7 @@
     "_status": "published"
   },
   {
-    "order": 21,
+    "order": 22,
     "title": "13 · Code signing",
     "status": "need",
     "statusLabel": "route to choose",
@@ -770,7 +830,7 @@
     "_status": "published"
   },
   {
-    "order": 22,
+    "order": 23,
     "title": "14 · Formula card animation",
     "status": "done",
     "statusLabel": "1.5.0",
@@ -795,7 +855,7 @@
     "_status": "published"
   },
   {
-    "order": 23,
+    "order": 24,
     "title": "15 · Client preview &amp; switching",
     "status": "wip",
     "statusLabel": "1.5.0 · off by default",
@@ -855,7 +915,7 @@
     "_status": "published"
   },
   {
-    "order": 24,
+    "order": 25,
     "title": "16 · Updates in one click",
     "status": "done",
     "statusLabel": "1.5.0",
@@ -900,7 +960,7 @@
     "_status": "published"
   },
   {
-    "order": 25,
+    "order": 26,
     "title": "17 · Settings typography and structure",
     "status": "wip",
     "statusLabel": "1.5.0 · installer next",
@@ -945,7 +1005,7 @@
     "_status": "published"
   },
   {
-    "order": 26,
+    "order": 27,
     "title": "18 · Statistics and the calendar",
     "status": "done",
     "statusLabel": "1.5.0",
