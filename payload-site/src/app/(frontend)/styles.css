@@ -700,6 +700,7 @@
     .col-7 { grid-column: span 7; }
     .col-5 { grid-column: span 5; }
     .col-6 { grid-column: span 6; }
+    .col-4 { grid-column: span 4; }
     .col-12 { grid-column: span 12; }
 
     .bento-content {
@@ -1130,7 +1131,7 @@
     }
 
     @media (max-width: 900px) {
-      .col-7, .col-5, .col-6 { grid-column: span 12; }
+      .col-7, .col-5, .col-6, .col-4 { grid-column: span 12; }
       .metric-grid { grid-template-columns: repeat(2, 1fr); }
       .metric-cell:nth-child(2) { border-right: none; }
       .metric-cell:nth-child(1),

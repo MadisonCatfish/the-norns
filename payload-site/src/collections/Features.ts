@@ -45,6 +45,7 @@ export const Features: CollectionConfig = {
         { label: 'Standard (Half Width, col-6)', value: 'col-6' },
         { label: 'Wide (7/12 Width, col-7)', value: 'col-7' },
         { label: 'Narrow (5/12 Width, col-5)', value: 'col-5' },
+        { label: 'One-Third (4/12 Width, col-4)', value: 'col-4' },
       ],
       label: 'Card Grid Width',
     },

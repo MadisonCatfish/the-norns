@@ -190,9 +190,9 @@ export default async function HomePage() {
                     const rawUrl = f.videoUrl || '/assets/the-norns-competition.mp4'
                     const cleanUrl = rawUrl.replace('https://the-norns.pages.dev', '')
                     const webmUrl = cleanUrl.replace(/\.mp4$/, '.webm')
-                    const posterUrl = (f.videoPoster || '/assets/the-norns-competition-poster.jpg')
+                    const rawPoster = (f.videoPoster || '/assets/the-norns-competition-poster.jpg')
                       .replace('https://the-norns.pages.dev', '')
-                      .replace(/\.jpg$/, '.webp')
+                    const posterUrl = rawPoster.startsWith('http') ? rawPoster : rawPoster.replace(/\.jpg$/, '.webp')
 
                     return (
                       <video
