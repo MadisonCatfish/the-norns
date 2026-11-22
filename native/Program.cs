@@ -58,6 +58,8 @@ namespace TheNorns
                 bool preview = Array.IndexOf(args, "--preview-no-clients") >= 0 || Array.IndexOf(args, "--preview-update") >= 0 || Array.IndexOf(args, "--preview-rewarps") >= 0 || Array.IndexOf(args, "--preview-dread") >= 0 || Array.IndexOf(args, "--preview-competition") >= 0 || Fleet.TracePath != null;
                 if (!first && !preview) return;   // already open
                 Application.EnableVisualStyles();
+                // tuning (Tune.cs): tuning.json and the Tuning window only with --tune or in a test build
+                Tune.Init(Array.IndexOf(args, "--tune") >= 0 || DpsForm.TestLabel != null);
                 if (preview) DpsForm.SelfTesting = true;   // the preview keeps no position and no session statistics
                 if (preview && Array.IndexOf(args, "--potato") >= 0) DpsForm.Potato = true;   // a preview in Potato mode
                 if (preview && Array.IndexOf(args, "--compact") >= 0) DpsForm.Compact = true;   // a preview in Compact mode
@@ -70,6 +72,7 @@ namespace TheNorns
                 int pu = Array.IndexOf(args, "--preview-update");
                 if (pu >= 0 && args.Length > pu + 1) { DpsForm.UpdateAtStart = false; f.DemoUpdate(args[pu + 1]); }
                 f.ShowDps();
+                if (Array.IndexOf(args, "--tune") >= 0) f.OpenTuning();   // the Tuning window at start (TuneWindow.cs)
                 Application.Run(f);
             }
         }

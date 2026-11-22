@@ -39,23 +39,29 @@ namespace TheNorns
             trayPotato = new ToolStripMenuItem(L.T("Potato mode"), null, (s, e) => { ShowFromTray(); Activate("potato"); });
             menu.Items.Add(trayShow);
             menu.Items.Add(new ToolStripSeparator());
-            menu.Items.Add(new ToolStripMenuItem(L.T("Settings"), null, (s, e) => OpenPageFromTray("general")));
-            menu.Items.Add(new ToolStripMenuItem(L.T("Statistics"), null, (s, e) => OpenPageFromTray("stats")));
+            // the items are kept by reference: the menu's order changes with tuning on (Tuning), so never by index
+            var settings = new ToolStripMenuItem(L.T("Settings"), null, (s, e) => OpenPageFromTray("general"));
+            var statistics = new ToolStripMenuItem(L.T("Statistics"), null, (s, e) => OpenPageFromTray("stats"));
+            var updates = new ToolStripMenuItem(L.T("Check for updates"), null, (s, e) => { OpenPageFromTray("about"); CheckForUpdates(false); });
+            var exit = new ToolStripMenuItem(L.T("Exit"), null, (s, e) => { ShowFromTray(); SavePos(); Close(); });
+            menu.Items.Add(settings);
+            menu.Items.Add(statistics);
             menu.Items.Add(new ToolStripSeparator());
             menu.Items.Add(trayCompact);
             menu.Items.Add(trayPotato);
             menu.Items.Add(new ToolStripSeparator());
-            menu.Items.Add(new ToolStripMenuItem(L.T("Check for updates"), null, (s, e) => { OpenPageFromTray("about"); CheckForUpdates(false); }));
+            if (Tune.Enabled) { menu.Items.Add(new ToolStripMenuItem("Tuning", null, (s, e) => OpenTuning())); menu.Items.Add(new ToolStripSeparator()); }   // --tune / test build (TuneWindow.cs), English only
+            menu.Items.Add(updates);
             menu.Items.Add(new ToolStripSeparator());
-            menu.Items.Add(new ToolStripMenuItem(L.T("Exit"), null, (s, e) => { ShowFromTray(); SavePos(); Close(); }));
+            menu.Items.Add(exit);
             // the texts and checks as they are now (the language may have changed since)
             menu.Opening += (s, e) =>
             {
                 trayShow.Text = Visible ? L.T("Hide") : L.T("Show");
                 trayCompact.Text = L.T("Compact mode"); trayCompact.Checked = Compact;
                 trayPotato.Text = L.T("Potato mode"); trayPotato.Checked = Potato;
-                menu.Items[2].Text = L.T("Settings"); menu.Items[3].Text = L.T("Statistics");
-                menu.Items[8].Text = L.T("Check for updates"); menu.Items[10].Text = L.T("Exit");
+                settings.Text = L.T("Settings"); statistics.Text = L.T("Statistics");
+                updates.Text = L.T("Check for updates"); exit.Text = L.T("Exit");
             };
             return menu;
         }
@@ -94,7 +100,7 @@ namespace TheNorns
         {
             if (tray == null) return;
             var now = DateTime.UtcNow;
-            bool titan = (now - stats.LastTitan).TotalSeconds < 20, dread = (now - stats.LastDread).TotalSeconds < 20;
+            bool titan = (now - stats.LastTitan).TotalSeconds < Tune.OnGridS.V, dread = (now - stats.LastDread).TotalSeconds < Tune.OnGridS.V;
             string key;
             if (titan || dread) key = (now.Second % 2 == 0) ? (titan ? "alarm-red" : "alarm-yellow") : "plain";   // flashes
             else if (updateState == 3) key = "update";

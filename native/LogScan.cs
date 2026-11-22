@@ -77,7 +77,7 @@ namespace TheNorns
             foreach (var s in seen.OrderBy(x => x.Item1))
             {
                 DateTime prev;
-                if (!last.TryGetValue(s.Item2, out prev) || (s.Item1 - prev).TotalMinutes > 10) spawns.Add(Tuple.Create(s.Item1.ToLocalTime(), s.Item3));
+                if (!last.TryGetValue(s.Item2, out prev) || (s.Item1 - prev).TotalMinutes > Tune.SpawnSameMin.Def) spawns.Add(Tuple.Create(s.Item1.ToLocalTime(), s.Item3));
                 last[s.Item2] = s.Item1;
             }
             if (!Directory.Exists(sessionDir)) return L.F("{0} logs read: no saved sessions", files);

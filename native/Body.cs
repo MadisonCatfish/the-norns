@@ -310,7 +310,7 @@ namespace TheNorns
         {
             if (stats.LoudSpawns == loudHeard) return;
             loudHeard = stats.LoudSpawns;
-            if (SpawnSound && (now - stats.LastLoudSpawn).TotalSeconds < 60) PlayAlert();
+            if (SpawnSound && (now - stats.LastLoudSpawn).TotalSeconds < Tune.SoundRecentS.V) PlayAlert();
         }
         const int PotatoInterval = 200;
         readonly ToolTip tip = new ToolTip { ShowAlways = true, UseAnimation = false, UseFading = false };
@@ -321,6 +321,7 @@ namespace TheNorns
         public bool DemoLive;       // --demo-anim: DemoNow moves, the eased parts ease as they do live
         double Clock { get { return DemoClock ?? clock.Elapsed.TotalSeconds; } }
         Bitmap shell;   // the static body, drawn once per size
+        bool shellTuned;   // the shell was drawn with TUNED on the band (Tune.cs)
         public DateTime? DemoNow;            // selftest: a fixed "now"
         public double? DemoSeconds;          // selftest: a fixed animation time
         public Point? DemoMouse;             // selftest: where the mouse lights the glass
@@ -429,9 +430,10 @@ namespace TheNorns
             timer.Tick += (s, e) =>
             {
                 var now = DateTime.UtcNow;
-                if ((now - lastPoll).TotalMilliseconds >= 1000)
+                if ((now - lastPoll).TotalMilliseconds >= Tune.LogPollMs.V)
                 {
                     lastPoll = now;
+                    Tune.Poll();   // tuning.json changed outside the Tuning window (only with tuning on)
                     if (replay != null) ReplayStep(now); else stats.Add(tail.Poll(stats), now);
                     SoundSpawns(now);
                     SoundFactionSpawns(now);
@@ -713,7 +715,8 @@ namespace TheNorns
         public Bitmap Draw() { return DrawTo(new Bitmap(Width, Height, PixelFormat.Format32bppArgb)); }
         Bitmap DrawTo(Bitmap bmp)
         {
-            if (shell == null || shell.Size != Size) { if (shell != null) shell.Dispose(); shell = DrawShell(); }
+            bool tunedNow = Tune.Enabled && Tune.AnyChanged;   // the band's TUNED mark is part of the shell
+            if (shell == null || shell.Size != Size || tunedNow != shellTuned) { if (shell != null) shell.Dispose(); shell = DrawShell(); shellTuned = tunedNow; }
             var now = DemoNow ?? DateTime.UtcNow;
             using (var g = Graphics.FromImage(bmp))
             {
@@ -880,12 +883,13 @@ namespace TheNorns
                 for (int i = 2; i >= 0; i--) g.FillRectangle(silk, rx - V(0.75f) - i * V(1.75f), cy - V(2.25f), V(0.75f), V(4.5f));
                 // a test build (build.ps1 -Test): TEST BUILD and its short description in place of the promise, in the dread
                 // tone, cut with "…" before the ticks (owner, 06.11.2026)
-                if (TestLabel != null)
+                bool tuned = Tune.Enabled && Tune.AnyChanged;   // a value differs from its default (Tune.cs): TUNED first, never cut
+                if (TestLabel != null || tuned)
                 {
                     float room = rx - V(5.25f) - V(6) - x;
                     var tf = NornsFonts.Body(V(5) + U(2));   // 2 px larger than the band's markings (owner, 06.11.2026)
                     float tty = cy - tf.GetHeight(g) / 2;
-                    var t = ("TEST BUILD · " + TestLabel).ToUpperInvariant();
+                    var t = ((tuned ? "TUNED · " : "") + (TestLabel != null ? "TEST BUILD · " + TestLabel : "")).TrimEnd(' ', '·').ToUpperInvariant();
                     if (SpacedWidth(g, t, tf, sp) > room)
                     {
                         while (t.Length > 1 && SpacedWidth(g, t + "…", tf, sp) > room) t = t.Substring(0, t.Length - 1).TrimEnd();
@@ -901,7 +905,7 @@ namespace TheNorns
         }
 
         // the label of a test build, embedded by build.ps1 -Test; null in a release build
-        internal static readonly string TestLabel = ReadTestLabel();
+        internal static string TestLabel = ReadTestLabel();   // not readonly: the self-test draws the band with a label
         static string ReadTestLabel()
         {
             try
@@ -1041,7 +1045,7 @@ namespace TheNorns
             double t = Clock, dt = animLast < 0 ? 0 : Math.Min(0.2, t - animLast);
             animLast = t;
             var warp = stats.Tracker.LastWarpTime;
-            bool warping = warp > DateTime.MinValue && stats.LastNpcHit < warp && (now - warp).TotalSeconds > 8;
+            bool warping = warp > DateTime.MinValue && stats.LastNpcHit < warp && (now - warp).TotalSeconds > Tune.WarpingAfterS.V;
             animSpeed += ((warping ? 0.08 : 1.0) - animSpeed) * 0.04;
             animTime += dt * animSpeed;
             return animTime;
@@ -1323,13 +1327,13 @@ namespace TheNorns
         {
             double t = Clock, dt = heatClock < 0 ? 0 : Math.Min(0.5, t - heatClock);
             heatClock = t;
-            bool titan = (now - stats.LastTitan).TotalSeconds < 20;
+            bool titan = (now - stats.LastTitan).TotalSeconds < Tune.OnGridS.V;
             bool demoHot = dreadDemo != DateTime.MinValue && (DateTime.UtcNow - dreadDemo).TotalSeconds % 16 < 6;
             if (demoHot && !dreadDemoHot && SpawnSound) PlayAlert();   // the demo's dreadnought spawns: the alert, if it is on
             dreadDemoHot = demoHot;
-            bool dread = (now - stats.LastDread).TotalSeconds < 20 || demoHot;
-            heat += ((titan ? 1 : 0) - heat) * (1 - Math.Exp(-dt / (titan ? 0.35 : 3.5)));
-            heatY += ((dread ? 1 : 0) - heatY) * (1 - Math.Exp(-dt / (dread ? 0.35 : 3.5)));
+            bool dread = (now - stats.LastDread).TotalSeconds < Tune.OnGridS.V || demoHot;
+            heat += ((titan ? 1 : 0) - heat) * (1 - Math.Exp(-dt / (titan ? Tune.HeatRiseTau.V : Tune.HeatFallTau.V)));
+            heatY += ((dread ? 1 : 0) - heatY) * (1 - Math.Exp(-dt / (dread ? Tune.HeatRiseTau.V : Tune.HeatFallTau.V)));
             PaintHot(g, DemoHeatY ?? heatY, HotYellow, t);
             PaintHot(g, DemoHeat ?? heat, HotRed, t);
         }
@@ -1552,7 +1556,7 @@ namespace TheNorns
         public bool? DemoRewarp;                            // selftest
         double countStart = -1;            // when the count-up began (the timer's fade-in)
         DateTime countWarp;                // the warp the count belongs to
-        const double CountSecs = 1.4;
+        static double CountSecs { get { return Tune.CountUpS.V; } }
         public float TimerThin = 1.4f;          // how much of the stroke is eaten (both edges together; owner, 27.10.2026)
         void StepQuiet(DateTime now)
         {
@@ -1565,24 +1569,25 @@ namespace TheNorns
             if (!NoClientNow) noClientSince = -1; else if (noClientSince < 0) noClientSince = t;
             if (ClientsGone) hiddenWarp = warp;
             bool still = warp != DateTime.MinValue && warp != hiddenWarp && now >= warp && stats.LastNpcHit < warp;   // no hit since the warp
+            double down = Tune.LinesDownS.V, tin = Tune.TimerInS.V, tout = Tune.TimerOutS.V, back = Tune.LinesBackS.V;
             if (ClientsGone)
             {
-                timerA = Math.Max(0, timerA - (float)(dt / 0.15));
-                if (timerA <= 0) quiet = Math.Min(1, quiet + (float)(dt / 0.7));
+                timerA = Math.Max(0, timerA - (float)(dt / tout));
+                if (timerA <= 0) quiet = Math.Min(1, quiet + (float)(dt / down));
             }
             else if (still)
             {
-                quiet = Math.Min(1, quiet + (float)(dt / 0.7));                                        // lines down in 0.7 s
+                quiet = Math.Min(1, quiet + (float)(dt / down));                                       // lines down in 0.7 s
                 if (quiet >= 1)
                 {
                     if (timerA <= 0) countStart = t;
-                    timerA = Math.Min(1, timerA + (float)(dt / 0.6));                                   // then the timer in 0.6 s
+                    timerA = Math.Min(1, timerA + (float)(dt / tin));                                   // then the timer in 0.6 s
                 }
             }
             else
             {
-                timerA = Math.Max(0, timerA - (float)(dt / 0.15));                                   // out fast
-                if (timerA <= 0) quiet = Math.Max(0, quiet - (float)(dt / 0.6));                      // then the lines back
+                timerA = Math.Max(0, timerA - (float)(dt / tout));                                   // out fast
+                if (timerA <= 0) quiet = Math.Max(0, quiet - (float)(dt / back));                     // then the lines back
             }
             // a new warp while the timer is out (re-warps one after another): its count starts again
             if (warp != countWarp) { countWarp = warp; if (timerA > 0) countStart = t; }
@@ -1591,7 +1596,7 @@ namespace TheNorns
         }
         DateTime hiddenWarp = DateTime.MinValue;   // the warp whose timer went with the clients
         double noClientSince = -1;                 // since when no client is found (Clock), -1 while there is one
-        const double NoClientAfter = 5;
+        static double NoClientAfter { get { return Tune.NoClientAfterS.V; } }
         bool NoClientNow { get { return DemoNoClients ?? clients == 0; } }
         bool ClientsGone { get { return noClientSince >= 0 && Clock - noClientSince >= NoClientAfter; } }
         void PaintAnomalyTimer(Graphics g, RectangleF plot, DateTime now)
@@ -1647,7 +1652,7 @@ namespace TheNorns
         }
 
         const string SbKey = "\0smartbombs";
-        const double IdleGap = 120;   // s between two warps with no hit: the pack was not active (owner, 05.11.2026)
+        static double IdleGap { get { return Tune.IdleGapS.V; } }   // s between two warps with no hit: the pack was not active (owner, 05.11.2026)
         static double RewarpHash(long n) { double t = Math.Sin(n * 12.9898 + 78.233) * 43758.5453; return t - Math.Floor(t); }
         static Color SbLineColor { get { return BodyTheme.Ink; } }   // the smartbomb line: dotted, in the pilots' white (owner, 27.10.2026)
         // a line's points on the plot, into one buffer kept for every line of every frame (drawn at once, never kept)
@@ -1886,7 +1891,7 @@ namespace TheNorns
             int count = ticks.Count - first;
             var raw = new double[count];
             var sorted = ticks.Skip(first).OrderBy(v => v).ToList(); long median = sorted.Count > 0 ? sorted[sorted.Count / 2] : 0;
-            for (int i = 0; i < count; i++) raw[i] = Math.Max(0, Math.Min(1, (Math.Log(Math.Max(1, ticks[first + i])) - Math.Log(3000)) / (Math.Log(270000) - Math.Log(3000))));
+            for (int i = 0; i < count; i++) raw[i] = IskHeat(ticks[first + i]);
             var spawnDots = new List<Tuple<RectangleF, int, bool>>();   // drawn last: on top of the grid
             for (int i = 0; i < Rows * Cols; i++)
             {
@@ -1905,10 +1910,11 @@ namespace TheNorns
                             if (dc == 0 && dr == 0) continue;
                             int nr = row + dr, nc = col + dc, ni = nc * Rows + nr;
                             if (nr < 0 || nr >= Rows || nc < 0 || ni >= count) continue;
-                            double kw = dc != 0 && dr != 0 ? 0.5 : 1;
+                            double kw = dc != 0 && dr != 0 ? Tune.IskDiagonalWeight.V : 1;
                             sum += raw[ni] * kw; wsum += kw;
                         }
-                    target = wsum > 0 ? 0.6 * raw[i] + 0.4 * sum / wsum : raw[i];
+                    double share = Tune.IskNeighbourShare.V;
+                    target = wsum > 0 ? (1 - share) * raw[i] + share * sum / wsum : raw[i];
                     // a slow shimmer, each cell on its own beat
                     if (!Potato) target *= 0.9 + 0.1 * Math.Sin(secs * cellBeat[i] + cellPhase[i]);
                 }
@@ -1916,7 +1922,7 @@ namespace TheNorns
                 // unevenly, not all at once (snapped in self-tests)
                 // a spawn's own tick (at least 4x the site's median: its bounty, not the small ships dying with it) is not
                 // faded in: it is there at once, in its colour, over the grid (owner, 31.10.2026)
-                int kind = i < count && first + i < tr.BountyTimes.Count && ticks[first + i] >= 4 * median ? stats.KindNear(tr.BountyTimes[first + i]) : 0;
+                int kind = i < count && first + i < tr.BountyTimes.Count && ticks[first + i] >= Tune.IskSpawnTickX.V * median ? stats.KindNear(tr.BountyTimes[first + i]) : 0;
                 if (DemoNow != null && !DemoLive || Potato || kind != 0) { cellHeat[i] = (float)target; cellLit[i] = (float)presence; }
                 else { cellHeat[i] += (float)((target - cellHeat[i]) * cellPace[i]); cellLit[i] += (float)((presence - cellLit[i]) * cellPace[i]); }
                 double t = cellHeat[i], lit = cellLit[i];
@@ -1945,6 +1951,12 @@ namespace TheNorns
         // ISK. A column with a commander's or a titan's tick takes its colour outright, full and a little larger, drawn
         // over its neighbours (owner, 28.10.2026)
         const int GridRows = 10, GridCols = 26;
+        // a tick's heat 0..1 on the log scale between the coldest and the hottest tick (Tune: ISK grid)
+        static double IskHeat(double isk)
+        {
+            double lo = Math.Log(Tune.IskHeatMin.V), hi = Math.Log(Math.Max(Tune.IskHeatMin.V * 1.01, Tune.IskHeatMax.V));
+            return Math.Max(0, Math.Min(1, (Math.Log(Math.Max(1, isk)) - lo) / (hi - lo)));
+        }
         void PaintIskRow(Graphics g, RectangleF r)
         {
             const int Rows = GridRows, Cols = GridCols;
@@ -1963,10 +1975,10 @@ namespace TheNorns
                 for (int i = a; i < b; i++)
                 {
                     avg += ticks[first + i];
-                    if (first + i < tr.BountyTimes.Count && ticks[first + i] >= 4 * median) { int k = stats.KindNear(tr.BountyTimes[first + i]); if (DpsStats.Rank(k) > DpsStats.Rank(kind)) kind = k; }
+                    if (first + i < tr.BountyTimes.Count && ticks[first + i] >= Tune.IskSpawnTickX.V * median) { int k = stats.KindNear(tr.BountyTimes[first + i]); if (DpsStats.Rank(k) > DpsStats.Rank(kind)) kind = k; }
                 }
                 avg /= b - a;
-                double t = Math.Max(0, Math.Min(1, (Math.Log(Math.Max(1, avg)) - Math.Log(3000)) / (Math.Log(270000) - Math.Log(3000))));
+                double t = IskHeat(avg);
                 if (kind != 0) { marked.Add(Tuple.Create(cell, kind, b == count)); continue; }
                 var c = HeatColor(t);
                 SoftGlow(g, new PointF(cx, cy), d / 2 + U(3 + (float)t * 7), c, (int)(t * t * 255 * 0.3));
@@ -2000,13 +2012,13 @@ namespace TheNorns
             var list = new List<DpsStats.Sighting>();
             foreach (var sg in stats.Sightings)
             {
-                if ((now - sg.Last).TotalSeconds > 90) continue;
+                if ((now - sg.Last).TotalSeconds > Tune.IskPendingS.V) continue;
                 bool paid = false;
-                for (int k = tr.BountyTimes.Count - 1; k >= 0 && tr.BountyTimes[k] >= sg.First.AddSeconds(-4); k--)
+                for (int k = tr.BountyTimes.Count - 1; k >= 0 && tr.BountyTimes[k] >= sg.First.AddSeconds(-Tune.KindNearBeforeS.V); k--)
                     if (stats.KindNear(tr.BountyTimes[k]) == sg.Kind) { paid = true; break; }
                 if (!paid) list.Add(sg);
             }
-            return list.OrderByDescending(x => DpsStats.Rank(x.Kind)).ThenBy(x => x.First).Take(3).Select(x => x.Kind).ToList();
+            return list.OrderByDescending(x => DpsStats.Rank(x.Kind)).ThenBy(x => x.First).Take(Tune.IskPendingMax.I).Select(x => x.Kind).ToList();
         }
 
         // one spawn's dot, drawn over the grid: full colour, a little larger, a strong glow that breathes (still in Potato)
@@ -2184,6 +2196,7 @@ namespace TheNorns
                 f.Stats.Spawns.Add(Tuple.Create(now.AddMinutes(-62), "Shadow Serpentis Vice Admiral"));
                 f.Stats.Spawns.Add(Tuple.Create(now.AddMinutes(-24), "Shadow Serpentis Flotilla Admiral"));
                 save(f, "dps_window.png");
+                TuneWindow.SelfTest(f, dir, now, sb);   // the Tuning window and its Inspector (TuneWindow.cs)
                 // the palette (Palette.cs): the window in every accent, the hull at 0 / 100 %; then back to the shipped colours
                 foreach (var ec in new[] { false, true }) { EyeComfort = ec; f.ThemeChanged(); save(f, ec ? "palette_eye_comfort.png" : "palette_shipped.png"); }
                 EyeComfort = false;
@@ -2492,6 +2505,29 @@ namespace TheNorns
             {
                 f.AddDemo(makeDemo(pilots3));
                 save(f, "dps_3pilots.png");
+                // the tray menu with tuning on: every item keeps its own text after Opening relabels them (tune1 showed two
+                // "Exit" and no "Tuning": the texts were set by index), drawn as it opens
+                {
+                    bool keepT = Tune.Enabled; Tune.Enabled = true;
+                    using (var menu = f.TrayMenu())
+                    {
+                        typeof(ToolStripDropDown).GetMethod("OnOpening", System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic)
+                            .Invoke(menu, new object[] { new System.ComponentModel.CancelEventArgs() });
+                        var texts = string.Join(" | ", menu.Items.OfType<ToolStripMenuItem>().Select(x => x.Text));
+                        sb.AppendLine("tray menu (tuning on): " + texts);
+                        if (texts != "Show | Settings | Statistics | Compact mode | Potato mode | Tuning | Check for updates | Exit" && L.Code == "en")
+                            throw new Exception("Tray menu texts: " + texts);
+                        menu.Size = menu.GetPreferredSize(Size.Empty);
+                        using (var b = new Bitmap(menu.Width, menu.Height)) { menu.DrawToBitmap(b, new Rectangle(Point.Empty, menu.Size)); b.Save(Path.Combine(dir, "tune_tray_menu.png"), ImageFormat.Png); }
+                    }
+                    Tune.Enabled = keepT;
+                }
+                // the band with a tuned value in a test build: TUNED first, the test label cut with "…"
+                {
+                    var keepLabel = TestLabel; TestLabel = "tune1: Tuning window + Inspector"; Tune.Enabled = true; Tune.SbCycleGapS.V = 7.5;
+                    save(f, "tune_band_tuned.png");
+                    Tune.SbCycleGapS.V = Tune.SbCycleGapS.Def; Tune.Enabled = false; TestLabel = keepLabel;
+                }
             }
             using (var f = new DpsForm(pilots8, () => null, true) { DemoNow = now, DemoSeconds = 0.5, DemoFollowing = true })
             {

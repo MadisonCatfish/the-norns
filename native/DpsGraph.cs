@@ -64,7 +64,7 @@ namespace TheNorns
         // the first one ends the anomaly, the others within 10 s are the same warp
         public void OnWarp(string leader, DateTime t)
         {
-            if (string.Equals(leader, LastWarpLeader, StringComparison.OrdinalIgnoreCase) && Math.Abs((t - LastWarpTime).TotalSeconds) <= 10) return;
+            if (string.Equals(leader, LastWarpLeader, StringComparison.OrdinalIgnoreCase) && Math.Abs((t - LastWarpTime).TotalSeconds) <= Tune.WarpDedupeS.V) return;
             LastWarpLeader = leader;
             PrevWarpTime = LastWarpTime;
             LastWarpTime = t;
@@ -229,6 +229,8 @@ namespace TheNorns
         readonly HashSet<string> notOurs = new HashSet<string>();                          // headers already read: another character
         DateTime nextScan = DateTime.MinValue;
         public string Status = L.T("waiting for the combat log");
+        // the inspector (TuneWindow.cs): which file of which pilot is followed, and how far it is read
+        public IEnumerable<Tuple<string, string, long>> FollowedFiles { get { return fileOf.Select(kv => Tuple.Create(kv.Key, kv.Value, pos.ContainsKey(kv.Value) ? pos[kv.Value] : 0)).ToList(); } }
         public bool Following;   // a log of at least one pilot is followed (the header then says "last 60 s")
         string anomalySourcePilot;
 
@@ -242,7 +244,7 @@ namespace TheNorns
         {
             var res = new List<DmgEvent>();
             var fleet = new List<Tuple<DateTime, int, object, string>>();   // (time, 0 bounty / 1 warp, event, pilot)
-            if (DateTime.UtcNow >= nextScan && (AutoDiscover || fileOf.Count < pilots.Count)) { nextScan = DateTime.UtcNow.AddSeconds(10); Scan(); }
+            if (DateTime.UtcNow >= nextScan && (AutoDiscover || fileOf.Count < pilots.Count)) { nextScan = DateTime.UtcNow.AddSeconds(Tune.LogRescanS.V); Scan(); }
             if (stats != null)
             {
                 foreach (var p in pilots) stats.EnsurePilot(p);
@@ -272,6 +274,7 @@ namespace TheNorns
                         for (int i = 0; i < lines.Length - 1; i++)
                         {
                             var obj = GameLogParser.ParseLine(lines[i].TrimEnd('\r'), kv.Key);
+                if (Tune.Enabled) Inspect.Line(kv.Key, lines[i].TrimEnd('\r'), obj);   // the Tuning window's inspector
                             var e = obj as DmgEvent;
                             if (e != null)
                             {
@@ -326,7 +329,7 @@ namespace TheNorns
                 }
                 if (!Directory.Exists(Dir)) { Status = L.T("no combat log folder"); return; }
                 var files = new DirectoryInfo(Dir).GetFiles("*.txt")
-                    .Where(x => x.LastWriteTimeUtc >= since.AddMinutes(-30))
+                    .Where(x => x.LastWriteTimeUtc >= since.AddMinutes(-Tune.LogRecentMin.V))
                     .OrderByDescending(x => x.LastWriteTimeUtc);
                 foreach (var f in files)
                 {
@@ -341,7 +344,7 @@ namespace TheNorns
                     }
                     if (pilot == null) { notOurs.Add(f.FullName); continue; }
                     if (fileOf.ContainsKey(pilot)) continue;   // an older file of the same pilot
-                    fileOf[pilot] = f.FullName; pos[f.FullName] = Math.Max(0, f.Length - 16384);
+                    fileOf[pilot] = f.FullName; pos[f.FullName] = Math.Max(0, f.Length - Tune.LogNewFileKb.I * 1024L);
                 }
                 Status = fileOf.Count == 0 ? L.T("waiting for the combat log") :
                          AutoDiscover ? L.F("{0} pilots", fileOf.Count) :
@@ -412,7 +415,7 @@ namespace TheNorns
         public int KindNear(DateTime t)
         {
             int k = 0;
-            foreach (var x in special) if (x.Item1 <= t.AddSeconds(1) && x.Item1 >= t.AddSeconds(-4) && Rank(x.Item2) > Rank(k)) k = x.Item2;
+            foreach (var x in special) if (x.Item1 <= t.AddSeconds(1) && x.Item1 >= t.AddSeconds(-Tune.KindNearBeforeS.V) && Rank(x.Item2) > Rank(k)) k = x.Item2;
             return k;
         }
         // every rare spawn as it is first hit (owner, 31.10.2026: on the ISK grid at once, before its bounty comes): its
@@ -446,13 +449,14 @@ namespace TheNorns
         bool OnRunner(DmgEvent e) { return Runner != null && e.Pilot != null && e.Pilot.Equals(Runner, StringComparison.OrdinalIgnoreCase); }
 
         // damage through the rod per second: the shots on the runner in the last `window` s x one shot's full damage
-        public double RodDps(DateTime now, double shot, double window = 10)
+        public double RodDps(DateTime now, double shot, double window = 0)
         {
+            if (window <= 0) window = Tune.RodWindowS.V;
             return RodHits.Count(h => h.T <= now && (now - h.T).TotalSeconds < window) * shot / window;
         }
         // what the runner takes per second: the Vorton shots after its resists and signature (as logged), and the NPCs
-        public double RunnerVortonTaken(DateTime now, double window = 10) { return RodHits.Where(h => h.T <= now && (now - h.T).TotalSeconds < window).Sum(h => h.Amount) / window; }
-        public double RunnerNpcTaken(DateTime now, double window = 10) { return taken.Where(h => OnRunner(h) && h.T <= now && (now - h.T).TotalSeconds < window).Sum(h => h.Amount) / window; }
+        public double RunnerVortonTaken(DateTime now, double window = 0) { if (window <= 0) window = Tune.RodWindowS.V; return RodHits.Where(h => h.T <= now && (now - h.T).TotalSeconds < window).Sum(h => h.Amount) / window; }
+        public double RunnerNpcTaken(DateTime now, double window = 0) { if (window <= 0) window = Tune.RodWindowS.V; return taken.Where(h => OnRunner(h) && h.T <= now && (now - h.T).TotalSeconds < window).Sum(h => h.Amount) / window; }
         public IEnumerable<DmgEvent> RunnerNpcHits { get { return taken.Where(OnRunner); } }
         // outgoing DPS counts only this weapon (the Norns body shows "EFF. DPS · VORTON PROJECTOR"); null = every weapon
         public string OutWeapon = "Vorton";
@@ -639,7 +643,7 @@ namespace TheNorns
                         special.Add(Tuple.Create(e.T, sk));
                         if (IsDread(e.Other) && e.T > LastDread) LastDread = e.T;
                         DateTime seen;
-                        if (!spawnSeen.TryGetValue(e.Other, out seen) || (e.T - seen).TotalMinutes > 10)
+                        if (!spawnSeen.TryGetValue(e.Other, out seen) || (e.T - seen).TotalMinutes > Tune.SpawnSameMin.V)
                         {
                             if (sk != 1) { LoudSpawns++; LastLoudSpawn = e.T; }   // the alert, not a ★
                             else Spawns.Add(Tuple.Create(e.T, e.Other));
@@ -665,13 +669,13 @@ namespace TheNorns
 
         // the window redraws at 25 fps (Thundpack, marquees, lerps) but the events change once a second: the events of one
         // pilot and direction are picked once per change (in time order) instead of on every frame (review 26.10.2026)
-        int version, cacheVersion = -1, cachePilots; bool cacheThund;
+        int version, cacheVersion = -1, cachePilots, cacheTune = -1; bool cacheThund;
         readonly Dictionary<string, List<DmgEvent>> picked = new Dictionary<string, List<DmgEvent>>();
         List<DmgEvent> Picked(string pilot, bool outgoing, string weapon = null)
         {
-            if (cacheVersion != version || cacheThund != Thundpack || cachePilots != Pilots.Count)
+            if (cacheVersion != version || cacheThund != Thundpack || cachePilots != Pilots.Count || cacheTune != Tune.Version)
             {
-                picked.Clear(); cacheVersion = version; cacheThund = Thundpack; cachePilots = Pilots.Count;
+                picked.Clear(); cacheVersion = version; cacheTune = Tune.Version; cacheThund = Thundpack; cachePilots = Pilots.Count;
             }
             var key = (pilot ?? "\0") + (outgoing ? "\0out" : "\0in") + "\0" + weapon;
             var w = weapon ?? OutWeapon;
@@ -690,7 +694,7 @@ namespace TheNorns
         public double[] Series(string pilot, bool outgoing, DateTime now, string weapon = null)
         {
             var s = new double[N];
-            const double W = 3.0; // Hann kernel radius in seconds
+            double W = Tune.VortonKernelS.V; // Hann kernel radius in seconds (Tune)
             var matching = Picked(pilot, outgoing, weapon);
             if (matching.Count == 0) return s;
 
@@ -720,7 +724,8 @@ namespace TheNorns
         // DPS of the last 10 s (Variant B: direct effective combat log HP)
         public double Now(string pilot, bool outgoing, DateTime now)
         {
-            return Picked(pilot, outgoing).Where(x => (now - x.T).TotalSeconds <= 10).Sum(x => x.Amount) / 10;
+            double win = Tune.VortonNowS.V;
+            return Picked(pilot, outgoing).Where(x => (now - x.T).TotalSeconds <= win).Sum(x => x.Amount) / win;
         }
 
         // ---- smartbombs: one reading per module, for the cycle that just went off ----
@@ -733,7 +738,7 @@ namespace TheNorns
         readonly Dictionary<string, int> sbModules = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
         readonly Dictionary<string, double[]> sbBest = new Dictionary<string, double[]>(StringComparer.OrdinalIgnoreCase);
         readonly Dictionary<string, double> sbPeriod = new Dictionary<string, double>(StringComparer.OrdinalIgnoreCase);
-        int sbVersion = -1; SmartbombReading sbCache;
+        int sbVersion = -1, sbTune = -1; SmartbombReading sbCache;
 
         // the last damage any pilot put on an NPC (friendly fire left out): the power display slows down after a fleet
         // warp with none since
@@ -756,8 +761,10 @@ namespace TheNorns
 
         public SmartbombReading Smartbombs(DateTime now)
         {
-            if (sbVersion == version && sbCache != null) return sbCache;
-            sbVersion = version;
+            if (sbVersion == version && sbTune == Tune.Version && sbCache != null) return sbCache;
+            if (sbTune != Tune.Version) { sbModules.Clear(); sbPeriod.Clear(); }   // new tuning: the count is decided again
+            sbVersion = version; sbTune = Tune.Version;
+            double gap = Tune.SbCycleGapS.V;
             var all = events.Where(e => e.Out && e.Amount > 0 && IsSmartbomb(e) && !IsPlayerOrFriendly(e.Other, Pilots)).OrderBy(e => e.T).ToList();
             if (all.Count == 0) return sbCache = null;
             string pilot = all[all.Count - 1].Pilot;   // the ship whose smartbombs went off last
@@ -765,7 +772,7 @@ namespace TheNorns
             var cycles = new List<List<DmgEvent>> { new List<DmgEvent> { mine[0] } };
             for (int i = 1; i < mine.Count; i++)
             {
-                if ((mine[i].T - mine[i - 1].T).TotalSeconds > 6) cycles.Add(new List<DmgEvent>());
+                if ((mine[i].T - mine[i - 1].T).TotalSeconds > gap) cycles.Add(new List<DmgEvent>());
                 cycles[cycles.Count - 1].Add(mine[i]);
             }
             // decided once per site, from the cycles after the fleet warp (owner, 26.10.2026). NPCs of one name add up
@@ -775,23 +782,33 @@ namespace TheNorns
             // most voted (then the larger) value is shown. Owner's log 21:23: votes 3, 7, 7 -> 7.
             if (sbWarp != Tracker.LastWarpTime) { sbWarp = Tracker.LastWarpTime; sbModules.Clear(); sbBest.Clear(); }
             int n;
+            bool locked = sbModules.ContainsKey(pilot);
+            var trace = Tune.Enabled ? new SbTrace { Pilot = pilot, LockedBefore = locked } : null;
             if (!sbModules.TryGetValue(pilot, out n))
             {
                 var votes = new Dictionary<int, int>();
                 for (int i = 0; i < cycles.Count; i++)
                 {
-                    bool complete = i < cycles.Count - 1 || (now - cycles[i][cycles[i].Count - 1].T).TotalSeconds > 6;
-                    if (cycles[i][0].T < sbWarp || !complete) continue;
+                    bool complete = i < cycles.Count - 1 || (now - cycles[i][cycles[i].Count - 1].T).TotalSeconds > gap;
                     int gcd = cycles[i].GroupBy(e => e.Other).Select(gr => gr.Count()).Aggregate(0, Gcd);
-                    if (gcd < 3) continue;
+                    if (trace != null) trace.Cycles.Add(new SbTrace.Cycle { Start = cycles[i][0].T, Hits = cycles[i].Count, Names = cycles[i].Select(e => e.Other).Distinct().Count(),
+                        Gcd = gcd, Complete = complete, AfterWarp = cycles[i][0].T >= sbWarp, Vote = n == 0 && cycles[i][0].T >= sbWarp && complete && gcd >= Tune.SbMinGcd.I ? ModulesOf(gcd) : 0, Decided = n != 0 });
+                    if (n != 0) continue;   // decided by an earlier cycle: the rest are only traced (the loop used to stop here)
+                    if (cycles[i][0].T < sbWarp || !complete) continue;
+                    if (gcd < Tune.SbMinGcd.I) continue;
                     int v = ModulesOf(gcd), c;
                     votes.TryGetValue(v, out c); votes[v] = ++c;
-                    if (c >= 2) { sbModules[pilot] = n = v; break; }
+                    if (c >= Tune.SbVotesToLock.I) { sbModules[pilot] = n = v; if (trace == null) break; }
                 }
                 if (n == 0)
                     n = votes.Count > 0 ? votes.OrderByDescending(kv => kv.Value).ThenByDescending(kv => kv.Key).First().Key
                                         : ModulesOf(Math.Max(1, cycles[cycles.Count - 1].GroupBy(e => e.Other).Select(gr => gr.Count()).Aggregate(0, Gcd)));
             }
+            else if (trace != null)   // decided earlier on this site: the cycles are listed for the inspector, none votes
+                for (int i = 0; i < cycles.Count; i++)
+                    trace.Cycles.Add(new SbTrace.Cycle { Start = cycles[i][0].T, Hits = cycles[i].Count, Names = cycles[i].Select(e => e.Other).Distinct().Count(),
+                        Gcd = cycles[i].GroupBy(e => e.Other).Select(gr => gr.Count()).Aggregate(0, Gcd), AfterWarp = cycles[i][0].T >= sbWarp, Decided = true,
+                        Complete = i < cycles.Count - 1 || (now - cycles[i][cycles[i].Count - 1].T).TotalSeconds > gap });
             if (cycles.Count > 1)
             {
                 var gaps = new List<double>();
@@ -799,7 +816,8 @@ namespace TheNorns
                 gaps.Sort();
                 sbPeriod[pilot] = Math.Max(1, gaps[gaps.Count / 2]);
             }
-            double period; if (!sbPeriod.TryGetValue(pilot, out period)) period = 9;
+            double period; bool measured = sbPeriod.TryGetValue(pilot, out period); if (!measured) period = Tune.SbDefaultPeriodS.V;
+            if (trace != null) { trace.Locked = sbModules.ContainsKey(pilot); trace.Modules = n; trace.Period = period; trace.PeriodMeasured = measured; trace.CycleCount = cycles.Count; LastSbTrace = trace; }
             Func<List<DmgEvent>, double[]> perModule = cycle =>
             {
                 var d = new double[n];
@@ -816,7 +834,7 @@ namespace TheNorns
             foreach (var cycle in cycles) { var d = perModule(cycle); for (int k = 0; k < n; k++) best[k] = Math.Max(best[k], d[k]); }
             var last = cycles[cycles.Count - 1];
             // older than two periods, or from before the fleet warp (the site just left): the smartbombs are quiet now
-            var dmg = (now - last[last.Count - 1].T).TotalSeconds <= period * 2 + 1 && last[last.Count - 1].T >= sbWarp ? perModule(last) : new double[n];
+            var dmg = (now - last[last.Count - 1].T).TotalSeconds <= period * Tune.SbQuietPeriods.V + 1 && last[last.Count - 1].T >= sbWarp ? perModule(last) : new double[n];
             var r = new SmartbombReading { Pilot = pilot, Modules = n, Dps = new double[n], Frac = new double[n] };
             for (int k = 0; k < n; k++)
             {
@@ -827,8 +845,17 @@ namespace TheNorns
             return sbCache = r;
         }
 
+        // the inspector's view of the last Smartbombs() call (only with tuning on)
+        public class SbTrace
+        {
+            public class Cycle { public DateTime Start; public int Hits, Names, Gcd, Vote; public bool Complete, AfterWarp, Decided; }
+            public string Pilot; public bool Locked, LockedBefore, PeriodMeasured; public int Modules, CycleCount; public double Period;
+            public readonly List<Cycle> Cycles = new List<Cycle>();
+        }
+        public SbTrace LastSbTrace;
+
         static int Gcd(int a, int b) { while (b != 0) { int t = a % b; a = b; b = t; } return a; }
-        static int ModulesOf(int gcd) { for (int d = Math.Min(8, gcd); d >= 1; d--) if (gcd % d == 0) return d; return 1; }
+        static int ModulesOf(int gcd) { for (int d = Math.Min(Tune.SbMaxSlots.I, gcd); d >= 1; d--) if (gcd % d == 0) return d; return 1; }
         DateTime sbWarp = DateTime.MinValue;
 
         // shots of the active window (10 s in Thundpack mode, 60 s in standard mode): good, glancing, missed

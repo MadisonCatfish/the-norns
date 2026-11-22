@@ -79,6 +79,7 @@ namespace TheNorns
         void SaveSession()
         {
             if (SelfTesting || !Standalone || session.Sites == 0) return;
+            if (Tune.AnyChanged) return;   // tuned values would go into the saved history (TuneWindow.cs): not kept while tuned
             try
             {
                 Directory.CreateDirectory(SessionDir);

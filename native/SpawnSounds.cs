@@ -30,14 +30,14 @@ namespace TheNorns
             if (n == factionHeard) return;
             factionHeard = n;
             bool loudNow = SpawnSound && (now - stats.LastLoudSpawn).TotalSeconds < 3;
-            if (FactionSound && !loudNow && (now - stats.Spawns[n - 1].Item1).TotalSeconds < 60) PlayFaction();
+            if (FactionSound && !loudNow && (now - stats.Spawns[n - 1].Item1).TotalSeconds < Tune.SoundRecentS.V) PlayFaction();
         }
 
         // the red count-down of a re-warp with no damage has come up (PaintAnomalyTimer): once per warp, live only
         void SoundRewarp(DateTime warp)
         {
             if (warp == rewarpHeard) return;
-            bool first = rewarpHeard == DateTime.MinValue && (DateTime.UtcNow - warp).TotalSeconds > 60;   // an old one read back at start
+            bool first = rewarpHeard == DateTime.MinValue && (DateTime.UtcNow - warp).TotalSeconds > Tune.SoundRecentS.V;   // an old one read back at start
             rewarpHeard = warp;
             if (RewarpSound && !first && !SelfTesting && DemoNow == null) PlayRewarp();
         }
