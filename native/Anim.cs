@@ -19,7 +19,7 @@ namespace TheNorns
     {
         const int AnimFps = 25;   // the live timer's rate: the easing steps are per frame at 25 fps
 
-        static readonly string[] AnimScenes = { "live", "glass", "spawns", "timer", "competition", "settings", "language", "stats", "formula", "update", "noclient", "compact", "rewarp", "keys", "displaypick", "readlogs", "oneclick", "eyecomfort", "switchname", "alerts" };
+        static readonly string[] AnimScenes = { "live", "glass", "spawns", "timer", "competition", "settings", "language", "stats", "formula", "update", "noclient", "compact", "rewarp", "keys", "displaypick", "readlogs", "oneclick", "eyecomfort", "switchname", "alerts", "warp", "tunekey", "tuning" };
 
         public static void Anim(string dir, string only)
         {
@@ -215,6 +215,39 @@ namespace TheNorns
                     r.At(9.5, () => { var tr = f.stats.Tracker; tr.PrevWarpTime = tr.LastWarpTime; tr.LastWarpTime = r.Now; });
                     r.Wait(12.5);
                     break;
+                case "warp":
+                    // 1.7.0: the power display's Warp. Cruising in a site; the hits stop, the fleet warps (the leader's warp in
+                    // the log): the stars stretch into streaks and the view rolls; the first hit on the next site brings it out
+                    PowerAnimName = "warp";
+                    r.Site(Five, 2.0, 60, 2.0);
+                    r.At(3.4, () => { f.stats.Tracker.PrevWarpTime = r.Now.AddSeconds(-380); f.stats.Tracker.LastWarpTime = r.Now; });
+                    r.Fight(Five, 9.2, 14, 3, true);
+                    r.Mouse = r.MainAt(f.GlassRect, 0.62f, 0.62f);
+                    r.Wait(14);
+                    File.WriteAllText(Path.Combine(r.Dir, "crop.txt"), string.Join(",", new[] { f.PowerFace.Left, f.PowerFace.Top, f.PowerFace.Width, f.PowerFace.Height }.Select(v => ((int)Math.Round(v)).ToString(CultureInfo.InvariantCulture))));
+                    PowerAnimName = "working";
+                    break;
+                case "tunekey":
+                    // 1.7.0: values tuned - the Settings header's Tuning key stays as it is, its flask breathes grey / accent
+                    {
+                        bool wasOn = Tune.Enabled; var tp = Tune.SbCycleGapS; var keepV = tp.V;
+                        Tune.Enabled = true; tp.V = 7.5;
+                        try
+                        {
+                            r.Site(Five, 10, 70);
+                            f.DemoSettings(true, null, false, "general");
+                            r.Mouse = r.MainAt(f.GlassRect, 0.5f, 0.6f);
+                            r.Wait(4.8);
+                            r.MoveToSpot("tuning", 1.0); r.Wait(1.8);
+                            r.MoveTo(r.MainAt(f.GlassRect, 0.45f, 0.55f), 0.9); r.Wait(2.4);
+                        }
+                        finally { tp.V = keepV; Tune.Enabled = wasOn; }
+                    }
+                    break;
+                case "tuning":
+                    // 1.7.0: the Tuning window (TuneWindow.Record draws its own frames)
+                    TuneWindow.Record(f, r.Dir, r.Now);
+                    break;
                 case "eyecomfort":
                     // 1.6.0, Settings -> Display -> Colours: the hull's brightness down to graphite and up, its saturation
                     // down and up, then Eye comfort on (the muted scheme, no glow)
@@ -306,6 +339,7 @@ namespace TheNorns
             Point cardAt;
             readonly Random rnd = new Random(7);
 
+            public string Dir { get { return dir; } }
             public AnimRec(string dir)
             {
                 this.dir = dir;

@@ -201,6 +201,7 @@ namespace TheNorns
         static float K { get { return Theme.K; } }
         static float U(float v) { return v * K; }
         public DateTime? DemoNow;    // selftest: a fixed clock
+        public double? DemoSecs;     // --demo-anim: the clock of a recorded frame (the mini display, the running line)
 
         public TuneWindow(DpsForm body)
         {
@@ -367,7 +368,7 @@ namespace TheNorns
             {
                 var st = g.Save();
                 g.SetClip(fp, CombineMode.Intersect);
-                double secs = DemoNow != null ? 4.2 : (DateTime.UtcNow - animStart).TotalSeconds;
+                double secs = DemoSecs ?? (DemoNow != null ? 4.2 : (DateTime.UtcNow - animStart).TotalSeconds);
                 PowerAnims.Draw(DpsForm.PowerAnimName, "tune", g, animDisplay, DpsForm.Potato ? 0 : secs, BodyTheme.Lamp);
                 var tex = DpsForm.Potato ? null : DpsForm.GlassTexture;
                 if (tex != null)
@@ -637,7 +638,7 @@ namespace TheNorns
         void PaintRunning(Graphics g)
         {
             if (running.Count == 0) return;
-            double secs = MarqueeSecs ?? (DemoNow != null ? 0 : (DateTime.UtcNow - animStart).TotalSeconds);
+            double secs = MarqueeSecs ?? DemoSecs ?? (DemoNow != null ? 0 : (DateTime.UtcNow - animStart).TotalSeconds);
             var st = g.Save();
             g.TextRenderingHint = TextRenderingHint.AntiAlias;
             foreach (var rn in running)
@@ -1267,6 +1268,98 @@ namespace TheNorns
             Tune.Version++;
             langOverride = null;
             log.AppendLine("tuning: drag, reset, Ctrl+wheel, typed value (limit, Esc), release off a key, language, save / read back, broken file, limits: ok (" + saved.Length + " bytes saved)");
+        }
+        // --demo-anim tuning (1.7.0, the site's clip): the Tuning window played as a player uses it - a value dragged,
+        // the change lit and marked in the side menu, put back with its reset key, another page and back. 25 fps
+        // frames into <dir>; the tuning file is a temporary one, every value goes back to what it was
+        public static void Record(DpsForm f, string dir, DateTime now)
+        {
+            bool wasOn = Tune.Enabled; var keepFile = Tune.FileOverride; var keepV = Tune.All.Select(p => p.V).ToArray();
+            Tune.Enabled = true; var animDir = System.IO.Path.Combine(System.IO.Path.GetTempPath(), "norns_anim"); System.IO.Directory.CreateDirectory(animDir);
+            Tune.FileOverride = System.IO.Path.Combine(animDir, "tuning.json");   // the band names the file: as the player's
+            foreach (var p in Tune.All) p.V = p.Def;
+            Tune.Version++;
+            var t = now.ToLocalTime();
+            Inspect.Demo(new[]
+            {
+                new Inspect.LogLine { Wall = t.AddSeconds(-3), Pilot = "Pilot-1", Kind = "DMG>", Text = "[ 2026.11.20 18:41:07 ] (combat) 412 to Sleepless Warden - Large Vorton Projector II - Hits" },
+                new Inspect.LogLine { Wall = t.AddSeconds(-3), Pilot = "Pilot-5", Kind = "DMG>", Text = "[ 2026.11.20 18:41:07 ] (combat) 183 to Core Grand Admiral - Caldari Navy Large Graviton Smartbomb - Hits" },
+                new Inspect.LogLine { Wall = t.AddSeconds(-2), Pilot = "Pilot-2", Kind = "ISK ", Text = "[ 2026.11.20 18:41:08 ] (bounty) 29 250 ISK added to next bounty payout" },
+                new Inspect.LogLine { Wall = t.AddSeconds(-2), Pilot = "Pilot-3", Kind = "DMG<", Text = "[ 2026.11.20 18:41:08 ] (combat) 96 from Corelatis High Captain - Hits" },
+                new Inspect.LogLine { Wall = t.AddSeconds(-1), Pilot = "Pilot-4", Kind = "    ", Text = "[ 2026.11.20 18:41:09 ] (notify) Your Large Shield Booster II is repaired" },
+            });
+            try
+            {
+                using (var w = new TuneWindow(f) { DemoNow = now })
+                {
+                    w.SyncLook(); w.ShowPage("Smartbombs");
+                    using (w.Render()) { }
+                    int n = 0; double T = 0; bool down = false;
+                    var m = new PointF(w.mainGlassR.Left + w.mainGlassR.Width * 0.62f, w.mainGlassR.Top + w.mainGlassR.Height * 0.55f);
+                    Action shot = () =>
+                    {
+                        w.DemoSecs = T;
+                        var pt = Point.Round(m);
+                        w.OnMouseMove(new MouseEventArgs(down ? MouseButtons.Left : MouseButtons.None, 0, pt.X, pt.Y, 0));
+                        w.DemoMouse = !DpsForm.Potato && (w.mainGlassR.Contains(m) || w.navGlassR.Contains(m)) ? (PointF?)m : null;
+                        using (var b = w.Render())
+                        {
+                            using (var g = Graphics.FromImage(b))
+                            using (var arrow = Glass.PulseFrame(w.OnPulse(pt) ? T % Glass.PulseLoop / Glass.PulseLoop : 0, BodyTheme.Pointer, BodyTheme.PointerOutline, Theme.K))
+                            {
+                                float tip = 10 * Theme.K;
+                                g.DrawImageUnscaled(arrow, (int)Math.Round(m.X - tip), (int)Math.Round(m.Y - tip));
+                            }
+                            b.Save(System.IO.Path.Combine(dir, n.ToString("0000") + ".png"), System.Drawing.Imaging.ImageFormat.Png);
+                        }
+                        n++; T += 0.04;
+                    };
+                    Action<double> wait = s => { for (double e = 0; e < s - 1e-9; e += 0.04) shot(); };
+                    Action<PointF, double> move = (to, s) =>
+                    {
+                        var from = m; int k = Math.Max(1, (int)Math.Round(s * 25));
+                        for (int i = 1; i <= k; i++) { double x = i / (double)k; x = x < 0.5 ? 4 * x * x * x : 1 - Math.Pow(-2 * x + 2, 3) / 2; m = new PointF(from.X + (to.X - from.X) * (float)x, from.Y + (to.Y - from.Y) * (float)x); shot(); }
+                    };
+                    Action press = () => { down = true; w.OnMouseDown(new MouseEventArgs(MouseButtons.Left, 1, (int)m.X, (int)m.Y, 0)); };
+                    Action release = () => { down = false; w.OnMouseUp(new MouseEventArgs(MouseButtons.Left, 1, (int)m.X, (int)m.Y, 0)); };
+                    Action click = () => { press(); wait(0.12); release(); };
+                    Func<RectangleF, PointF> mid = r => new PointF(r.Left + r.Width / 2, r.Top + r.Height / 2);
+                    Func<Tune.P, double, PointF> knob = (p, v) =>
+                    {
+                        var hit = w.tracks.First(x => x.Item2 == p).Item1;
+                        float pad = U(6);
+                        return new PointF(hit.Left + pad + (float)Frac(p, v) * (hit.Width - 2 * pad), hit.Top + hit.Height / 2);
+                    };
+                    Func<string, PointF> key = id => mid(w.keys.First(x => x.Item2 == id).Item1);
+
+                    var gap = Tune.SbCycleGapS;
+                    wait(0.8);
+                    move(knob(gap, gap.V), 1.0); wait(0.25);
+                    press(); move(knob(gap, gap.Min + (gap.Max - gap.Min) * 0.62), 1.3); wait(0.3); release();
+                    wait(1.4);
+                    move(mid(w.resets.First(x => x.Item2 == gap).Item1), 0.8); wait(0.3); click();
+                    wait(0.9);
+                    var votes = Tune.SbVotesToLock;
+                    move(knob(votes, votes.V), 0.9); wait(0.2);
+                    press(); move(knob(votes, votes.Max), 0.8); wait(0.2); release();
+                    wait(1.0);
+                    move(key("page:Anomaly timer"), 1.0); wait(0.2); click();
+                    wait(0.6);
+                    move(new PointF(w.mainGlassR.Left + w.mainGlassR.Width * 0.35f, w.mainGlassR.Top + w.mainGlassR.Height * 0.3f), 1.2);
+                    move(new PointF(w.mainGlassR.Left + w.mainGlassR.Width * 0.7f, w.mainGlassR.Top + w.mainGlassR.Height * 0.6f), 1.4);
+                    // not the Inspector: it shows the PC's folders, which a public clip must not
+                    move(key("page:Smartbombs"), 1.2); wait(0.2); click();
+                    wait(1.2);
+                    Console.WriteLine("tuning: " + n + " frames");
+                }
+            }
+            finally
+            {
+                for (int i = 0; i < keepV.Length; i++) Tune.All[i].V = keepV[i];
+                Tune.Version++;
+                try { System.IO.File.Delete(Tune.FileOverride); } catch { }
+                Tune.FileOverride = keepFile; Tune.Enabled = wasOn;
+            }
         }
         public static Keys? ModsOverride;   // selftest: the modifier keys of a simulated wheel
         static Keys Mods { get { return ModsOverride ?? ModifierKeys; } }

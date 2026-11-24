@@ -69,7 +69,7 @@ Whether you are just training skills for your Skybreakers / Stormbringers or fin
 - Drag by any part of the hull or the display.
 - Three keys at the top right: minimize (yellow) hides the body to the tray, the mode key (green) switches compact and full mode, and Close.
 - **Tray:** The Norns lives in the notification area instead of the taskbar. Click the icon to hide or show the body; its menu opens Settings and Statistics, toggles Compact and Potato mode and checks for updates. A dot on the icon shows the state, it flashes red or yellow when a titan or a dreadnought lands, and hovering it shows the fleet's DPS and the site's ISK. "Close to tray" and "Start in the tray" are in Settings → General.
-- **Power display animations:** pick the small display's animation in Settings → Display, each with a live preview: Working (the sphere), Cube wave, ノルン and Flow field.
+- **Power display animations:** pick the small display's animation in Settings → Display, each with a live preview: Working (the sphere), Cube wave, ノルン and Warp. Warp flies through the stars; when the fleet warps, the stars stretch into streaks and the view rolls, until the first shot on the next site.
 - Hardware LOG lamp indicates active log tailing; when no EVE client is found, the small power display flickers red like a short circuit and the empty graph says so.
 - The version plate on the bottom band blinks when a newer release is out; a click opens About, where **Update to …** downloads the release's installer from GitHub, checks its SHA-256 and starts it in one click.
 - **Compact mode:** a shorter body for many-client screens — no power display or printed band, and the ISK grid folded into one row of column averages.
@@ -91,7 +91,14 @@ Whether you are just training skills for your Skybreakers / Stormbringers or fin
 - Next / previous hotkeys, the wheel over the power display, or a click on the client squares beside the body.
 - The order is set by dragging rows in the clients table; the window you leave can be minimized, and a pin keeps one open.
 
-### 9. Multi-Language Support
+### 9. Tuning
+- The numbers behind the logic, open to the player: the key with the flask in the Settings header (Settings → Tuning). A warning comes first; **Open Tuning** keeps tuning on after a restart.
+- One page per module — Log, Vorton projector, Smartbombs, Anomaly timer, ISK grid, Alerts, Lightning rod — each value with a slider (Ctrl + wheel, or type the number), its limits, its default, a reset key and a line on what it does.
+- A changed value is lit; its page gets a dot; the band says TUNED and the flask on the Settings key breathes. **Delete custom tuning** puts every value back and turns tuning off.
+- The values are kept in `tuning.json` in the app's data folder; the **Inspector** shows the log lines as The Norns reads them.
+- The window is the body's own: the same hull, glass and keys, and it follows the app's language, Potato mode, Eye comfort, colours and window size.
+
+### 10. Multi-Language Support
 Available in 7 languages, auto-detected or selectable:
 - English
 - Ukrainian (Українська)

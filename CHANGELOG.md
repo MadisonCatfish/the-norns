@@ -1,5 +1,14 @@
 # Changelog
 
+## 1.7.0 — 2026-11-24
+
+- Tuning: the numbers behind the logic, open to the player. The key with the flask in the Settings header opens it, after a warning; Open Tuning keeps tuning on after a restart. One page per module (Log, Vorton projector, Smartbombs, Anomaly timer, ISK grid, Alerts, Lightning rod): every value with a slider, Ctrl + wheel or a typed number, its limits, its default, a reset key and a line on what it does. Delete custom tuning puts every value back and turns tuning off. The Inspector shows the log lines as The Norns reads them.
+- While a value differs from its default: the value and its page are lit, the band says TUNED, and the flask on the Settings key breathes grey and yellow (the key itself stays as it is).
+- The Tuning window is built as the body: the same hull, glass, keys and mouse, and it follows the app's language, Potato mode, Eye comfort, hull colours, accent, window size and Remember window position at once.
+- Power display: Warp, in place of Flow field. Stars fly at you; when the fleet warps, they stretch into streaks and the view rolls, until the first shot on the next site (or after the Tuning value "Warp effect lasts", 20 s). A saved Flow field choice opens as Warp.
+- Fix: a double click on the hull maximized the window; it now does nothing.
+- Fix: a sound key sometimes had to be pressed twice; it now cuts the sound that plays and starts its own at once.
+
 ## 1.6.1 — 2026-11-12
 
 - Fix: About → What's new had no scroll bar, so the longer notes ran past the box with nothing telling that they scroll. It now has one, which the mouse can pull too.
