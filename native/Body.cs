@@ -295,7 +295,7 @@ namespace TheNorns
         // 5 fps, the power display still, no glow, halo, glass light or shimmer, a plain hull; the numbers jump instead of gliding
         public static bool Potato = AppSetting("potato") is bool && (bool)AppSetting("potato");
         // the power display's animation (PowerAnims.cs; Settings -> Display): config.json "app": { "power_anim" }
-        public static string PowerAnimName = PowerAnims.Known(AppSetting("power_anim") as string) ? (string)AppSetting("power_anim") : "working";
+        public static string PowerAnimName = PowerAnims.Known(PowerAnims.Upgrade(AppSetting("power_anim") as string)) ? PowerAnims.Upgrade((string)AppSetting("power_anim")) : "working";
         // the spawn alert sound (owner, 28.10.2026; config.json "app": { "spawn_sound" }, off by default): three short
         // pulses (synthesized, res\spawn_alert.wav) when a titan or a dreadnought spawns; no sound for the other spawns.
         // 12.11.2026 (owner): a lever thrown before them (dragged over its detents, a clunk), the faction Lever's own front
@@ -349,6 +349,7 @@ namespace TheNorns
             return pulses[(int)(seconds / Glass.PulseLoop * pulses.Length) % pulses.Length];
         }
         static readonly Stopwatch pulseClock = Stopwatch.StartNew();
+        internal static Cursor PulsePointer { get { return PulseCursor(pulseClock.Elapsed.TotalSeconds); } }   // the Tuning window's keys
         static Cursor BluePointer { get { if (pointer == null) try { pointer = Glass.MakePointer(BodyTheme.Pointer, BodyTheme.PointerOutline); } catch { pointer = Cursors.Default; } return pointer; } }
 
         class VisualGraphState { public double VisualMax, VisualTotal; public readonly Dictionary<string, float[]> VisualSeries = new Dictionary<string, float[]>(StringComparer.OrdinalIgnoreCase); }
@@ -421,6 +422,7 @@ namespace TheNorns
             tail = new GameLogTail(ps, standalone); stats = new DpsStats(ps) { Thundpack = true };
             // no taskbar button: the body lives in the tray icon (Tray.cs; owner, 04.11.2026)
             FormBorderStyle = FormBorderStyle.None; ShowInTaskbar = false; StartPosition = FormStartPosition.Manual;
+            MaximizeBox = false;   // the hull drags the window; a double click on it must not maximize it
             TopMost = true; Text = AppInfo.Name + " — DPS"; AutoScaleMode = AutoScaleMode.None;
             if (standalone) Icon = AppInfo.Icon;
             StartTray();   // the icon in the notification area (Tray.cs)
@@ -502,6 +504,7 @@ namespace TheNorns
         const int WM_NCHITTEST = 0x84, WM_SETCURSOR = 0x20, HTCLIENT = 1, HTTRANSPARENT = -1, HTCAPTION = 2, WM_EXITSIZEMOVE = 0x0232;
         protected override void WndProc(ref Message m)
         {
+            if (m.Msg == 0xA3 /* WM_NCLBUTTONDBLCLK */) { m.Result = IntPtr.Zero; return; }   // a double click on the hull does nothing (owner, 24.11.2026: it maximized the window)
             if (m.Msg == WM_NCHITTEST)
             {
                 var sp = new Point((short)(m.LParam.ToInt64() & 0xFFFF), (short)((m.LParam.ToInt64() >> 16) & 0xFFFF));
@@ -541,7 +544,7 @@ namespace TheNorns
             tip.Hide(this);
             var warn = WarnTip(spot);   // Settings -> Carousel: the EVE client's action on a hotkey (EveO.cs)
             // the settings' header keys: their page's name under the key (owner, 31.10.2026)
-            string head = spot == "page:stats" ? L.T("Statistics") : spot == "page:about" ? L.T("About") : spot == "stats:calendar" ? L.T("Calendar") : spot == "stats:readlogs" ? L.T("Read logs")
+            string head = spot == "page:stats" ? L.T("Statistics") : spot == "page:about" ? L.T("About") : spot == "tuning" ? "Tuning" /* English only, as the tray's */ : spot == "stats:calendar" ? L.T("Calendar") : spot == "stats:readlogs" ? L.T("Read logs")
                 : spot == "stats:titans" ? L.T("Titans") : spot == "stats:dreads" ? L.T("Pirate dreadnoughts") : spot == "stats:stars" ? L.T("Faction NPCs and commanders") : null;
             var headKey = head != null ? spots.First(s => s.Item1 == spot).Item2 : RectangleF.Empty;
             tipText = hn ? L.T("Settings") : hc ? L.T("Close") : hm ? L.T("Hide") : hmo ? L.T(Compact ? "Full mode" : "Compact mode") : head ?? warn;
@@ -1051,6 +1054,17 @@ namespace TheNorns
             return animTime;
         }
 
+        // the fleet is in warp: from the fleet's warp (the leader's warp in the log) until the first hit on an NPC after it,
+        // at most Tune.WarpAnimS (the log does not say when the warp ends). The log's times are EVE time (UTC): "now" is UTC
+        // too (24.11.2026: the local time put every warp an hour in the past, so the display never jumped)
+        public bool? DemoFleetWarp;   // selftest
+        bool FleetInWarp()
+        {
+            var now = DemoNow ?? DateTime.UtcNow;
+            var warp = stats.Tracker.LastWarpTime;
+            return warp > DateTime.MinValue && now >= warp && stats.LastNpcHit < warp && (now - warp).TotalSeconds < Tune.WarpAnimS.V;
+        }
+
         internal static Color Mix(Color a, Color b, double t)
         {
             t = Math.Max(0, Math.Min(1, t));
@@ -1060,7 +1074,7 @@ namespace TheNorns
         // the power display: a small black glass, tilted back a little (its top edge narrower, the bottom lip thicker),
         // running the working animation while a log is followed; a wipe texture lies on the glass
         static Bitmap glassTexture;
-        static Bitmap GlassTexture
+        internal static Bitmap GlassTexture
         {
             get
             {
@@ -1143,6 +1157,10 @@ namespace TheNorns
                         // the live picture turned off the animation stood still)
                     {
                         double at = following || noClients || fleet != null ? animSecs : 0;
+                        // Warp: its own clock (the slow-down between sites would slow the jump itself), and the jump in step
+                        // with the fleet's warp (owner, 24.11.2026)
+                        if (PowerAnimName == "warp" && at != 0 && !Potato) at = secs;
+                        PowerAnims.FleetWarp = DemoFleetWarp ?? FleetInWarp();
                         // Carousel on, the live picture off: a switch blurs it and shows the character's name (SwitchName.cs)
                         if (!noClients) { WatchSwitch(); PaintAnimWithSwitch(g, face, (ag, af) => PowerAnims.Draw(PowerAnimName, "body", ag, af, at, dotColor)); }
                         else PowerAnims.Draw(PowerAnimName, "body", g, face, at, dotColor);
@@ -1281,7 +1299,7 @@ namespace TheNorns
         // u = one logical px (U(1)) of the window that draws it
         internal static void CloseKey(Graphics g, RectangleF r, bool hover, bool down, float u) { Key(g, r, hover, down, u, AlarmRed, MaterialIcon.Close); }
         static readonly Color KeyMark = Color.FromArgb(150, BodyTheme.KeyRim);   // the mark on the key's face: dark, so it reads on the pale face and on the lit one
-        static void Key(Graphics g, RectangleF r, bool hover, bool down, float u, Color hot, string icon)
+        internal static void Key(Graphics g, RectangleF r, bool hover, bool down, float u, Color hot, string icon)
         {
             var pressed = Mix(hot, Color.Black, 0.36);
             Func<RectangleF, float, GraphicsPath> round = (rr, lr) => Theme.Round(rr, u * lr * 0.6f, 0.6f);
@@ -1321,7 +1339,7 @@ namespace TheNorns
         // --preview-dread: a dreadnought on grid for 6 s, then gone, every 16 s
         public void StartDreadDemo() { dreadDemo = DateTime.UtcNow; }
         // the heat's stops from the one alarm and dread tokens (owner, 1.5.2): dark, deep, the tone, and white-hot
-        static readonly Color[] HotRed = HeatRamp(BodyTheme.Alarm), HotYellow = HeatRamp(BodyTheme.Dread);
+        internal static readonly Color[] HotRed = HeatRamp(BodyTheme.Alarm), HotYellow = HeatRamp(BodyTheme.Dread);
         static Color[] HeatRamp(Color c) { return new[] { Mix(c, Color.Black, 0.42), Mix(c, Color.Black, 0.16), c, Mix(c, Color.White, 0.3) }; }
         void PaintHeat(Graphics g, DateTime now)
         {
@@ -2196,7 +2214,8 @@ namespace TheNorns
                 f.Stats.Spawns.Add(Tuple.Create(now.AddMinutes(-62), "Shadow Serpentis Vice Admiral"));
                 f.Stats.Spawns.Add(Tuple.Create(now.AddMinutes(-24), "Shadow Serpentis Flotilla Admiral"));
                 save(f, "dps_window.png");
-                TuneWindow.SelfTest(f, dir, now, sb);   // the Tuning window and its Inspector (TuneWindow.cs)
+                TuneWindow.SelfTest(f, dir, now, sb);
+                TuneWarnWindow.SelfTest(f, dir);   // the warning before Tuning (TuneWarn.cs)   // the Tuning window and its Inspector (TuneWindow.cs)
                 // the palette (Palette.cs): the window in every accent, the hull at 0 / 100 %; then back to the shipped colours
                 foreach (var ec in new[] { false, true }) { EyeComfort = ec; f.ThemeChanged(); save(f, ec ? "palette_eye_comfort.png" : "palette_shipped.png"); }
                 EyeComfort = false;
@@ -2356,6 +2375,27 @@ namespace TheNorns
                     var keepA = PowerAnimName;
                     f.DemoSettings(false, null, false);
                     foreach (var an in PowerAnims.Names) { PowerAnimName = an; f.DemoSeconds = 4.3; save(f, "dps_anim_" + an + ".png"); }
+                    // Warp: cruising, then 1.2 s into the fleet's warp (streaks, roll, the rim lit), and 0.6 s after it ended
+                    {
+                        PowerAnimName = "warp";
+                        double wt = 10;
+                        using (var wb = new Bitmap(200, 106)) using (var wg = Graphics.FromImage(wb))
+                        {
+                            Action<bool, double> run = (on, len) => { PowerAnims.FleetWarp = on; for (double e = 0; e < len; e += 0.04) { wt += 0.04; PowerAnims.Draw("warp", "body", wg, new RectangleF(0, 0, 200, 106), wt, BodyTheme.Lamp); } };
+                            run(false, 1); f.DemoFleetWarp = false; f.DemoSeconds = wt += 0.04; save(f, "dps_anim_warp_cruise.png");
+                            run(true, 1.2); f.DemoFleetWarp = true; f.DemoSeconds = wt += 0.04; save(f, "dps_anim_warp_jump.png");
+                            run(false, 0.6); f.DemoFleetWarp = false; f.DemoSeconds = wt += 0.04; save(f, "dps_anim_warp_out.png");
+                        }
+                        f.DemoFleetWarp = null;
+                        // the real signal on the real clock: a fleet warp 2 s ago is a warp; 25 s ago it is over
+                        var tr = f.Stats.Tracker; var keepW = tr.LastWarpTime; var keepNow = f.DemoNow; f.DemoNow = null;
+                        tr.LastWarpTime = DateTime.UtcNow.AddSeconds(-2);
+                        if (!f.FleetInWarp()) throw new Exception("self-test: a fleet warp 2 s ago did not start the Warp animation's jump");
+                        tr.LastWarpTime = DateTime.UtcNow.AddSeconds(-(Tune.WarpAnimS.V + 5));
+                        if (f.FleetInWarp()) throw new Exception("self-test: the Warp animation's jump did not end after " + Tune.WarpAnimS.V + " s");
+                        tr.LastWarpTime = keepW; f.DemoNow = keepNow;
+                        sb.AppendLine("warp animation: in step with a fleet warp on the UTC clock: ok");
+                    }
                     // the cost of one frame of each, on a display-sized bitmap (the body redraws ~25 times a second)
                     using (var bb = new Bitmap(80, 44))
                     using (var bg = Graphics.FromImage(bb))
@@ -2365,10 +2405,18 @@ namespace TheNorns
                             for (int fr = 0; fr < 100; fr++) PowerAnims.Draw(an, "bench", bg, new RectangleF(0, 0, 80, 44), fr * 0.04, BodyTheme.Accent);
                             sb.AppendLine(string.Format(CultureInfo.InvariantCulture, "power anim {0}: {1:0.00} ms a frame", an, sw.Elapsed.TotalMilliseconds / 100));
                         }
-                    PowerAnimName = "cubewave"; f.DemoSettings(true, "anim:flow", false, "display"); save(f, "dps_settings_display_anims.png");
+                    PowerAnimName = "cubewave"; f.DemoSettings(true, "anim:warp", false, "display"); save(f, "dps_settings_display_anims.png");
                     PowerAnimName = keepA; f.DemoSeconds = 1.3; f.DemoSettings(true, "page:about", false, "display");
                 }
                 f.DemoSettings(true, "page:general", false, "about"); save(f, "dps_settings_about.png");
+                {   // a tuned value: the Tuning key's flask breathes in the accent (at the top of a breath, and at its bottom)
+                    bool keepT = Tune.Enabled; var tp = Tune.All.First(); var keepV = tp.V; var keepDc = f.DemoClock;
+                    Tune.Enabled = true; tp.V = tp.Def == tp.Max ? tp.Min : tp.Max;
+                    f.DemoClock = TuneBreath / 4; save(f, "dps_settings_tuned.png");
+                    f.DemoClock = TuneBreath * 3 / 4; save(f, "dps_settings_tuned_low.png");
+                    tp.V = tp.Def; f.DemoClock = TuneBreath / 4; save(f, "dps_settings_untuned.png");
+                    Tune.Enabled = keepT; tp.V = keepV; f.DemoClock = keepDc;
+                }
                 f.DemoAboutView = "credits"; save(f, "dps_settings_about_credits.png");
                 f.DemoAboutView = "legal"; save(f, "dps_settings_about_legal.png"); f.DemoAboutView = "news";
                 f.DemoSettings(false, null, false);

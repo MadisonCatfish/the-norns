@@ -149,7 +149,18 @@ namespace TheNorns
         float scroll;                // content scroll, px
         bool frozen;                 // the Inspector stops refreshing
         Tune.P drag;                 // the parameter whose track is held
-        internal TextBox edit; Tune.P editing;
+        // the value being typed in, as the settings' number fields (Settings -> Modes): what was typed (null: nothing yet, the
+        // first key replaces the number); a key over the limit turns it red with one shake
+        internal Tune.P editing; internal string editText; internal Tune.P errP; double errAt = -10;
+        // the app's mouse: a key acts on release over the same key (downId), the light on the glass under it (lightAt)
+        internal string downId; PointF? lightAt; public PointF? DemoMouse;
+        RectangleF navGlassR, mainGlassR, barTrack, barView; float barH, barMax; float? barGrip;
+        Bitmap baseFrame, frame; bool dirty = true;
+        static readonly System.Diagnostics.Stopwatch clock = System.Diagnostics.Stopwatch.StartNew();
+        static double Clock { get { return clock.Elapsed.TotalSeconds; } }
+        // the tip under a hull key after a short rest on it (DpsForm: TipDelay 0.7 s)
+        readonly ToolTip tip = new ToolTip { ShowAlways = true, UseAnimation = false, UseFading = false };
+        string tipFor, tipText; Point tipAt; double tipDue;
         List<DpsForm.InspectRow> report;
         Point mouse = new Point(-1, -1);
         // hit areas of the last frame
@@ -160,7 +171,9 @@ namespace TheNorns
         // the window's language (owner, 21.11.2026; all the app's languages 22.11.2026): at first the app's; the header key
         // opens a list of L.Languages (owner, 22.11.2026: a dropdown). The texts are native\lang\tune.<code>.json (English -> that language), kept apart from
         // the app's own <code>.json; a missing entry shows the English.
-        public static string Lang = L.Known(L.Code) ? L.Code : "en";
+        // owner, 23.11.2026: always the app's language (Settings -> General); the window has no language choice of its own
+        static string langOverride;   // selftest only
+        public static string Lang { get { return langOverride ?? (L.Known(L.Code) ? L.Code : "en"); } set { langOverride = value; } }
         static readonly Dictionary<string, Dictionary<string, string>> maps = new Dictionary<string, Dictionary<string, string>>();
         public static string T(string en)
         {
@@ -187,7 +200,6 @@ namespace TheNorns
 
         static float K { get { return Theme.K; } }
         static float U(float v) { return v * K; }
-        const float Wd = 840, Ht = 640, Head = 46, Nav = 180, Foot = 30, RowH = 94;
         public DateTime? DemoNow;    // selftest: a fixed clock
 
         public TuneWindow(DpsForm body)
@@ -198,290 +210,696 @@ namespace TheNorns
             FormBorderStyle = FormBorderStyle.None;
             StartPosition = FormStartPosition.CenterScreen;
             var wa = Screen.PrimaryScreen.WorkingArea;   // never larger than the screen (a large Windows scale)
-            ClientSize = new Size(Math.Min((int)U(Wd), wa.Width - 20), Math.Min((int)U(Ht), wa.Height - 20));
-            TopMost = true;
+            ClientSize = new Size(Math.Min((int)Math.Round(M(HW)), wa.Width - 20), Math.Min((int)Math.Round(M(HH)), wa.Height - 20));
+            LoadPos();
+            TopMost = true; MaximizeBox = false;   // the hull drags the window; a double click on it must not maximize it
             KeyPreview = true;
-            BackColor = Color.Black;
-            SetStyle(ControlStyles.OptimizedDoubleBuffer | ControlStyles.AllPaintingInWmPaint | ControlStyles.UserPaint | ControlStyles.ResizeRedraw, true);
+            AutoScaleMode = AutoScaleMode.None;
             page = Tune.Groups.First();
-            timer.Tick += (s, e) => { if (page == "Inspector" && !frozen) { report = null; Invalidate(); } else if (Tune.Version != shownVersion) Invalidate(); };
+            timer.Tick += (s, e) => { if (page == "Inspector" && !frozen) { report = null; Redraw(); } else if (Tune.Version != shownVersion) Redraw(); };
             timer.Start();
-            KeyDown += (s, e) => { if (e.KeyCode == Keys.Escape && edit == null) { if (langOpen) { langOpen = false; Invalidate(); } else Hide(); } };
+            frameTimer.Tick += (s, e) => Frame();
+            SyncLook();
+            frameTimer.Start();
+            KeyDown += (s, e) => { if (e.KeyCode == Keys.Escape && editing == null) Hide(); };
         }
         int shownVersion = -1;
 
-        protected override void Dispose(bool disposing) { if (disposing) timer.Dispose(); base.Dispose(disposing); }
+        protected override void Dispose(bool disposing) { if (disposing) { timer.Dispose(); frameTimer.Dispose(); tip.Dispose(); if (baseFrame != null) baseFrame.Dispose(); if (frame != null) frame.Dispose(); } base.Dispose(disposing); }
 
-        // the header drags the window (not its keys)
+        // ---------------- the window as the body's (owner, 23.11.2026: the same UI one to one) ----------------
+        // a layered window: the hull's own anti-aliased edge over the desktop, no WinForms painting (FormulaWindow, DpsForm)
+        protected override CreateParams CreateParams { get { var cp = base.CreateParams; cp.ExStyle |= 0x80000 /* WS_EX_LAYERED */; return cp; } }
+        protected override void OnVisibleChanged(EventArgs e) { base.OnVisibleChanged(e); if (!Visible) SavePos(); if (Visible) { SyncLook(); Redraw(); } else { tip.Hide(this); tipText = null; } }
+        protected override void OnShown(EventArgs e) { base.OnShown(e); Redraw(); }
+
+        [System.Runtime.InteropServices.DllImport("user32.dll")] static extern IntPtr SetCursor(IntPtr h);
+        [System.Runtime.InteropServices.DllImport("user32.dll")] static extern IntPtr WindowFromPoint(Point p);
+        // the hull is the handle that drags the window, its displays and keys are the window's; outside the hull's round
+        // corners the desktop gets the mouse. The app's blue pointer over all of it, pulsing over what can be pressed
+        // Settings -> General -> Remember window position: as the body (DpsForm.SavePos / LoadPos), in its own file
+        static string PosFile { get { return System.IO.Path.Combine(AppInfo.DataDir, "tune_pos.txt"); } }
+        void SavePos()
+        {
+            if (DpsForm.SelfTesting || !DpsForm.RememberPos || !IsHandleCreated) return;
+            try { System.IO.Directory.CreateDirectory(AppInfo.DataDir); System.IO.File.WriteAllText(PosFile, Location.X + "," + Location.Y); }
+            catch { }
+        }
+        void LoadPos()
+        {
+            if (DpsForm.SelfTesting || !DpsForm.RememberPos) return;
+            try
+            {
+                if (!System.IO.File.Exists(PosFile)) return;
+                var s = System.IO.File.ReadAllText(PosFile).Trim().Split(',');
+                int x, y;
+                if (s.Length == 2 && int.TryParse(s[0], out x) && int.TryParse(s[1], out y)
+                    && Screen.AllScreens.Any(sc => sc.WorkingArea.IntersectsWith(new Rectangle(x, y, Width, Height))))
+                { StartPosition = FormStartPosition.Manual; Location = new Point(x, y); }
+            }
+            catch { }
+        }
+        bool rememberSeen = DpsForm.RememberPos;
         protected override void WndProc(ref Message m)
         {
-            base.WndProc(ref m);
-            if (m.Msg == 0x84 /* WM_NCHITTEST */ && (int)m.Result == 1)
+            if (m.Msg == 0xA3 /* WM_NCLBUTTONDBLCLK */) { m.Result = IntPtr.Zero; return; }   // a double click on the hull does nothing (owner, 24.11.2026: it maximized the window)
+            if (m.Msg == 0x0232 /* WM_EXITSIZEMOVE */) SavePos();
+            if (m.Msg == 0x84 /* WM_NCHITTEST */)
             {
                 var p = PointToClient(new Point((short)(m.LParam.ToInt64() & 0xFFFF), (short)((m.LParam.ToInt64() >> 16) & 0xFFFF)));
-                if (p.Y < U(Head) && !keys.Any(k => k.Item1.Contains(p))) m.Result = (IntPtr)2;   // HTCAPTION
+                bool onBody;
+                using (var hull = HRound(new RectangleF(0, 0, Width, Height), 24)) onBody = hull.IsVisible(p);
+                m.Result = (IntPtr)(!onBody ? -1 /* HTTRANSPARENT */ : OnKey(p) ? 1 /* HTCLIENT */ : 2 /* HTCAPTION */);
+                return;
             }
+            if (m.Msg == 0x20 /* WM_SETCURSOR */)
+            {
+                int hit = (short)(m.LParam.ToInt64() & 0xFFFF);
+                if (hit == 1 || hit == 2) { SetCursor((OnPulse(PointToClient(Cursor.Position)) ? DpsForm.PulsePointer : DpsForm.Pointer).Handle); m.Result = (IntPtr)1; return; }
+            }
+            base.WndProc(ref m);
+        }
+        bool OnKey(Point p) { return navGlassR.Contains(p) || mainGlassR.Contains(p) || keys.Any(k => k.Item1.Contains(p)); }
+        bool OnPulse(Point p) { return SpotAt(p) != null || tracks.Any(t => t.Item1.Contains(p)) || barTrack.Contains(p); }
+        string SpotAt(PointF p)
+        {
+            var k = keys.LastOrDefault(x => x.Item1.Contains(p)); if (k != null) return k.Item2;
+            var r = resets.FirstOrDefault(x => x.Item1.Contains(p)); if (r != null) return "reset:" + r.Item2.Key;
+            var v = values.FirstOrDefault(x => x.Item1.Contains(p)); if (v != null) return "field:" + v.Item2.Key;
+            return null;
         }
 
         // ---------------- painting ----------------
-        protected override void OnPaint(PaintEventArgs e) { Paint(e.Graphics, ClientSize); }
+        // what changes with the state is painted again on Redraw; each frame (25 fps) puts the small display's animation,
+        // its glass marks and the cursor's light on the dirt over that, as the body draws its shell and its live parts
+        void Redraw() { dirty = true; Present(); }
+        // what the app's settings make of the look (Settings -> Display): when it changes, the window follows at once, as
+        // the body does - Potato's 5 fps and plain hull, eye comfort, the hull's and the accent's colours, the size
+        string look;
+        internal void SyncLook()
+        {
+            if (DpsForm.RememberPos != rememberSeen) { rememberSeen = DpsForm.RememberPos; SavePos(); }   // switched on: kept from now, as the body
+            var now = string.Join("|", DpsForm.Potato, DpsForm.EyeComfort, DpsForm.UiScale, Lang, DpsForm.PowerAnimName, BodyTheme.Hull.ToArgb(), BodyTheme.Accent.ToArgb(), BodyTheme.Ink.ToArgb(), BodyTheme.Lamp.ToArgb());
+            if (now == look) return;
+            bool first = look == null;
+            look = now;
+            frameTimer.Interval = DpsForm.Potato ? 200 : 40;
+            if (DpsForm.Potato) lightAt = null;
+            var wa = Screen.FromControl(this).WorkingArea;
+            var size = new Size(Math.Min((int)Math.Round(M(HW)), wa.Width - 20), Math.Min((int)Math.Round(M(HH)), wa.Height - 20));
+            if (ClientSize != size)
+            {
+                ClientSize = size;   // Settings -> Display -> Window size: the window grows or shrinks with the body
+                if (!first) Location = new Point(Math.Max(wa.Left, Math.Min(Left, wa.Right - Width)), Math.Max(wa.Top, Math.Min(Top, wa.Bottom - Height)));   // and stays on the screen
+            }
+            if (!first) Redraw();
+        }
+        void Frame()
+        {
+            SyncLook();
+            if (!Visible) return;
+            var mp = PointToClient(Cursor.Position);   // polled: the light follows while the window is dragged
+            lightAt = !DpsForm.Potato && (navGlassR.Contains(mp) || mainGlassR.Contains(mp)) ? (PointF?)mp : null;
+            if (tipText != null && Clock >= tipDue) { tip.Show(tipText, this, tipAt.X, tipAt.Y, 3000); tipText = null; }
+            if (OnPulse(mp) && ClientRectangle.Contains(mp) && WindowFromPoint(Cursor.Position) == Handle) SetCursor(DpsForm.PulsePointer.Handle);
+            if (editing != null || Clock - errAt < 0.9) dirty = true;   // the caret blinks, the field shakes
+            Present();
+        }
+        void Present()
+        {
+            if (!IsHandleCreated || !Visible) return;
+            if (frame == null || frame.Size != ClientSize) { if (frame != null) frame.Dispose(); frame = new Bitmap(ClientSize.Width, ClientSize.Height, System.Drawing.Imaging.PixelFormat.Format32bppArgb); }
+            Compose(frame, lightAt);
+            AppChrome.PresentLayered(this, frame);
+        }
+        void Compose(Bitmap target, PointF? light)
+        {
+            if (dirty || baseFrame == null || baseFrame.Size != ClientSize)
+            {
+                if (baseFrame == null || baseFrame.Size != ClientSize) { if (baseFrame != null) baseFrame.Dispose(); baseFrame = new Bitmap(ClientSize.Width, ClientSize.Height, System.Drawing.Imaging.PixelFormat.Format32bppArgb); }
+                using (var g = Graphics.FromImage(baseFrame)) Paint(g, ClientSize);
+                dirty = false;
+            }
+            using (var g = Graphics.FromImage(target))
+            {
+                g.CompositingMode = CompositingMode.SourceCopy; g.DrawImageUnscaled(baseFrame, 0, 0); g.CompositingMode = CompositingMode.SourceOver;
+                g.SmoothingMode = SmoothingMode.AntiAlias; g.PixelOffsetMode = PixelOffsetMode.HighQuality;
+                PaintAnim(g);
+                PaintRunning(g);
+                if (light != null && !DpsForm.Potato)   // Potato: no light on the glass, as the body
+                {
+                    var gr = navGlassR.Contains(light.Value) ? navGlassR : mainGlassR;
+                    var st = g.Save();
+                    using (var gp = HRound(gr, 13)) g.SetClip(gp);
+                    // the keys on the glass stay clear, as on the body's screen
+                    foreach (var k in keys) if (gr.Contains(k.Item1.Location)) g.SetClip(k.Item1, CombineMode.Exclude);
+                    foreach (var k in resets.Concat(values)) g.SetClip(k.Item1, CombineMode.Exclude);
+                    GlassDirt.Paint(g, gr, light.Value, M(1));
+                    g.Restore(st);
+                }
+            }
+        }
+        // the small display's live part: the cube wave, then the glass's light marks and its rim (DpsForm.PaintPowerGlass)
+        void PaintAnim(Graphics g)
+        {
+            if (animDisplay.IsEmpty) return;
+            using (var fp = HRound(animDisplay, 9))
+            {
+                var st = g.Save();
+                g.SetClip(fp, CombineMode.Intersect);
+                double secs = DemoNow != null ? 4.2 : (DateTime.UtcNow - animStart).TotalSeconds;
+                PowerAnims.Draw(DpsForm.PowerAnimName, "tune", g, animDisplay, DpsForm.Potato ? 0 : secs, BodyTheme.Lamp);
+                var tex = DpsForm.Potato ? null : DpsForm.GlassTexture;
+                if (tex != null)
+                {
+                    var cm = new System.Drawing.Imaging.ColorMatrix(new[]
+                    {
+                        new float[] { 0, 0, 0, 0.19f * 0.30f, 0 }, new float[] { 0, 0, 0, 0.19f * 0.59f, 0 }, new float[] { 0, 0, 0, 0.19f * 0.11f, 0 },
+                        new float[] { 0, 0, 0, 0, 0 }, new float[] { 1, 1, 1, 0, 1 }
+                    });
+                    using (var ia = new System.Drawing.Imaging.ImageAttributes())
+                    {
+                        ia.SetColorMatrix(cm);
+                        var face = animDisplay; float tw = face.Width * 1.5f, th = face.Height * 1.5f;
+                        g.DrawImage(tex, new Rectangle((int)(face.Left - (tw - face.Width) / 2), (int)(face.Top - (th - face.Height) / 2), (int)tw, (int)th), 0, 0, tex.Width, tex.Height, GraphicsUnit.Pixel, ia);
+                    }
+                }
+                g.Restore(st);
+                using (var pen = new Pen(Color.FromArgb(28, 29, 32), M(1))) g.DrawPath(pen, fp);
+                using (var pen = new Pen(Color.FromArgb(15, 255, 255, 255), 1f)) g.DrawPath(pen, fp);
+            }
+        }
 
+        // selftest: a frame as the window would show it (the demo mouse lights the glass)
         public Bitmap Render()
         {
-            var b = new Bitmap(ClientSize.Width, ClientSize.Height);
-            using (var g = Graphics.FromImage(b)) Paint(g, ClientSize);
+            dirty = true;
+            var b = new Bitmap(ClientSize.Width, ClientSize.Height, System.Drawing.Imaging.PixelFormat.Format32bppArgb);
+            Compose(b, DemoMouse);
             return b;
         }
         public void ShowPage(string p) { page = p; scroll = 0; report = null; }
 
-        static readonly Color Hull = Color.FromArgb(24, 26, 30), Panel = Color.FromArgb(14, 15, 17), Line = Color.FromArgb(44, 47, 54),
-                              Dim = Color.FromArgb(150, 154, 162), Faint = Color.FromArgb(96, 100, 108);
+
+        // ---------------- the body (owner, 22.11.2026: the first layout - the header, the pages on the left, the values on
+        // the right, the footer - in the app's own look: the hull around, the pages on a black display of their own, the values
+        // on the main black screen, the printed band). Sizes in the app's logical units (DpsForm: 287 x 329), at its size setting (100 / 125 / 150 %) ----------------
+        const float HW = 640, HH = 480, HPad = 7, HStrip = 35, HGap = 6, HBand = 26.5f, NavW = 140;   // NavW: every page's name fits at Tab size, with its dot
+        static float M(float v) { return v * K * DpsForm.UiScale; }
+        static GraphicsPath HRound(RectangleF r, float lr) { return Theme.Round(r, M(lr * 0.6f), 0.6f); }
+        static float HeadH { get { return M(HPad + HStrip); } }   // the strip drags the window
+        static Color A(int a, Color c) { return Color.FromArgb(a, c); }
+        static readonly Color Dim = BodyTheme.LabelDim, Faint = Color.FromArgb(110, BodyTheme.Ink);
+        RectangleF animDisplay;
+        readonly DateTime animStart = DateTime.UtcNow;
+        readonly Timer frameTimer = new Timer { Interval = DpsForm.Potato ? 200 : 40 };   // 25 fps as the body (Potato: 5)
+
+        // the title face: Orbitron; Ukrainian in Segoe UI Semibold, Chinese in Noto Sans SC Regular (see BodyFont)
+        internal static Font TitleF(string text, float px)
+        {
+            if (L.Cjk(text)) return NornsFonts.Sc(px * NornsFonts.MatchSc(FontStyle.Regular, true));
+            if (L.Cyrillic(text)) { Font f; if (!titleFonts.TryGetValue(px, out f)) titleFonts[px] = f = new Font("Segoe UI Semibold", px * NornsFonts.Match("Segoe UI Semibold", FontStyle.Regular, true), GraphicsUnit.Pixel); return f; }
+            return NornsFonts.Screen(px);
+        }
+        static readonly Dictionary<float, Font> titleFonts = new Dictionary<float, Font>();
+        internal static Font TextF(string text, float px) { return L.Cjk(text) ? NornsFonts.Sc(px * NornsFonts.MatchSc(FontStyle.Regular, false)) : NornsFonts.Body(px); }
 
         void Paint(Graphics g, Size size)
         {
             shownVersion = Tune.Version;
             g.SmoothingMode = SmoothingMode.AntiAlias;
-            g.TextRenderingHint = TextRenderingHint.AntiAliasGridFit;
-            keys.Clear(); tracks.Clear(); values.Clear(); rows.Clear(); resets.Clear();
-            var all = new RectangleF(0, 0, size.Width, size.Height);
-            using (var b = new SolidBrush(Hull)) g.FillRectangle(b, all);
-            using (var p = new Pen(Line, 1)) g.DrawRectangle(p, 0, 0, size.Width - 1, size.Height - 1);
+            g.TextRenderingHint = TextRenderingHint.AntiAlias;
+            g.PixelOffsetMode = PixelOffsetMode.HighQuality;
+            keys.Clear(); tracks.Clear(); values.Clear(); rows.Clear(); resets.Clear(); running.Clear();
+            g.Clear(Color.Transparent);
+            float W = size.Width, H = size.Height;
+            var all = new RectangleF(0, 0, W, H);
 
-            // header
-            var title = HeadFont(U(13));
-            var small = BodyFont(U(9.5f));
-            var tt = T("TUNING");
-            g.DrawString(tt, title, Brushes(BodyTheme.Ink), U(18), U(12));
-            float tw = g.MeasureString(tt, title).Width;
-            g.DrawString(AppInfo.Name + " " + AppInfo.VersionText + (DpsForm.TestLabel != null ? " · " + DpsForm.TestLabel : ""), small, Brushes(Dim), U(18) + tw + U(6), U(17));
-            float kx = size.Width - U(14);
-            kx = Key(g, "✕", "close", kx, U(10), true);
-            kx = Key(g, T("Reset all"), "resetall", kx - U(6), U(10), Tune.AnyChanged);
-            kx = Key(g, T("Open file"), "openfile", kx - U(6), U(10), true);
-            kx = Key(g, T("Language") + ": " + Lang.ToUpperInvariant(), "lang", kx - U(6), U(10), true, true);   // the window's language: opens the list
-            if (page == "Inspector") Key(g, T(frozen ? "Resume" : "Freeze"), "freeze", kx - U(6), U(10), true);
-            using (var p = new Pen(Line, 1)) g.DrawLine(p, 0, U(Head), size.Width, U(Head));
-
-            // navigation
-            var nav = RectangleF.FromLTRB(0, U(Head), U(Nav), size.Height - U(Foot));
-            using (var b = new SolidBrush(Panel)) g.FillRectangle(b, nav);
-            float y = nav.Top + U(10);
-            var navFont = BodyFont(U(11.5f));
-            foreach (var grp in Tune.Groups.Concat(new[] { "", "Inspector" }))
+            // the hull: satin light from the top left, darker towards the bottom, a lit edge (DpsForm.DrawShell)
+            using (var body = HRound(all, 24))
             {
-                if (grp == "") { y += U(8); using (var p = new Pen(Line, 1)) g.DrawLine(p, U(14), y, nav.Right - U(14), y); y += U(8); continue; }
-                var r = new RectangleF(0, y, nav.Width, U(32));
-                bool on = grp == page, hot = r.Contains(mouse);
-                if (on || hot) using (var b = new SolidBrush(on ? Color.FromArgb(30, 33, 38) : Color.FromArgb(22, 24, 28))) g.FillRectangle(b, r);
-                if (on) using (var b = new SolidBrush(BodyTheme.Accent)) g.FillRectangle(b, 0, r.Top + U(6), U(3), r.Height - U(12));
-                g.DrawString(T(grp), navFont, Brushes(on ? BodyTheme.Ink : Dim), U(18), r.Top + (r.Height - navFont.GetHeight(g)) / 2);
-                int n = Tune.All.Count(p => p.Group == grp && p.Changed);
-                if (n > 0)
-                {
-                    var t = n.ToString(CultureInfo.InvariantCulture); var f = NornsFonts.Screen(U(8.5f));
-                    var sz = g.MeasureString(t, f);
-                    var pill = new RectangleF(nav.Right - U(14) - sz.Width - U(8), r.Top + (r.Height - U(16)) / 2, sz.Width + U(8), U(16));
-                    using (var path = Theme.Round(pill, U(8), 0.85f)) using (var b = new SolidBrush(BodyTheme.Accent)) g.FillPath(b, path);
-                    g.DrawString(t, f, Brushes(Color.Black), pill.Left + U(4), pill.Top + (pill.Height - f.GetHeight(g)) / 2);
-                }
-                keys.Add(Tuple.Create(r, "page:" + grp));
-                y += r.Height;
+                using (var b = new SolidBrush(BodyTheme.Hull)) g.FillPath(b, body);
+                if (!DpsForm.Potato)
+                    using (var lg = new LinearGradientBrush(all, Color.White, Color.Black, 80f))
+                    {
+                        lg.InterpolationColors = new ColorBlend { Colors = new[] { Color.FromArgb(36, 255, 255, 255), Color.FromArgb(5, 255, 255, 255), Color.FromArgb(66, 0, 0, 0) }, Positions = new[] { 0f, 0.45f, 1f } };
+                        g.FillPath(lg, body);
+                    }
+                var edge = all; edge.Inflate(-0.5f, -0.5f);
+                using (var ep = HRound(edge, 24))
+                using (var lg = new LinearGradientBrush(all, Color.FromArgb(70, 255, 255, 255), Color.FromArgb(115, 0, 0, 0), 90f))
+                using (var pen = new Pen(lg, 1f)) g.DrawPath(pen, ep);
             }
 
-            // content
-            var content = RectangleF.FromLTRB(nav.Right, U(Head), size.Width, size.Height - U(Foot));
+            // the strip: ノルン printed in white, the lamp (lit while a value differs from its default), TUNING printed
+            var strip = new RectangleF(M(HPad), M(HPad), W - 2 * M(HPad), M(HStrip));
+            float x0 = M(HPad + 7), nameRight = x0, mid = strip.Top + strip.Height / 2;
+            var name = DpsForm.NamePath(M(9.5f));
+            if (name != null)
+                using (name)
+                {
+                    var nb0 = name.GetBounds();
+                    using (var m = new Matrix()) { m.Translate(x0 - nb0.X, mid - nb0.Height / 2 - nb0.Y); name.Transform(m); }
+                    using (var nb = new SolidBrush(Color.FromArgb(244, 245, 247))) g.FillPath(nb, name);
+                    nameRight = x0 + nb0.Width;
+                }
+            int changed = Tune.All.Count(p => p.Changed);
+            float d = M(6.825f), lx = nameRight + M(6);
+            double level = changed > 0 ? 1 : 0.25;
+            DpsForm.SoftGlow(g, new PointF(lx + d / 2, mid), d / 2 + M(5), BodyTheme.Accent, (int)(level * 150));
+            using (var path = new GraphicsPath())
+            {
+                path.AddEllipse(lx, mid - d / 2, d, d);
+                using (var pb = new PathGradientBrush(path))
+                {
+                    pb.CenterColor = DpsForm.Mix(BodyTheme.LampCoreOff, BodyTheme.LampCoreOn, level);
+                    pb.SurroundColors = new[] { DpsForm.Mix(BodyTheme.LampEdgeOff, BodyTheme.LampEdgeOn, level) };
+                    g.FillPath(pb, path);
+                }
+            }
+            using (var pen = new Pen(Color.FromArgb(80, 12, 13, 15), M(0.6f))) g.DrawEllipse(pen, lx, mid - d / 2, d, d);
+            var tt = T("TUNING").ToUpperInvariant();
+            var tf = TitleF(tt, M(7.2f));   // Caption, as the settings' section headings
+            using (var b = new SolidBrush(Color.FromArgb(225, BodyTheme.Silk))) DpsForm.Spaced(g, tt, tf, b, lx + d + M(9), mid - tf.GetHeight(g) / 2, M(1));
+
+            // right to left: Close, Reset all, Open file, Delete (owner, 23.11.2026: the custom tuning cleared and deleted,
+            // after a warning) - the hull's keys - then the small display
+            float kw = M(14.2f), kh = M(30), ky = mid - kh / 2;
+            var close = new RectangleF(strip.Right - kw, ky, kw, kh);
+            var reset = new RectangleF(close.Left - M(3) - kw, ky, kw, kh);
+            var open = new RectangleF(reset.Left - M(3) - kw, ky, kw, kh);
+            DpsForm.CloseKey(g, close, HotKey(close), Held("close", close), M(1));
+            DpsForm.Key(g, reset, changed > 0 && HotKey(reset), changed > 0 && Held("resetall", reset), M(1), BodyTheme.Dread, MaterialIcon.Refresh);
+            DpsForm.Key(g, open, HotKey(open), Held("openfile", open), M(1), BodyTheme.Accent, MaterialIcon.Folder);
+            keys.Add(Tuple.Create(close, "close"));
+            if (changed > 0) keys.Add(Tuple.Create(reset, "resetall"));
+            keys.Add(Tuple.Create(open, "openfile"));
+            var del = new RectangleF(open.Left - M(3) - kw, ky, kw, kh);
+            DpsForm.Key(g, del, HotKey(del), Held("delete", del), M(1), BodyTheme.Alarm, TuneWarnWindow.DeleteIcon);
+            keys.Add(Tuple.Create(del, "delete"));
+            float dispRight = del.Left - M(8);
+            if (page == "Inspector")
+            {
+                var fr = new RectangleF(del.Left - M(3) - kw, ky, kw, kh);
+                DpsForm.Key(g, fr, frozen || HotKey(fr), Held("freeze", fr), M(1), BodyTheme.Accent, frozen ? MaterialIcon.Play : Pause);
+                keys.Add(Tuple.Create(fr, "freeze"));
+                dispRight = fr.Left - M(8);
+            }
+            // the small display on the strip (owner, 22.11.2026): an animation in the accent, as the body's power display -
+            // the cube wave of PowerAnims, its own slot
+            animDisplay = new RectangleF(dispRight - M(53), mid - M(14), M(53), M(28));
+            PaintDisplay(g, animDisplay);   // its live part each frame (PaintAnim)
+
+            // two screens in their recesses: the pages on the left, the values (or the inspector) on the right
+            float top = M(HPad + HStrip + HGap), bottom = H - M(HBand);
+            var navGlass = navGlassR = PaintRecess(g, RectangleF.FromLTRB(M(HPad), top, M(HPad + NavW), bottom));
+            var glass = mainGlassR = PaintRecess(g, RectangleF.FromLTRB(M(HPad + NavW + HGap), top, W - M(HPad), bottom));
+            PaintNav(g, navGlass);
+            var content = RectangleF.FromLTRB(glass.Left + M(11), glass.Top + M(7), glass.Right - M(11), glass.Bottom - M(7));
             var state = g.Save();
-            g.SetClip(content);
-            if (page == "Inspector") PaintInspector(g, content); else PaintGroup(g, content);
+            g.SetClip(RectangleF.FromLTRB(glass.Left, content.Top, glass.Right, content.Bottom));
+            if (page == "Inspector") PaintInspector(g, RectangleF.FromLTRB(content.Left - M(6), content.Top, content.Right, content.Bottom));
+            else PaintGroup(g, content);
             g.Restore(state);
+            barTrack = RectangleF.Empty;
             if (contentH > content.Height + 1)
             {
-                float th = content.Height * content.Height / contentH, ty = content.Top + (content.Height - th) * scroll / (contentH - content.Height);
-                using (var path = Theme.Round(new RectangleF(content.Right - U(7), ty + U(3), U(3), th - U(6)), U(1.5f), 0.85f)) using (var b = new SolidBrush(Color.FromArgb(110, 116, 126))) g.FillPath(b, path);
+                // the settings' bar: it can be pulled (Settings.AddBar)
+                float right = glass.Right - M(4);
+                barMax = contentH - content.Height; barView = content;
+                barH = DpsForm.PaintScrollBar(g, content, right, Math.Min(scroll, barMax), barMax, M(1));
+                barTrack = RectangleF.FromLTRB(right - M(7), content.Top, right + M(2), content.Bottom);
             }
 
-            // footer
-            var foot = RectangleF.FromLTRB(0, size.Height - U(Foot), size.Width, size.Height);
-            using (var b = new SolidBrush(Panel)) g.FillRectangle(b, foot);
-            using (var p = new Pen(Line, 1)) g.DrawLine(p, 0, foot.Top, size.Width, foot.Top);
-            int changed = Tune.All.Count(p => p.Changed);
-            string status = Tune.LastError ?? (changed == 0 ? T("All values are the defaults.") : string.Format(CultureInfo.InvariantCulture, T(changed == 1 ? "{0} value differs from the defaults · kept in {1}" : "{0} values differ from the defaults · kept in {1}"), changed, Tune.FilePath));
-            g.DrawString(status, small, Brushes(Tune.LastError != null ? BodyTheme.Alarm : changed > 0 ? BodyTheme.Accent : Dim), U(14), foot.Top + (foot.Height - small.GetHeight(g)) / 2);
-            string note = T("Formula cards show the default numbers.");
-            g.DrawString(note, small, Brushes(Faint), size.Width - U(14) - g.MeasureString(note, small).Width, foot.Top + (foot.Height - small.GetHeight(g)) / 2);
-            if (langOpen) PaintLangMenu(g);
+            PaintHullBand(g, RectangleF.FromLTRB(M(HPad + 7), H - M(HBand), W - M(HPad + 7), H), changed);
         }
 
-        // ---------------- the language list ----------------
-        // every language of the app by its own name, the one in use with a check; a click on a name takes it, a click
-        // anywhere else or Esc closes the list
-        const string DropDown = "M7 10l5 5 5-5z", DropUp = "M7 14l5-5 5 5z";   // Material arrow_drop_down / arrow_drop_up
-        bool langOpen;
-        RectangleF langKey, langBox;
-        readonly List<Tuple<RectangleF, string>> langRows = new List<Tuple<RectangleF, string>>();
-        bool LangMenuOver(PointF p) { return langOpen && langBox.Contains(p); }
-        static Font NameFont(string name, float px)
+        bool HotKey(RectangleF r) { return r.Contains(mouse); }
+        bool Held(string id, RectangleF r) { return downId == id && r.Contains(mouse); }
+        static readonly StringFormat Centre = new StringFormat(StringFormat.GenericTypographic) { Alignment = StringAlignment.Center, Trimming = StringTrimming.EllipsisCharacter, FormatFlags = StringFormatFlags.NoWrap };
+
+        // a small display on the hull: the glass in a dark lip with its shadow (DpsForm.PaintDamage)
+        void PaintDisplay(Graphics g, RectangleF r)
         {
-            return L.Cjk(name) ? NornsFonts.Sc(px * NornsFonts.MatchSc(FontStyle.Regular, false)) : NornsFonts.Body(px);
-        }
-        void PaintLangMenu(Graphics g)
-        {
-            langRows.Clear();
-            float rowH = U(30), pad = U(5), w = langKey.Width;
-            foreach (var l in L.Languages) w = Math.Max(w, U(44) + g.MeasureString(l[1], NameFont(l[1], U(11))).Width + U(16));
-            langBox = new RectangleF(langKey.Right - w, langKey.Bottom + U(4), w, L.Languages.Length * rowH + 2 * pad);
-            var shadow = langBox; shadow.Offset(0, U(3));
-            using (var path = Theme.Round(shadow, U(9), 0.85f)) using (var b = new SolidBrush(Color.FromArgb(110, 0, 0, 0))) g.FillPath(b, path);
-            using (var path = Theme.Round(langBox, U(9), 0.85f))
+            var sh = r; sh.Offset(0, M(3.5f)); sh.Inflate(-M(1), 0);
+            using (var sp = HRound(sh, 9)) using (var b = new SolidBrush(Color.FromArgb(120, 0, 0, 0))) g.FillPath(b, sp);
+            using (var lip = HRound(new RectangleF(r.X, r.Y + M(1.5f), r.Width, r.Height), 9)) using (var b = new SolidBrush(Color.FromArgb(8, 9, 11))) g.FillPath(b, lip);
+            using (var fp = HRound(r, 9))
             {
-                using (var b = new SolidBrush(Color.FromArgb(30, 33, 38))) g.FillPath(b, path);
-                using (var p = new Pen(BodyTheme.KeyRim, 1)) g.DrawPath(p, path);
+                using (var pb = new PathGradientBrush(fp) { CenterColor = Color.FromArgb(12, 13, 16), SurroundColors = new[] { Color.FromArgb(3, 3, 4) } }) g.FillPath(pb, fp);
+                using (var pen = new Pen(Color.FromArgb(28, 29, 32), M(1))) g.DrawPath(pen, fp);
+                using (var pen = new Pen(Color.FromArgb(15, 255, 255, 255), 1f)) g.DrawPath(pen, fp);
             }
-            float y = langBox.Top + pad;
-            foreach (var l in L.Languages)
-            {
-                var r = new RectangleF(langBox.Left + pad, y, langBox.Width - 2 * pad, rowH);
-                bool cur = l[0] == Lang, hot = r.Contains(mouse);
-                if (hot) using (var path = Theme.Round(r, U(6), 0.85f)) using (var b = new SolidBrush(Color.FromArgb(48, 51, 57))) g.FillPath(b, path);
-                if (cur) MaterialIcon.Draw(g, MaterialIcon.Check, new RectangleF(r.Left + U(8), r.Top + (rowH - U(16)) / 2, U(16), U(16)), Brushes(BodyTheme.Accent));
-                var f = NameFont(l[1], U(11));
-                g.DrawString(l[1], f, Brushes(cur || hot ? BodyTheme.Ink : Dim), r.Left + U(32), r.Top + (rowH - f.GetHeight(g)) / 2);
-                langRows.Add(Tuple.Create(r, l[0]));
-                y += rowH;
-            }
-        }
-        void SetLang(string code) { Lang = code; langOpen = false; report = null; Invalidate(); }
-
-        // a key of the header, right-aligned at x; returns its left edge
-        float Key(Graphics g, string text, string id, float right, float top, bool enabled, bool menu = false)
-        {
-            var f = BodyFont(U(10.5f));
-            var sz = g.MeasureString(text, f);
-            float arrow = menu ? U(16) : 0;
-            var r = new RectangleF(right - sz.Width - U(20) - arrow, top, sz.Width + U(20) + arrow, U(26));
-            bool hot = enabled && (r.Contains(mouse) && !LangMenuOver(mouse) || menu && langOpen);
-            using (var path = Theme.Round(r, U(8), 0.85f))
-            {
-                using (var b = new LinearGradientBrush(r, hot ? Color.FromArgb(60, 63, 70) : BodyTheme.KeyTop, BodyTheme.KeyBottom, 90f)) g.FillPath(b, path);
-                using (var p = new Pen(BodyTheme.KeyRim, 1)) g.DrawPath(p, path);
-            }
-            g.DrawString(text, f, Brushes(!enabled ? Faint : id == "close" && hot ? BodyTheme.Alarm : BodyTheme.Ink), r.Left + U(10), r.Top + (r.Height - f.GetHeight(g)) / 2);
-            if (menu) MaterialIcon.Draw(g, langOpen ? DropUp : DropDown, new RectangleF(r.Right - U(26), r.Top + U(3), U(20), U(20)), Brushes(Dim));
-            if (enabled) keys.Add(Tuple.Create(r, id));
-            if (menu) langKey = r;
-            return r.Left;
         }
 
+        // a screen in its recess: the hull's wall in shadow at the top, the lip catching light, the bezel, the black glass
+        // (DpsForm.DrawShell); returns the glass
+        RectangleF PaintRecess(Graphics g, RectangleF cav)
+        {
+            using (var cp = HRound(cav, 17))
+            {
+                using (var b = new SolidBrush(DpsForm.Potato ? DpsForm.Mix(BodyTheme.Hull, Color.Black, 0.3) : BodyTheme.Hull)) g.FillPath(b, cp);
+                if (!DpsForm.Potato)
+                    using (var lg = new LinearGradientBrush(cav, Color.Black, Color.White, 90f))
+                    {
+                        lg.InterpolationColors = new ColorBlend { Colors = new[] { Color.FromArgb(140, 0, 0, 0), Color.FromArgb(64, 0, 0, 0), Color.FromArgb(26, 255, 255, 255) }, Positions = new[] { 0f, 0.55f, 1f } };
+                        g.FillPath(lg, cp);
+                    }
+                using (var lg = new LinearGradientBrush(cav, Color.FromArgb(0, 255, 255, 255), Color.FromArgb(56, 255, 255, 255), 90f))
+                using (var pen = new Pen(lg, 1f)) g.DrawPath(pen, cp);
+            }
+            var bz = cav; bz.Inflate(-M(1.5f), -M(1.5f));
+            using (var bp = HRound(bz, 15.5f))
+            using (var lg = new LinearGradientBrush(bz, Color.FromArgb(26, 27, 29), Color.FromArgb(11, 12, 13), 90f))
+            {
+                var sh = bz; sh.Offset(0, M(1.5f));
+                using (var sp = HRound(sh, 15.5f)) using (var sb = new SolidBrush(Color.FromArgb(110, 0, 0, 0))) g.FillPath(sb, sp);
+                g.FillPath(lg, bp);
+                using (var pen = new Pen(Color.FromArgb(26, 255, 255, 255), 1f)) g.DrawPath(pen, bp);
+            }
+            var glass = cav; glass.Inflate(-M(4), -M(4));
+            using (var gp = HRound(glass, 13)) using (var b = new SolidBrush(Color.Black)) g.FillPath(b, gp);
+            return glass;
+        }
+
+        // the pages on their own display: Orbitron capitals as the settings' tabs, the open one in the accent with a bar,
+        // how many values differ on the right; a line, then the inspector
+        void PaintNav(Graphics g, RectangleF glass)
+        {
+            float x = glass.Left + M(7), w = glass.Width - M(14), y = glass.Top + M(8), rh = M(21);
+            foreach (var grp in Tune.Groups.Concat(new[] { "", "Inspector" }))
+            {
+                if (grp == "")
+                {
+                    y += M(5);
+                    using (var b = new SolidBrush(A(26, BodyTheme.Ink))) g.FillRectangle(b, x + M(3), y, w - M(6), Math.Max(1f, M(0.5f)));
+                    y += M(6);
+                    continue;
+                }
+                var r = new RectangleF(x, y, w, rh);
+                bool on = grp == page, hot = !on && HotKey(r);
+                if (on || hot) using (var p = HRound(r, 6)) using (var b = new SolidBrush(on ? A(16, BodyTheme.Accent) : A(22, BodyTheme.Ink))) g.FillPath(b, p);
+                if (on) using (var b = new SolidBrush(BodyTheme.Accent)) g.FillRectangle(b, r.Left, r.Top + M(4.5f), M(1.5f), r.Height - M(9));
+                // owner, 23.11.2026: the names always in English (Orbitron, one face for every language), an icon for each,
+                // and an accent dot where values differ (no count)
+                var col = on ? BodyTheme.Accent : hot ? BodyTheme.Label : Color.FromArgb(130, 133, 140);
+                float ic = M(8.5f), tx = r.Left + M(6);
+                MaterialIcon.Draw(g, NavIcon(grp), new RectangleF(tx, r.Top + (rh - ic) / 2, ic, ic), Brushes(col));
+                tx += ic + M(4);
+                bool changed = Tune.All.Any(p => p.Group == grp && p.Changed);
+                float dot = M(3.2f), room = r.Right - (changed ? M(6) + dot + M(3) : M(4)) - tx;
+                var label = grp.ToUpperInvariant();
+                // owner, 23.11.2026: one size for every name (Tab, as the settings' tabs); a name too long for its place
+                // runs by, as the preview name on the body's power display (Potato: cut with "…")
+                var f = NornsFonts.Screen(M(6.8f));
+                float lw = g.MeasureString(label, f, 1000, StringFormat.GenericTypographic).Width, ly = r.Top + (rh - f.GetHeight(g)) / 2 + M(0.5f);
+                var lr = new RectangleF(tx, ly, room, f.GetHeight(g) + M(1));
+                if (lw > room && !DpsForm.Potato) running.Add(new Running { Text = label, Font = f, Color = col, Place = lr, Width = lw });
+                else
+                    using (var b = new SolidBrush(col))
+                        g.DrawString(label, f, b, lr, new StringFormat(StringFormat.GenericTypographic) { Trimming = StringTrimming.EllipsisCharacter, FormatFlags = StringFormatFlags.NoWrap });
+                if (changed)   // values differ here: an accent dot, lit
+                {
+                    var c = new PointF(r.Right - M(6) - dot / 2, r.Top + rh / 2);
+                    DpsForm.SoftGlow(g, c, M(5), BodyTheme.Accent, 110);
+                    using (var b = new SolidBrush(BodyTheme.Accent)) g.FillEllipse(b, c.X - dot / 2, c.Y - dot / 2, dot, dot);
+                }
+                keys.Add(Tuple.Create(r, "page:" + grp));
+                y += rh + M(1);
+            }
+        }
+        const string Pause = "M6 19h4V5H6v14zm8-14v14h4V5h-4z";   // Material pause
+        // the side menu's names too long for their place: painted each frame over the still frame (Compose)
+        sealed class Running { public string Text; public Font Font; public Color Color; public RectangleF Place; public float Width; }
+        readonly List<Running> running = new List<Running>();
+        public double? MarqueeSecs;   // selftest: a fixed moment of the running line
+        // the running line as the body's (DpsForm.PaintPreviewName): from the left edge on, then again after a gap, 39 units a second
+        void PaintRunning(Graphics g)
+        {
+            if (running.Count == 0) return;
+            double secs = MarqueeSecs ?? (DemoNow != null ? 0 : (DateTime.UtcNow - animStart).TotalSeconds);
+            var st = g.Save();
+            g.TextRenderingHint = TextRenderingHint.AntiAlias;
+            foreach (var rn in running)
+            {
+                g.SetClip(RectangleF.FromLTRB(rn.Place.Left, rn.Place.Top - M(2), rn.Place.Right, rn.Place.Bottom + M(2)));
+                float loop = rn.Width + M(18), x = rn.Place.Left - (float)(secs * M(39.1f) % loop);
+                using (var b = new SolidBrush(rn.Color))
+                {
+                    g.DrawString(rn.Text, rn.Font, b, x, rn.Place.Top, StringFormat.GenericTypographic);
+                    g.DrawString(rn.Text, rn.Font, b, x + loop, rn.Place.Top, StringFormat.GenericTypographic);
+                }
+            }
+            g.Restore(st);
+        }
+        static string NavIcon(string grp)
+        {
+            switch (grp)
+            {
+                case "Log": return MaterialIcon.Description;
+                case "Vorton projector": return MaterialIcon.Share;     // the arcs jump from target to target
+                case "Smartbombs": return MaterialIcon.Flare;           // a blast all around
+                case "Anomaly timer": return MaterialIcon.Timer;
+                case "ISK grid": return MaterialIcon.Grid;
+                case "Alerts": return MaterialIcon.Bell;
+                case "Lightning rod": return MaterialIcon.Bolt;
+                default: return MaterialIcon.Search;                    // Inspector
+            }
+        }
+
+        // the bottom edge: NRN-01 printed, then what the window keeps (on a dark plate when values changed, as the band's
+        // TEST BUILD), the three ticks and the version plate (DpsForm.PaintBand)
+        void PaintHullBand(Graphics g, RectangleF r, int changed)
+        {
+            Func<float, float> V = v => M(v * 1.1f);   // owner, 23.11.2026: the band keeps the main window's sizes (5.5 / 7.5), off the type scale on purpose
+            var f = NornsFonts.Body(V(5));
+            float sp = V(0.72f), cy = r.Top + r.Height / 2, ty = cy - f.GetHeight(g) / 2;
+            using (var silk = new SolidBrush(Color.FromArgb(215, BodyTheme.Silk)))
+            {
+                float x = r.Left;
+                foreach (var ch in "NRN-01")
+                {
+                    DpsForm.Weighted(g, ch.ToString(), f, BodyTheme.Name, x, ty, V(0.3f));
+                    x += g.MeasureString(ch.ToString(), f, 1000, StringFormat.GenericTypographic).Width + sp;
+                }
+                x += V(6) - sp;
+                using (var b = new SolidBrush(Color.FromArgb(191, 236, 235, 228))) g.FillRectangle(b, x, cy - V(2), V(2.5f), V(4));
+                x += V(2.5f) + V(6);
+                var ver = AppInfo.Version;
+                float vw = DpsForm.SpacedWidth(g, ver, f, sp) + V(6);
+                var box = new RectangleF(r.Right - vw, cy - V(4.5f), vw, V(9));
+                using (var pen = new Pen(Color.FromArgb(217, BodyTheme.Accent), Math.Max(1f, V(0.5f)))) g.DrawRectangle(pen, box.X, box.Y, box.Width, box.Height);
+                using (var yb = new SolidBrush(BodyTheme.Accent)) DpsForm.Spaced(g, ver, f, yb, box.Left + V(3), cy - f.GetHeight(g) / 2, sp);
+                float rx = box.Left - V(6);
+                for (int i = 2; i >= 0; i--) g.FillRectangle(silk, rx - V(0.75f) - i * V(1.75f), cy - V(2.25f), V(0.75f), V(4.5f));
+                float room = rx - V(5.25f) - V(6) - x;
+                string t = Tune.LastError ?? (changed == 0 ? T("All values are the defaults.")
+                    : string.Format(CultureInfo.InvariantCulture, T(changed == 1 ? "{0} value differs from the defaults · kept in {1}" : "{0} values differ from the defaults · kept in {1}"), changed, System.IO.Path.GetFileName(Tune.FilePath)));
+                t = t.TrimEnd('.').ToUpperInvariant();
+                var tf = L.Cjk(t) ? TextF(t, V(5) + M(2)) : NornsFonts.Body(V(5) + M(2));
+                float tsp = L.Cjk(t) ? 0 : sp;
+                if (DpsForm.SpacedWidth(g, t, tf, tsp) > room)
+                {
+                    while (t.Length > 1 && DpsForm.SpacedWidth(g, t + "…", tf, tsp) > room) t = t.Substring(0, t.Length - 1).TrimEnd();
+                    t += "…";
+                }
+                float tty = cy - tf.GetHeight(g) / 2;
+                if (changed == 0 && Tune.LastError == null) DpsForm.Spaced(g, t, tf, silk, x, tty, tsp);
+                else
+                {
+                    float ph = tf.GetHeight(g) + V(3);
+                    var plate = new RectangleF(x - V(3), cy - ph / 2, DpsForm.SpacedWidth(g, t, tf, tsp) + V(6), ph);
+                    using (var p = HRound(plate, 3)) using (var pb = new SolidBrush(BodyTheme.KeyRim)) g.FillPath(pb, p);
+                    using (var tb = new SolidBrush(Tune.LastError != null ? BodyTheme.Alarm : BodyTheme.Accent)) DpsForm.Spaced(g, t, tf, tb, x, tty, tsp);
+                }
+            }
+        }
+
+        // the value being typed in: the settings' number field (Modes.NumberField) - the accent rim, the number, the caret,
+        // the unit at the right; red with one shake when a key would pass the limit. Returns its place (the hit area)
+        RectangleF PaintField(Graphics g, Tune.P p, Font val, Font uf, string ut, float right, float y)
+        {
+            var txt = editText ?? Tune.Format(p, p.V).Replace(" ", "");
+            float tw = txt.Length == 0 ? 0 : g.MeasureString(txt, val, 1000, StringFormat.GenericTypographic).Width;
+            float uw = ut == "" ? 0 : g.MeasureString(ut, uf, 1000, StringFormat.GenericTypographic).Width;
+            float w = Math.Max(M(46), tw + uw + M(16));
+            var r = new RectangleF(right + M(3) - w, y + M(1), w, M(14));
+            double et = errP == p ? Clock - errAt : 10;
+            bool err = et < 0.9;
+            if (err && et < 0.35 && !DpsForm.Potato) r.Offset((float)(M(2.2f) * Math.Sin(et * 2 * Math.PI * 7) * Math.Exp(-et * 8)), 0);
+            using (var path = HRound(r, 5))
+            {
+                using (var b = new SolidBrush(err ? A(46, BodyTheme.Alarm) : A(40, BodyTheme.Accent))) g.FillPath(b, path);
+                using (var pen = new Pen(err ? BodyTheme.Alarm : BodyTheme.Accent, 1f)) g.DrawPath(pen, path);
+            }
+            float x = r.Left + M(4), ty = r.Top + (r.Height - val.GetHeight(g)) / 2 + M(0.5f);
+            g.DrawString(txt, val, Brushes(BodyTheme.Ink), x, ty, StringFormat.GenericTypographic);
+            if (DpsForm.SelfTesting || DpsForm.Potato || Clock % 1.0 < 0.55)   // the caret, blinking
+                using (var b = new SolidBrush(BodyTheme.Accent)) g.FillRectangle(b, x + tw + M(1), r.Top + M(3), Math.Max(1f, M(0.7f)), r.Height - M(6));
+            if (ut != "") g.DrawString(ut, uf, Brushes(A(120, BodyTheme.Ink)), r.Right - M(4) - uw, r.Top + (r.Height - uf.GetHeight(g)) / 2 + M(0.5f), StringFormat.GenericTypographic);
+            return r;
+        }
+
+        // one row per value: the name, the value in the screen's face on the right; the key and its tag; the track (the
+        // default a tick, the value a lamp); its limits; what it does in players' words.
+        // Owner, 23.11.2026: only the app's own type scale, one size for each role on the page - the heading and the value
+        // as the cards' titles and the modules' values (8.8), what it does as the cards' text (9.6), the key, the tag, the
+        // unit, the limits and the default in Micro (6.4), the page note as the settings' notes (7.2). Nothing shrinks to fit:
+        // a long heading and the help text wrap, and the row grows
+        sealed class RowLay { public string Lt, Vt, Ut, Ht; public Font Lf, Uf, Hf; public float HeadW, HeadH, Uw, Vw, Vx, KeyH, HelpH, H; }
+        static readonly StringFormat Wrap = new StringFormat();
         void PaintGroup(Graphics g, RectangleF area)
         {
             var list = Tune.All.Where(p => p.Group == page).ToList();
-            var label = BodyFont(U(12), FontStyle.Bold);
-            var help = BodyFont(U(9.5f));
-            var mono = new Font("Consolas", U(8.5f), GraphicsUnit.Pixel);
-            var val = NornsFonts.Screen(U(12));
-            var unitF = BodyFont(U(9.5f));
-            float x0 = area.Left + U(22), x1 = area.Right - U(22);
-            contentH = U(14) + list.Count * U(RowH) + U(10);
-            scroll = Math.Max(0, Math.Min(scroll, Math.Max(0, contentH - area.Height)));
-            float y = area.Top + U(14) - scroll;
+            float x0 = area.Left, x1 = area.Right - M(8);
+            var note = T("Formula cards show the default numbers.");
+            var mono = new Font("Consolas", M(6.4f), GraphicsUnit.Pixel);
+            var val = NornsFonts.Screen(M(8.8f));
+            var limF = NornsFonts.Body(M(6.4f));
+            var tag = T("new events only"); var tgf = TextF(tag, M(6.4f));
+            float valH = val.GetHeight(g), microH = limF.GetHeight(g), monoH = mono.GetHeight(g), tagH = tgf.GetHeight(g) + M(2.5f);
+            var nf = TextF(note, M(7.2f));
+            // the rows' heights first: the bar and the scroll need the whole page
+            var lays = new List<RowLay>();
+            float total = 0;
             foreach (var p in list)
             {
-                var row = new RectangleF(area.Left, y, area.Width, U(RowH));
+                var r = new RowLay { Vt = Tune.Format(p, p.V), Ut = T(p.Unit), Lt = T(p.Label).ToUpperInvariant(), Ht = T(p.Help) };
+                r.Uf = TextF(r.Ut, M(6.4f));
+                r.Uw = r.Ut == "" ? 0 : g.MeasureString(r.Ut, r.Uf, 1000, StringFormat.GenericTypographic).Width;
+                r.Vw = g.MeasureString(r.Vt, val, 1000, StringFormat.GenericTypographic).Width;
+                r.Vx = x1 - r.Uw - r.Vw - (r.Ut == "" ? 0 : M(2.5f));
+                r.Lf = TitleF(r.Lt, M(8.8f));
+                // the heading stops short of the value and of the field it opens (Modes.NumberField: 46 wide at least)
+                r.HeadW = Math.Max(M(40), Math.Min(r.Vx - M(3), x1 + M(3) - M(46)) - M(6) - x0);
+                r.HeadH = Math.Max(valH, g.MeasureString(r.Lt, r.Lf, new SizeF(r.HeadW, 10000), StringFormat.GenericTypographic).Height);
+                r.KeyH = Math.Max(monoH, p.NewEventsOnly ? tagH : 0);
+                r.Hf = TextF(r.Ht, M(9.6f));   // owner, 23.11.2026: 9.6, not the settings rows' 7.5
+                r.HelpH = r.Ht == "" ? 0 : g.MeasureString(r.Ht, r.Hf, new SizeF(x1 - x0, 10000), Wrap).Height;
+                r.H = M(5) + r.HeadH + M(1.5f) + r.KeyH + M(7) + M(4.5f) + microH + M(2.5f) + r.HelpH + M(5);
+                lays.Add(r);
+                total += r.H;
+            }
+            contentH = M(4) + total + M(5) + g.MeasureString(note, nf, new SizeF(x1 - x0, 10000), Wrap).Height + M(8);
+            scroll = Math.Max(0, Math.Min(scroll, Math.Max(0, contentH - area.Height)));
+            float y = area.Top + M(4) - scroll;
+            for (int i = 0; i < list.Count; i++)
+            {
+                var p = list[i]; var L0 = lays[i];
+                var row = new RectangleF(area.Left - M(4), y, x1 - area.Left + M(8), L0.H);
                 rows.Add(Tuple.Create(row, p));
-                if (row.Contains(mouse)) using (var b = new SolidBrush(Color.FromArgb(28, 31, 36))) g.FillRectangle(b, row);
-                // label, its key, and the "new events" tag
-                g.DrawString(T(p.Label), label, Brushes(BodyTheme.Ink), x0, y + U(8));
-                float lx = x0 + g.MeasureString(T(p.Label), label).Width + U(4);
-                g.DrawString(p.Key, mono, Brushes(Faint), lx, y + U(11));
-                if (p.NewEventsOnly)
-                {
-                    float kx = lx + g.MeasureString(p.Key, mono).Width + U(6);
-                    var tag = T("new events only"); var tf = BodyFont(U(8.5f)); var ts = g.MeasureString(tag, tf);
-                    var tr = new RectangleF(kx, y + U(9), ts.Width + U(8), U(15));
-                    using (var path = Theme.Round(tr, U(7), 0.85f)) using (var pen = new Pen(Faint, 1)) g.DrawPath(pen, path);
-                    g.DrawString(tag, tf, Brushes(Dim), tr.Left + U(4), tr.Top + (tr.Height - tf.GetHeight(g)) / 2);
-                }
-                // the value and its unit, right-aligned; the default under it when changed
-                string vt = Tune.Format(p, p.V), ut = T(p.Unit);
-                float uw = ut == "" ? 0 : g.MeasureString(ut, unitF).Width;
-                float vw = g.MeasureString(vt, val).Width;
-                float vx = x1 - uw - vw - (ut == "" ? 0 : U(2));
-                var vr = new RectangleF(vx - U(4), y + U(5), vw + uw + U(8), U(22));
+                bool rowHot = row.Contains(mouse);
+                if (rowHot) using (var rp = HRound(RectangleF.Inflate(row, 0, -M(1)), 6)) using (var b = new SolidBrush(A(10, BodyTheme.Ink))) g.FillPath(b, rp);
+                // the heading (owner, 23.11.2026: in capitals), wrapped when long; the value and its unit right of it
+                float top = y + M(5);
+                g.DrawString(L0.Lt, L0.Lf, Brushes(rowHot ? BodyTheme.Ink : BodyTheme.Label), new RectangleF(x0, top, L0.HeadW, L0.HeadH + M(1)), StringFormat.GenericTypographic);
+                var vr = new RectangleF(L0.Vx - M(3), top - M(1), L0.Vw + L0.Uw + M(6), valH + M(2));
+                if (editing == p) vr = PaintField(g, p, val, L0.Uf, L0.Ut, x1, top - M(2));
                 values.Add(Tuple.Create(vr, p));
                 if (editing != p)
                 {
-                    g.DrawString(vt, val, Brushes(p.Changed ? BodyTheme.Accent : BodyTheme.Ink), vx, y + U(7));
-                    if (ut != "") g.DrawString(ut, unitF, Brushes(Dim), x1 - uw, y + U(10));
+                    if (p.Changed && !DpsForm.Potato && !DpsForm.EyeComfort)   // a changed value glows as the screen's headings do
+                        using (var halo = new SolidBrush(A(28, BodyTheme.Accent)))
+                            foreach (var o in new[] { new PointF(-0.6f, 0), new PointF(0.6f, 0), new PointF(0, -0.6f), new PointF(0, 0.6f) })
+                                g.DrawString(L0.Vt, val, halo, L0.Vx + o.X * K, top + o.Y * K, StringFormat.GenericTypographic);
+                    g.DrawString(L0.Vt, val, Brushes(p.Changed ? BodyTheme.Accent : BodyTheme.Ink), L0.Vx, top, StringFormat.GenericTypographic);
+                    if (L0.Ut != "") g.DrawString(L0.Ut, L0.Uf, Brushes(Dim), x1 - L0.Uw, top + Ascent(val) - Ascent(L0.Uf), StringFormat.GenericTypographic);
                 }
-                // the track: the default as a tick, the value as a knob
-                float resetW = U(30);
-                var track = RectangleF.FromLTRB(x0, y + U(36), x1 - resetW - U(8), y + U(40));
-                var hitTrack = RectangleF.FromLTRB(track.Left - U(6), track.Top - U(8), track.Right + U(6), track.Bottom + U(8));
+                // the key and the "new events only" tag on their own line under the heading
+                float ky = top + L0.HeadH + M(1.5f), kmid = ky + L0.KeyH / 2;
+                g.DrawString(p.Key, mono, Brushes(Faint), x0, kmid - monoH / 2, StringFormat.GenericTypographic);
+                if (p.NewEventsOnly)
+                {
+                    float tx = x0 + g.MeasureString(p.Key, mono, 1000, StringFormat.GenericTypographic).Width + M(5);
+                    var ts = g.MeasureString(tag, tgf, 1000, StringFormat.GenericTypographic);
+                    var tr = new RectangleF(tx, kmid - tagH / 2, ts.Width + M(7), tagH);
+                    using (var path = HRound(tr, 4)) using (var pen = new Pen(A(60, BodyTheme.Ink), 1)) g.DrawPath(pen, path);
+                    g.DrawString(tag, tgf, Brushes(Dim), tr.Left + M(3.5f), tr.Top + (tr.Height - tgf.GetHeight(g)) / 2 + M(0.3f), StringFormat.GenericTypographic);
+                }
+                // the track; the reset key right of it while the value differs
+                float resetW = M(13);
+                float tcy = ky + L0.KeyH + M(7);
+                var track = RectangleF.FromLTRB(x0 + M(3), tcy - M(0.8f), x1 - resetW - M(8), tcy + M(0.8f));
+                var hitTrack = RectangleF.FromLTRB(track.Left - U(6), tcy - M(6), track.Right + U(6), tcy + M(6));
                 tracks.Add(Tuple.Create(hitTrack, p));
-                using (var path = Theme.Round(track, U(2), 0.85f)) using (var b = new SolidBrush(Color.FromArgb(46, 49, 56))) g.FillPath(b, path);
+                using (var path = Theme.Round(track, M(0.8f), 1f)) using (var b = new SolidBrush(A(34, BodyTheme.Ink))) g.FillPath(b, path);
                 float fx = track.Left + (float)Frac(p, p.V) * track.Width, dx = track.Left + (float)Frac(p, p.Def) * track.Width;
-                var fill = RectangleF.FromLTRB(track.Left, track.Top, Math.Max(track.Left + U(2), fx), track.Bottom);
-                using (var path = Theme.Round(fill, U(2), 0.85f)) using (var b = new SolidBrush(p.Changed ? BodyTheme.Accent : Color.FromArgb(120, 124, 132))) g.FillPath(b, path);
-                using (var pen = new Pen(BodyTheme.Silk, Math.Max(1f, U(1.2f)))) g.DrawLine(pen, dx, track.Top - U(4), dx, track.Bottom + U(4));
+                var fill = RectangleF.FromLTRB(track.Left, track.Top, Math.Max(track.Left + M(1), fx), track.Bottom);
+                using (var path = Theme.Round(fill, M(0.8f), 1f)) using (var b = new SolidBrush(p.Changed ? BodyTheme.Accent : A(120, BodyTheme.Ink))) g.FillPath(b, path);
+                using (var pen = new Pen(A(170, BodyTheme.Silk), Math.Max(1f, M(0.7f)))) g.DrawLine(pen, dx, tcy - M(3.5f), dx, tcy + M(3.5f));
                 bool hotKnob = drag == p || hitTrack.Contains(mouse);
-                float kr = U(hotKnob ? 7 : 6);
-                using (var b = new SolidBrush(p.Changed ? BodyTheme.Accent : BodyTheme.Ink)) g.FillEllipse(b, fx - kr, (track.Top + track.Bottom) / 2 - kr, kr * 2, kr * 2);
-                using (var pen = new Pen(Color.Black, Math.Max(1f, U(1.5f)))) g.DrawEllipse(pen, fx - kr, (track.Top + track.Bottom) / 2 - kr, kr * 2, kr * 2);
-                // min / max under the track ends
-                var lim = BodyFont(U(8.5f));
-                g.DrawString(Tune.Format(p, p.Min), lim, Brushes(Faint), track.Left, track.Bottom + U(5));
-                var mx = Tune.Format(p, p.Max); g.DrawString(mx, lim, Brushes(Faint), track.Right - g.MeasureString(mx, lim).Width, track.Bottom + U(5));
+                float kd = M(hotKnob ? 7.5f : 6.5f);
+                if (p.Changed) DpsForm.SoftGlow(g, new PointF(fx, tcy), kd / 2 + M(4), BodyTheme.Accent, 140);   // none in Potato or eye comfort
+                using (var b = new SolidBrush(p.Changed ? BodyTheme.Accent : BodyTheme.Ink)) g.FillEllipse(b, fx - kd / 2, tcy - kd / 2, kd, kd);
+                using (var pen = new Pen(Color.Black, Math.Max(1f, M(1)))) g.DrawEllipse(pen, fx - kd / 2, tcy - kd / 2, kd, kd);
                 if (p.Changed)
                 {
-                    var dt = T("default") + " " + Tune.Format(p, p.Def);
-                    g.DrawString(dt, lim, Brushes(Dim), (track.Left + track.Right - g.MeasureString(dt, lim).Width) / 2, track.Bottom + U(5));
-                    var rr = new RectangleF(x1 - resetW, track.Top - U(11), resetW, U(26));
-                    bool hot = rr.Contains(mouse);
-                    using (var path = Theme.Round(rr, U(8), 0.85f))
+                    var rr = new RectangleF(x1 - resetW, tcy - resetW / 2, resetW, resetW);
+                    bool hot = HotKey(rr);
+                    using (var path = HRound(rr, 5))
                     {
-                        using (var b = new LinearGradientBrush(rr, hot ? Color.FromArgb(60, 63, 70) : BodyTheme.KeyTop, BodyTheme.KeyBottom, 90f)) g.FillPath(b, path);
-                        using (var pen = new Pen(BodyTheme.KeyRim, 1)) g.DrawPath(pen, path);
+                        using (var b = new SolidBrush(hot ? A(26, BodyTheme.Ink) : A(12, BodyTheme.Ink))) g.FillPath(b, path);
+                        using (var pen = new Pen(A(50, BodyTheme.Ink), 1f)) g.DrawPath(pen, path);
                     }
-                    var rf = BodyFont(U(12)); var rs = g.MeasureString("↺", rf);
-                    g.DrawString("↺", rf, Brushes(hot ? BodyTheme.Accent : BodyTheme.Ink), rr.Left + (rr.Width - rs.Width) / 2, rr.Top + (rr.Height - rf.GetHeight(g)) / 2);
+                    float ri = M(8);
+                    MaterialIcon.Draw(g, MaterialIcon.Refresh, new RectangleF(rr.Left + (rr.Width - ri) / 2, rr.Top + (rr.Height - ri) / 2, ri, ri), Brushes(hot ? BodyTheme.Accent : BodyTheme.Ink));
                     resets.Add(Tuple.Create(rr, p));
                 }
-                // what it does
-                g.DrawString(T(p.Help), help, Brushes(Dim), new RectangleF(x0, y + U(57), x1 - x0, U(34)), TwoLines);
-                using (var pen = new Pen(Line, 1)) g.DrawLine(pen, x0, row.Bottom - 1, x1, row.Bottom - 1);
-                y += U(RowH);
+                // the limits at the ends, the default under its tick while the value differs (kept clear of the limits)
+                float ly = tcy + M(4.5f);
+                var mn = Tune.Format(p, p.Min); var mx = Tune.Format(p, p.Max);
+                float mnw = g.MeasureString(mn, limF, 1000, StringFormat.GenericTypographic).Width, mxw = g.MeasureString(mx, limF, 1000, StringFormat.GenericTypographic).Width;
+                g.DrawString(mn, limF, Brushes(Faint), track.Left, ly, StringFormat.GenericTypographic);
+                g.DrawString(mx, limF, Brushes(Faint), track.Right - mxw, ly, StringFormat.GenericTypographic);
+                if (p.Changed)
+                {
+                    var dt = T("default") + " " + Tune.Format(p, p.Def); var df = TextF(dt, M(6.4f));
+                    float dw = g.MeasureString(dt, df, 1000, StringFormat.GenericTypographic).Width;
+                    float lo = track.Left + mnw + M(6), hi = track.Right - mxw - M(6) - dw;
+                    g.DrawString(dt, df, Brushes(Dim), Math.Max(lo, Math.Min(hi, dx - dw / 2)), ly, StringFormat.GenericTypographic);
+                }
+                // what it does: all of it, wrapped
+                float hy = ly + microH + M(2.5f);
+                if (L0.Ht != "") g.DrawString(L0.Ht, L0.Hf, Brushes(Dim), new RectangleF(x0, hy, x1 - x0, L0.HelpH + M(2)), Wrap);
+                using (var b = new SolidBrush(A(20, BodyTheme.Ink))) g.FillRectangle(b, x0, row.Bottom - 1, x1 - x0, 1);
+                y += L0.H;
             }
+            g.DrawString(note, nf, Brushes(Faint), new RectangleF(x0, y + M(5), x1 - x0, nf.GetHeight(g) * 3), Wrap);
             mono.Dispose();
         }
+        // where a font's baseline sits under the top of its line (GenericTypographic draws from the cell's top)
+        static float Ascent(Font f) { var ff = f.FontFamily; return f.Size * ff.GetCellAscent(f.Style) / ff.GetEmHeight(f.Style); }
 
         void PaintInspector(Graphics g, RectangleF area)
         {
             var now = DemoNow ?? DateTime.UtcNow;
             if (report == null) report = body.InspectReport(now);
-            var mono = new Font("Consolas", U(10), GraphicsUnit.Pixel);
-            var headF = HeadFont(U(9.5f));
-            float lh = U(15.5f), x = area.Left + U(20);
-            contentH = U(12);
-            foreach (var r in report) contentH += r.Head ? U(28) : lh;
+            // owner, 23.11.2026: on the app's scale and at its Window size - the module names as the cards' titles (8.8),
+            // the lines in Consolas at the same size
+            var mono = new Font("Consolas", M(8.8f), GraphicsUnit.Pixel);
+            var headF = HeadFont(M(8.8f));
+            float lh = M(13.6f), x = area.Left + M(16);
+            contentH = M(10);
+            foreach (var r in report) contentH += r.Head ? M(25) : lh;
             scroll = Math.Max(0, Math.Min(scroll, Math.Max(0, contentH - area.Height)));
-            float y = area.Top + U(10) - scroll;
+            float y = area.Top + M(8) - scroll;
             foreach (var r in report)
             {
                 if (r.Head)
                 {
-                    y += U(8);
+                    y += M(7);
                     g.DrawString(r.Text, headF, Brushes(r.Color), x, y);
-                    y += U(20);
+                    y += M(18);
                     continue;
                 }
                 if (y > area.Top - lh && y < area.Bottom)
-                    g.DrawString(r.Text, mono, Brushes(r.Color), new RectangleF(x, y, area.Right - x - U(12), lh), OneLine);
+                    g.DrawString(r.Text, mono, Brushes(r.Color), new RectangleF(x, y, area.Right - x - M(10), lh), OneLine);
                 y += lh;
             }
             if (frozen)
             {
-                var t = T("FROZEN"); var f = HeadFont(U(9));
-                g.DrawString(t, f, Brushes(BodyTheme.Dread), area.Right - U(16) - g.MeasureString(t, f).Width, area.Top + U(10));
+                var t = T("FROZEN"); var f = headF;   // one size with the module names
+                g.DrawString(t, f, Brushes(BodyTheme.Dread), area.Right - M(13) - g.MeasureString(t, f).Width, area.Top + M(8));
             }
             mono.Dispose();
         }
@@ -501,19 +919,38 @@ namespace TheNorns
         }
 
         static readonly StringFormat OneLine = new StringFormat { Trimming = StringTrimming.EllipsisCharacter, FormatFlags = StringFormatFlags.NoWrap };
-        static readonly StringFormat TwoLines = new StringFormat { Trimming = StringTrimming.EllipsisWord };
         static readonly Dictionary<Color, SolidBrush> brushes = new Dictionary<Color, SolidBrush>();
         static Brush Brushes(Color c) { SolidBrush b; if (!brushes.TryGetValue(c, out b)) brushes[c] = b = new SolidBrush(c); return b; }
 
-        // ---------------- input ----------------
+        // ---------------- input (as the body's) ----------------
         protected override void OnMouseMove(MouseEventArgs e)
         {
             base.OnMouseMove(e);
             mouse = e.Location;
-            if (drag != null) SetFromTrack(drag, e.X);
-            Invalidate();
+            if (barGrip != null) { PullBar(e.Y); return; }
+            if (drag != null) { SetFromTrack(drag, e.X); Redraw(); return; }
+            lightAt = !DpsForm.Potato && (navGlassR.Contains(mouse) || mainGlassR.Contains(mouse)) ? (PointF?)mouse : null;
+            // the tip after a short rest on a hull key, not at once
+            var id = SpotAt(e.Location);
+            if (id != tipFor)
+            {
+                tipFor = id; tip.Hide(this);
+                var kr = id == null ? RectangleF.Empty : keys.Where(x => x.Item2 == id).Select(x => x.Item1).FirstOrDefault();
+                tipText = id == "close" ? T("Close") : id == "resetall" ? T("Reset all") : id == "openfile" ? T("Open file") : id == "delete" ? T("Clear and delete custom tuning") : id == "freeze" ? T(frozen ? "Resume" : "Freeze") : null;
+                tipAt = new Point((int)kr.Left, (int)(kr.Bottom + M(4)));
+                tipDue = Clock + 0.7;
+            }
+            var hover = HoverState();
+            if (hover != shownHover) { shownHover = hover; Redraw(); } else Present();
         }
-        protected override void OnMouseLeave(EventArgs e) { base.OnMouseLeave(e); mouse = new Point(-1, -1); Invalidate(); }
+        // what the frame shows of the mouse: the key, the row, the track under it
+        string shownHover;
+        string HoverState()
+        {
+            var r = rows.FirstOrDefault(x => x.Item1.Contains(mouse)); var t = tracks.FirstOrDefault(x => x.Item1.Contains(mouse));
+            return (SpotAt(mouse) ?? "") + "|" + (r == null ? "" : r.Item2.Key) + "|" + (t == null ? "" : t.Item2.Key) + "|" + barTrack.Contains(mouse);
+        }
+        protected override void OnMouseLeave(EventArgs e) { base.OnMouseLeave(e); mouse = new Point(-1, -1); lightAt = null; shownHover = null; downId = null; tipFor = null; tipText = null; tip.Hide(this); Redraw(); }
 
         void SetFromTrack(Tune.P p, int mx)
         {
@@ -526,100 +963,129 @@ namespace TheNorns
         protected override void OnMouseDown(MouseEventArgs e)
         {
             base.OnMouseDown(e);
+            tipText = null; tip.Hide(this);   // a click: no tip
             if (e.Button != MouseButtons.Left) return;
-            CommitEdit();
-            if (langOpen)
+            var id = SpotAt(e.Location);
+            if (editing != null && id != "field:" + editing.Key) CommitField();   // a click elsewhere keeps the number
+            if (barTrack.Contains(e.Location))
             {
-                var lr = langRows.FirstOrDefault(x => x.Item1.Contains(e.Location));
-                if (lr != null) { SetLang(lr.Item2); return; }
-                langOpen = false; Invalidate(); return;   // a click outside the names only closes the list
+                float barY = barView.Top + (barView.Height - barH) * Math.Min(scroll, barMax) / barMax;
+                barGrip = e.Y >= barY && e.Y <= barY + barH ? e.Y - barY : barH / 2;
+                PullBar(e.Y); return;
             }
-            var k = keys.FirstOrDefault(x => x.Item1.Contains(e.Location));
-            if (k != null) { Press(k.Item2); return; }
-            var rs = resets.FirstOrDefault(x => x.Item1.Contains(e.Location));
-            if (rs != null) { Tune.Set(rs.Item2, rs.Item2.Def); Invalidate(); return; }
+            if (id != null) { downId = id; Redraw(); return; }
             var t = tracks.FirstOrDefault(x => x.Item1.Contains(e.Location));
-            if (t != null) { drag = t.Item2; Capture = true; SetFromTrack(drag, e.X); Invalidate(); }
+            if (t != null) { drag = t.Item2; Capture = true; SetFromTrack(drag, e.X); Redraw(); }
         }
-        protected override void OnMouseUp(MouseEventArgs e) { base.OnMouseUp(e); drag = null; Capture = false; Invalidate(); }
-
-        protected override void OnMouseDoubleClick(MouseEventArgs e)
+        protected override void OnMouseUp(MouseEventArgs e)
         {
-            base.OnMouseDoubleClick(e);
-            var v = values.FirstOrDefault(x => x.Item1.Contains(e.Location));
-            if (v != null) StartEdit(v.Item2, v.Item1);
+            base.OnMouseUp(e);
+            bool left = e.Button == MouseButtons.Left;
+            drag = null; Capture = false; barGrip = null;
+            var id = downId; downId = null;
+            if (id != null && left && SpotAt(e.Location) == id) Press(id);   // a key acts on release, over the same key
+            Redraw();
+        }
+        void PullBar(int y)
+        {
+            float room = Math.Max(1, barView.Height - barH);
+            scroll = Math.Max(0, Math.Min(barMax, (y - barGrip.Value - barView.Top) / room * barMax));
+            Redraw();
         }
 
         protected override void OnMouseWheel(MouseEventArgs e)
         {
             base.OnMouseWheel(e);
-            if (langOpen) { langOpen = false; Invalidate(); return; }
             var row = rows.FirstOrDefault(x => x.Item1.Contains(e.Location));
             if ((Mods & Keys.Control) != 0 && row != null)
             {
                 var p = row.Item2; double step = p.Step * ((Mods & Keys.Shift) != 0 ? 10 : 1);
                 Tune.Set(p, p.V + Math.Sign(e.Delta) * step);
             }
-            else scroll -= e.Delta / 120f * U(48);
-            Invalidate();
+            else scroll -= Math.Sign(e.Delta) * M(24);   // the settings' step
+            Redraw();
         }
 
         void Press(string id)
         {
             if (id == "close") { Hide(); return; }
-            if (id == "resetall") { Tune.ResetAll(); Invalidate(); return; }
-            if (id == "freeze") { frozen = !frozen; report = null; Invalidate(); return; }
-            if (id == "lang") { langOpen = !langOpen; Invalidate(); return; }
+            if (id == "resetall") { Tune.ResetAll(); Redraw(); return; }
+            if (id == "freeze") { frozen = !frozen; report = null; Redraw(); return; }
+            if (id == "delete") { body.AskDeleteTuning(this); return; }
+            if (id.StartsWith("reset:")) { var p = Tune.All.First(x => x.Key == id.Substring(6)); Tune.Set(p, p.Def); Redraw(); return; }
+            if (id.StartsWith("field:")) { editing = Tune.All.First(x => x.Key == id.Substring(6)); editText = null; Redraw(); return; }
             if (id == "openfile")
             {
                 if (!System.IO.File.Exists(Tune.FilePath)) Tune.Save();
                 try { System.Diagnostics.Process.Start("notepad.exe", "\"" + Tune.FilePath + "\""); } catch { }
                 return;
             }
-            if (id.StartsWith("page:")) { ShowPage(id.Substring(5)); Invalidate(); }
+            if (id.StartsWith("page:")) { ShowPage(id.Substring(5)); Redraw(); }
         }
 
-        internal void StartEdit(Tune.P p, RectangleF r)
+        // typing a value (Modes.cs): digits and one decimal point (comma too) where the value has decimals; Backspace;
+        // Enter keeps it, Tab keeps it and goes to the next value of the page (Shift+Tab back), Escape leaves it as it was
+        internal void CommitField()
         {
-            CommitEdit();
-            editing = p;
-            edit = new TextBox
-            {
-                Text = Tune.Format(p, p.V).Replace(" ", ""), BorderStyle = BorderStyle.None, BackColor = Color.FromArgb(30, 33, 38), ForeColor = BodyTheme.Accent,
-                Font = BodyFont(U(12)), TextAlign = HorizontalAlignment.Right,
-                Bounds = new Rectangle((int)(r.Right - U(110)), (int)(r.Top + U(2)), (int)U(106), (int)U(20)),
-            };
-            edit.KeyDown += (s, e) =>
-            {
-                // the box is removed after its own key event, not inside it
-                if (e.KeyCode == Keys.Enter) { e.SuppressKeyPress = true; BeginInvoke((Action)CommitEdit); }
-                else if (e.KeyCode == Keys.Escape) { e.SuppressKeyPress = true; BeginInvoke((Action)CancelEdit); }
-            };
-            edit.LostFocus += (s, e) => CommitEdit();
-            Controls.Add(edit);
-            edit.Focus(); edit.SelectAll();
-            Invalidate();
-        }
-        internal void CommitEdit()
-        {
-            if (edit == null) return;
+            var p = editing; var text = editText;
+            editing = null; editText = null;
             double v;
-            var text = edit.Text.Replace(" ", "").Replace(",", ".");
-            if (double.TryParse(text, NumberStyles.Float, CultureInfo.InvariantCulture, out v)) Tune.Set(editing, v);
-            CancelEdit();
+            if (p != null && !string.IsNullOrEmpty(text) && double.TryParse(text, NumberStyles.Float, CultureInfo.InvariantCulture, out v)) Tune.Set(p, v);
+            Redraw();
         }
-        void CancelEdit()
+        internal bool EditKey(Keys keyData)
         {
-            if (edit == null) return;
-            var e = edit; edit = null; editing = null;
-            Controls.Remove(e); e.Dispose();
-            Invalidate();
+            if (editing == null) return false;
+            var key = keyData & Keys.KeyCode;
+            if (key == Keys.Enter) { CommitField(); return true; }
+            if (key == Keys.Tab)
+            {
+                var list = Tune.All.Where(x => x.Group == editing.Group).ToList();
+                int i = list.IndexOf(editing);
+                CommitField();
+                editing = list[(i + ((keyData & Keys.Shift) != 0 ? list.Count - 1 : 1)) % list.Count]; editText = null;
+                Redraw(); return true;
+            }
+            if (key == Keys.Escape) { editing = null; editText = null; Redraw(); return true; }
+            if (key == Keys.Back) { editText = string.IsNullOrEmpty(editText) ? "" : editText.Substring(0, editText.Length - 1); Redraw(); return true; }
+            return false;
+        }
+        protected override bool ProcessCmdKey(ref Message msg, Keys keyData) { return EditKey(keyData) || base.ProcessCmdKey(ref msg, keyData); }
+        protected override void OnKeyPress(KeyPressEventArgs e)
+        {
+            base.OnKeyPress(e);
+            if (editing == null) return;
+            e.Handled = true;
+            char ch = e.KeyChar == ',' ? '.' : e.KeyChar;
+            bool dec = !editing.Int;
+            if (!(ch >= '0' && ch <= '9') && !(dec && ch == '.')) return;
+            var t = editText ?? "";
+            if (ch == '.' && (t.Contains('.') || t.Length == 0)) return;
+            var next = t + ch;
+            double v;
+            if (ch != '.' && (!double.TryParse(next, NumberStyles.Float, CultureInfo.InvariantCulture, out v) || v > editing.Max))
+            {
+                errP = editing; errAt = Clock; Redraw();   // over the limit: red, one shake
+                return;
+            }
+            editText = next;
+            Redraw();
         }
 
         // --selftest-dps: the window on two groups (one value changed) and the Inspector over the self-test's fleet. Tuning is
         // switched on only in memory: nothing is read from or written to tuning.json, and every value is put back after.
+        [System.Runtime.InteropServices.DllImport("user32.dll", EntryPoint = "SendMessage")] static extern IntPtr SendMsg(IntPtr h, int msg, IntPtr w, IntPtr l);
         public static void SelfTest(DpsForm f, string dir, DateTime now, System.Text.StringBuilder log)
         {
+            // a double click on a hull (HTCAPTION) does nothing: neither the body nor this window maximizes (owner, 24.11.2026)
+            using (var dw = new TuneWindow(f))
+                foreach (var form in new Form[] { f, dw })
+                {
+                    var keep = form.WindowState;
+                    SendMsg(form.Handle, 0xA3 /* WM_NCLBUTTONDBLCLK */, (IntPtr)2 /* HTCAPTION */, IntPtr.Zero);
+                    if (form.WindowState == FormWindowState.Maximized) throw new Exception("self-test: a double click on the hull maximized " + form.GetType().Name);
+                    form.WindowState = keep;
+                }
             bool was = Tune.Enabled;
             Tune.Enabled = true;
             Tune.FileOverride = System.IO.Path.Combine(dir, "tuning_selftest.json");   // never the user's file
@@ -648,11 +1114,75 @@ namespace TheNorns
                             using (var b = w.Render()) b.Save(System.IO.Path.Combine(dir, "tune_" + (lg == "en" ? "" : lg + "_") + pg.ToLowerInvariant().Replace(" ", "_") + ".png"), System.Drawing.Imaging.ImageFormat.Png);
                         }
                     }
-                    Lang = keepLang;
-                    w.ShowPage("Smartbombs"); w.langOpen = true;
-                    using (w.Render()) { }   // the key's place
-                    using (var b = w.Render()) b.Save(System.IO.Path.Combine(dir, "tune_language_menu.png"), System.Drawing.Imaging.ImageFormat.Png);
-                    w.langOpen = false;
+                    langOverride = null;
+                    // every page's name fits the side menu at its one size, with the dot of changed values: none runs by
+                    Tune.VortonKernelS.V = Tune.VortonKernelS.Def * 2; Tune.Version++;
+                    w.ShowPage("Vorton projector");
+                    using (w.Render()) { }
+                    Tune.VortonKernelS.V = Tune.VortonKernelS.Def; Tune.Version++;
+                    if (w.running.Count > 0) throw new Exception("Tuning self-test: a side-menu name does not fit: " + string.Join(", ", w.running.Select(q => q.Text)));
+                    // the mouse as the body's: a hull key held, the light on the glass, a value being typed in
+                    w.ShowPage("Smartbombs");
+                    using (w.Render()) { }
+                    var rk = w.keys.First(x => x.Item2 == "resetall").Item1;
+                    w.mouse = Point.Round(new PointF(rk.Left + rk.Width / 2, rk.Top + rk.Height / 2)); w.downId = "resetall";
+                    using (var b = w.Render()) b.Save(System.IO.Path.Combine(dir, "tune_key_held.png"), System.Drawing.Imaging.ImageFormat.Png);
+                    w.downId = null;
+                    var ok = w.keys.First(x => x.Item2 == "openfile").Item1;
+                    w.mouse = Point.Round(new PointF(ok.Left + ok.Width / 2, ok.Top + ok.Height / 2));
+                    using (var b = w.Render()) b.Save(System.IO.Path.Combine(dir, "tune_key_hover.png"), System.Drawing.Imaging.ImageFormat.Png);
+                    w.mouse = new Point(-1, -1);
+                    w.DemoMouse = new PointF(w.mainGlassR.Left + w.mainGlassR.Width * 0.55f, w.mainGlassR.Top + w.mainGlassR.Height * 0.42f);
+                    using (var b = w.Render()) b.Save(System.IO.Path.Combine(dir, "tune_glass_light.png"), System.Drawing.Imaging.ImageFormat.Png);
+                    w.DemoMouse = null;
+                    w.editing = Tune.SbCycleGapS; w.editText = "8.";
+                    using (var b = w.Render()) b.Save(System.IO.Path.Combine(dir, "tune_field_typing.png"), System.Drawing.Imaging.ImageFormat.Png);
+                    w.errP = Tune.SbCycleGapS; w.errAt = Clock - 0.5;   // past the shake, still red
+                    using (var b = w.Render()) b.Save(System.IO.Path.Combine(dir, "tune_field_error.png"), System.Drawing.Imaging.ImageFormat.Png);
+                    w.editing = null; w.editText = null; w.errP = null;
+                    // the app switched to Potato mode while the window is open: it follows at once (5 fps, plain hull, no
+                    // light, no glow), and back
+                    w.SyncLook();
+                    DpsForm.Potato = true; w.SyncLook();
+                    if (w.frameTimer.Interval != 200) throw new Exception("Tuning self-test: Potato did not slow the window to 5 fps");
+                    w.DemoMouse = new PointF(w.mainGlassR.Left + w.mainGlassR.Width * 0.55f, w.mainGlassR.Top + w.mainGlassR.Height * 0.42f);
+                    using (var b = w.Render()) b.Save(System.IO.Path.Combine(dir, "tune_potato.png"), System.Drawing.Imaging.ImageFormat.Png);
+                    DpsForm.Potato = false; w.SyncLook(); w.DemoMouse = null;
+                    if (w.frameTimer.Interval != 40) throw new Exception("Tuning self-test: leaving Potato did not bring back 25 fps");
+                    // Settings -> Display -> Window size while the window is open: it takes the new size at once, and back
+                    float scale0 = DpsForm.UiScale; var size0 = w.ClientSize;
+                    var wa0 = Screen.FromControl(w).WorkingArea;
+                    foreach (var sc in new[] { 1f, 1.25f, 1.5f })
+                    {
+                        DpsForm.UiScale = sc; w.SyncLook();
+                        int want = Math.Min((int)Math.Round(HW * K * sc), wa0.Width - 20);
+                        if (w.ClientSize.Width != want) throw new Exception("Tuning self-test: window size " + sc + " gave " + w.ClientSize.Width + " px, not " + want);
+                        using (var b = w.Render()) b.Save(System.IO.Path.Combine(dir, "tune_size_" + sc.ToString(CultureInfo.InvariantCulture) + ".png"), System.Drawing.Imaging.ImageFormat.Png);
+                        w.ShowPage("Inspector");   // the Inspector follows the size too
+                        using (var b = w.Render()) b.Save(System.IO.Path.Combine(dir, "tune_size_" + sc.ToString(CultureInfo.InvariantCulture) + "_inspector.png"), System.Drawing.Imaging.ImageFormat.Png);
+                        w.ShowPage("Smartbombs");
+                    }
+                    DpsForm.UiScale = scale0; w.SyncLook();
+                    if (w.ClientSize != size0) throw new Exception("Tuning self-test: the window did not go back to its size");
+                    // Settings -> Display while the window is open: eye comfort, the hull's colour, the power display's animation
+                    bool keepEc = DpsForm.EyeComfort; int keepSat = DpsForm.HullSaturation, keepBr = DpsForm.HullBrightness; var keepAn = DpsForm.PowerAnimName;
+                    var look0 = w.look;
+                    DpsForm.EyeComfort = true; DpsForm.HullSaturation = 85; DpsForm.HullBrightness = 30; DpsForm.PowerAnimName = PowerAnims.Names.First(n => n != keepAn);
+                    DpsForm.ApplyTheme(); w.SyncLook();
+                    if (w.look == look0) throw new Exception("Tuning self-test: the window did not follow the app's Display settings");
+                    using (var b = w.Render()) b.Save(System.IO.Path.Combine(dir, "tune_theme.png"), System.Drawing.Imaging.ImageFormat.Png);
+                    DpsForm.EyeComfort = keepEc; DpsForm.HullSaturation = keepSat; DpsForm.HullBrightness = keepBr; DpsForm.PowerAnimName = keepAn;
+                    DpsForm.ApplyTheme(); w.SyncLook();
+                    // what a frame costs: the whole window painted again, or only the light on the glass moved
+                    var sw = System.Diagnostics.Stopwatch.StartNew();
+                    for (int i = 0; i < 5; i++) using (w.Render()) { }
+                    double full = sw.Elapsed.TotalMilliseconds / 5;
+                    using (var fb = new Bitmap(w.ClientSize.Width, w.ClientSize.Height, System.Drawing.Imaging.PixelFormat.Format32bppArgb))
+                    {
+                        sw.Restart();
+                        for (int i = 0; i < 20; i++) w.Compose(fb, (PointF?)new PointF(w.mainGlassR.Left + 40 + i * 9, w.mainGlassR.Top + 120 + i * 4));
+                    }
+                    log.AppendLine(string.Format(CultureInfo.InvariantCulture, "tuning frame: full paint {0:0} ms, light only {1:0} ms", full, sw.Elapsed.TotalMilliseconds / 20));
                 }
             }
             finally
@@ -674,6 +1204,8 @@ namespace TheNorns
             var keepL = Lang; Lang = "en";
             using (var w = new TuneWindow(f) { DemoNow = now })
             {
+                Action<PointF> click = pt => { w.OnMouseDown(new MouseEventArgs(MouseButtons.Left, 1, (int)pt.X, (int)pt.Y, 0)); w.OnMouseUp(new MouseEventArgs(MouseButtons.Left, 1, (int)pt.X, (int)pt.Y, 0)); using (w.Render()) { } };
+                Func<RectangleF, PointF> mid = r => new PointF(r.Left + r.Width / 2, r.Top + r.Height / 2);
                 w.ShowPage("Smartbombs");
                 using (w.Render()) { }   // the hit areas
                 var tr = w.tracks.First(x => x.Item2 == gap).Item1;
@@ -687,7 +1219,7 @@ namespace TheNorns
                 check(System.IO.File.Exists(Tune.FilePath) && System.IO.File.ReadAllText(Tune.FilePath).Contains("sb.cycle_gap_s"), "the drag was not saved");
                 using (w.Render()) { }
                 var rr = w.resets.First(x => x.Item2 == gap).Item1;
-                w.OnMouseDown(new MouseEventArgs(MouseButtons.Left, 1, (int)(rr.Left + rr.Width / 2), (int)(rr.Top + rr.Height / 2), 0));
+                click(mid(rr));
                 check(!gap.Changed, "reset left " + gap.V);
                 using (w.Render()) { }
                 var row = w.rows.First(x => x.Item2 == Tune.SbMinGcd).Item1;
@@ -696,23 +1228,29 @@ namespace TheNorns
                 ModsOverride = keepMods;
                 check(Tune.SbMinGcd.I == 4, "Ctrl+wheel gave " + Tune.SbMinGcd.V);
                 using (w.Render()) { }
-                var vr = w.values.First(x => x.Item2 == gap).Item1;
-                w.StartEdit(gap, vr); w.edit.Text = "8,5"; w.CommitEdit();
-                check(Math.Abs(gap.V - 8.5) < 1e-9, "typed 8,5 gave " + gap.V);
-                // the language list: the key opens it, a name takes that language, a click outside closes it
+                // the value typed in its field: a click on it, the keys, Enter; over the limit refused; Esc leaves it
+                click(mid(w.values.First(x => x.Item2 == gap).Item1));
+                check(w.editing == gap, "a click on the value did not open its field");
+                foreach (var ch in "8,5") w.OnKeyPress(new KeyPressEventArgs(ch));
+                w.EditKey(Keys.Enter);
+                check(Math.Abs(gap.V - 8.5) < 1e-9 && w.editing == null, "typed 8,5 gave " + gap.V);
+                click(mid(w.values.First(x => x.Item2 == gap).Item1));
+                foreach (var ch in "99") w.OnKeyPress(new KeyPressEventArgs(ch));
+                check(w.editText == "9" && w.errP == gap, "99 s (over " + gap.Max + ") was not refused");
+                w.EditKey(Keys.Escape);
+                check(Math.Abs(gap.V - 8.5) < 1e-9 && w.editing == null, "Esc changed the value to " + gap.V);
+                // a key acts on release over it: pressed and moved off, nothing happens
                 using (w.Render()) { }
-                Action<PointF> click = pt => { w.OnMouseDown(new MouseEventArgs(MouseButtons.Left, 1, (int)pt.X, (int)pt.Y, 0)); w.OnMouseUp(new MouseEventArgs(MouseButtons.Left, 1, (int)pt.X, (int)pt.Y, 0)); using (w.Render()) { } };
-                Func<RectangleF, PointF> mid = r => new PointF(r.Left + r.Width / 2, r.Top + r.Height / 2);
-                click(mid(w.langKey));
-                check(w.langOpen && w.langRows.Count == L.Languages.Length, "the Language key did not open the list");
-                click(mid(w.langRows.First(x => x.Item2 == "de").Item1));
-                check(Lang == "de" && !w.langOpen && T("Reset all") == "Alles zurücksetzen", "picking Deutsch gave " + Lang);
-                click(mid(w.langKey));
-                var gapRow = w.tracks.First(x => x.Item2 == gap).Item1;
-                double before = gap.V;
-                click(new PointF(gapRow.Left + U(4), gapRow.Top + gapRow.Height / 2));   // outside the list, on a track
-                check(!w.langOpen && gap.V == before && Lang == "de", "a click outside the list did more than close it");
-                Lang = "en";
+                var rk = w.keys.First(x => x.Item2 == "resetall").Item1;
+                w.OnMouseDown(new MouseEventArgs(MouseButtons.Left, 1, (int)(rk.Left + rk.Width / 2), (int)(rk.Top + rk.Height / 2), 0));
+                w.OnMouseUp(new MouseEventArgs(MouseButtons.Left, 1, (int)(rk.Left - M(30)), (int)(rk.Top + rk.Height / 2), 0));
+                check(gap.Changed, "Reset all acted though released off the key");
+                // the language: the app's, followed while the window is open
+                langOverride = null;
+                var keepCode = L.Code;
+                L.Code = "de"; w.SyncLook();
+                check(Lang == "de" && T("Reset all") == "Alles zurücksetzen", "the app in German gave " + Lang);
+                L.Code = keepCode; w.SyncLook(); Lang = "en";
             }
             // the file: what was saved reads back; a broken file and a value out of its limits
             var saved = System.IO.File.ReadAllText(Tune.FilePath);
@@ -727,8 +1265,8 @@ namespace TheNorns
             check(gap.V == gap.Max && Tune.SbMinGcd.I == 2 && Tune.LastError == null, "limits gave " + gap.V);
             foreach (var p in Tune.All) p.V = p.Def;
             Tune.Version++;
-            Lang = keepL;
-            log.AppendLine("tuning: drag, reset, Ctrl+wheel, typed value, language list, save / read back, broken file, limits: ok (" + saved.Length + " bytes saved)");
+            langOverride = null;
+            log.AppendLine("tuning: drag, reset, Ctrl+wheel, typed value (limit, Esc), release off a key, language, save / read back, broken file, limits: ok (" + saved.Length + " bytes saved)");
         }
         public static Keys? ModsOverride;   // selftest: the modifier keys of a simulated wheel
         static Keys Mods { get { return ModsOverride ?? ModifierKeys; } }

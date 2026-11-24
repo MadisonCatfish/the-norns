@@ -1,5 +1,13 @@
 {
   "_comment": "Tuning window (TuneWindow.cs, Tune.cs): English -> Ukrainian. Only the Tuning window reads this file; the app's own texts are in uk.json. Game terms stay as players say them (DPS, ISK, NPC, GCD, Vorton, smartbomb, runner, combat log).",
+  "DELETE CUSTOM TUNING": "ВИДАЛИТИ ВЛАСНИЙ TUNING",
+  "This clears all your custom values, deletes tuning.json and switches Tuning off. Every value goes back to its default. You cannot undo this.": "Це очищує всі ваші власні значення, видаляє tuning.json і вимикає Tuning. Кожне значення повертається до стандартного. Скасувати цю дію неможливо.",
+  "Clear and delete": "Очистити й видалити",
+  "Clear and delete custom tuning": "Очистити й видалити власний tuning",
+  "CHANGE WITH CARE": "ЗМІНЮЙТЕ ОБЕРЕЖНО",
+  "Tuning changes the values The Norns uses to read the logs and to count. A wrong value can make the program show wrong numbers or work incorrectly. Read the description of each value carefully before you change it.": "Tuning змінює значення, за якими The Norns читає логи й рахує. Неправильне значення може змусити програму показувати хибні числа або працювати неправильно. Уважно прочитайте опис кожного значення, перш ніж його змінити.",
+  "Cancel": "Скасувати",
+  "Open Tuning": "Відкрити Tuning",
   "never": "ніколи",
   "TUNING": "ТЮНІНГ",
   "file      {0}": "файл      {0}",
@@ -146,5 +154,9 @@
   "Alert sound only for": "Звук лише для",
   "The alert sound plays only for a spawn this fresh. Old spawns that The Norns reads from the log at start stay silent.": "Звук сповіщення лунає лише для такого свіжого спавну. Старі спавни, які The Norns читає з логу під час запуску, мовчать.",
   "Number window": "Вікно числа",
-  "The Lightning rod numbers (damage through the runner, damage the runner takes) average over this many last seconds.": "Числа Lightning rod (урон через runner, урон, який runner отримує) усереднюються за стільки останніх секунд."
+  "The Lightning rod numbers (damage through the runner, damage the runner takes) average over this many last seconds.": "Числа Lightning rod (урон через runner, урон, який runner отримує) усереднюються за стільки останніх секунд.",
+  "Settings": "Налаштування",
+  "Close": "Закрити",
+  "Warp effect lasts": "Ефект варпу триває",
+  "With the Warp animation, the power display jumps to warp when the fleet warps and comes out after this long, or at the first shot on a site.": "З анімацією Warp мінідисплей стрибає у варп, коли флот варпає, і виходить через цей час або з першим пострілом на сайті."
 }

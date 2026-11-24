@@ -1,5 +1,13 @@
 {
   "_comment": "Tuning window (TuneWindow.cs, Tune.cs): English -> Simplified Chinese. Only the Tuning window reads this file; the app's own texts are in zh.json. Game terms stay as players say them (DPS, ISK, NPC, GCD, Vorton, smartbomb, runner, combat log, bounty, warp, anomaly).",
+  "DELETE CUSTOM TUNING": "删除自定义 TUNING",
+  "This clears all your custom values, deletes tuning.json and switches Tuning off. Every value goes back to its default. You cannot undo this.": "这会清除你所有的自定义数值，删除 tuning.json 并关闭 Tuning。每个数值都恢复为默认值。此操作无法撤销。",
+  "Clear and delete": "清除并删除",
+  "Clear and delete custom tuning": "清除并删除自定义 tuning",
+  "CHANGE WITH CARE": "谨慎修改",
+  "Tuning changes the values The Norns uses to read the logs and to count. A wrong value can make the program show wrong numbers or work incorrectly. Read the description of each value carefully before you change it.": "Tuning 会改变 The Norns 读取日志和计数所用的数值。错误的数值可能使程序显示错误的数字或无法正常工作。修改前请仔细阅读每个数值的说明。",
+  "Cancel": "取消",
+  "Open Tuning": "打开 Tuning",
   "never": "从未",
   "TUNING": "调校",
   "file      {0}": "文件      {0}",
@@ -146,5 +154,9 @@
   "Lightning rod": "Lightning rod",
   "Number window": "数字窗口",
   "The Lightning rod numbers (damage through the runner, damage the runner takes) average over this many last seconds.": "Lightning rod 的数字 (经由 runner 的伤害、runner 承受的伤害) 取最近这么多秒的平均值。",
-  "Inspector": "检查器"
+  "Inspector": "检查器",
+  "Settings": "设置",
+  "Close": "关闭",
+  "Warp effect lasts": "跃迁效果持续",
+  "With the Warp animation, the power display jumps to warp when the fleet warps and comes out after this long, or at the first shot on a site.": "使用 Warp 动画时，舰队跃迁时能量显示进入跃迁，经过此时间或在站点第一次射击时退出。"
 }

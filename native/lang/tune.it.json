@@ -1,5 +1,13 @@
 {
   "_comment": "Tuning window (TuneWindow.cs, Tune.cs): English -> Italian. Only the Tuning window reads this file; the app's own texts are in it.json. Game terms stay as players say them (DPS, ISK, NPC, GCD, Vorton, smartbomb, runner, combat log, bounty).",
+  "DELETE CUSTOM TUNING": "ELIMINA IL TUNING PERSONALE",
+  "This clears all your custom values, deletes tuning.json and switches Tuning off. Every value goes back to its default. You cannot undo this.": "Questo cancella tutti i tuoi valori personali, elimina tuning.json e spegne Tuning. Ogni valore torna al suo predefinito. Non puoi annullarlo.",
+  "Clear and delete": "Cancella ed elimina",
+  "Clear and delete custom tuning": "Cancella ed elimina il tuning personale",
+  "CHANGE WITH CARE": "MODIFICA CON CAUTELA",
+  "Tuning changes the values The Norns uses to read the logs and to count. A wrong value can make the program show wrong numbers or work incorrectly. Read the description of each value carefully before you change it.": "Tuning cambia i valori che The Norns usa per leggere i log e contare. Un valore sbagliato può far mostrare numeri errati al programma o farlo funzionare male. Leggi con attenzione la descrizione di ogni valore prima di cambiarlo.",
+  "Cancel": "Annulla",
+  "Open Tuning": "Apri Tuning",
   "never": "mai",
   "TUNING": "TUNING",
   "file      {0}": "file      {0}",
@@ -146,5 +154,9 @@
   "Lightning rod": "Lightning rod",
   "Number window": "Finestra del numero",
   "The Lightning rod numbers (damage through the runner, damage the runner takes) average over this many last seconds.": "I numeri del Lightning rod (danno attraverso il runner, danno subito dal runner) fanno la media su questi ultimi secondi.",
-  "Inspector": "Ispettore"
+  "Inspector": "Ispettore",
+  "Settings": "Impostazioni",
+  "Close": "Chiudi",
+  "Warp effect lasts": "L'effetto warp dura",
+  "With the Warp animation, the power display jumps to warp when the fleet warps and comes out after this long, or at the first shot on a site.": "Con l'animazione Warp, il display di potenza entra in warp quando la flotta warpa ed esce dopo questo tempo o al primo colpo in un sito."
 }

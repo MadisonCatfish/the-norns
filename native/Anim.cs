@@ -176,7 +176,7 @@ namespace TheNorns
                     f.DemoSettings(true, null, false, "display");
                     r.Mouse = r.MainAt(f.GlassRect, 0.5f, 0.5f);
                     r.Wait(0.8);
-                    foreach (var an in new[] { "cubewave", "norns", "flow", "working" }) { r.MoveToSpot("anim:" + an, 0.6); r.Click(); r.Wait(2.6); }
+                    foreach (var an in new[] { "cubewave", "norns", "warp", "working" }) { r.MoveToSpot("anim:" + an, 0.6); r.Click(); r.Wait(2.6); }
                     PowerAnimName = "working";
                     break;
                 case "readlogs":

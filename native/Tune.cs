@@ -93,6 +93,8 @@ namespace TheNorns
             "Then the DPS lines rise back in this time.");
         public static readonly P WarpingAfterS = D("Anomaly timer", "warp.warping_after_s", "Power display slows after", "s", 8, 0, 60, 1,
             "If the fleet warped and nobody has shot since, after this long the small power display slows down: the fleet is between sites.", true);
+        public static readonly P WarpAnimS = D("Anomaly timer", "warp.anim_s", "Warp effect lasts", "s", 20, 3, 60, 1,
+            "With the Warp animation, the power display jumps to warp when the fleet warps and comes out after this long, or at the first shot on a site.");
 
         // ---- ISK grid ----
         public static readonly P IskHeatMin = D("ISK grid", "isk.heat_min", "Coldest bounty", "ISK", 3000, 100, 100000, 100,
@@ -196,6 +198,17 @@ namespace TheNorns
             foreach (var p in all) p.V = p.Def;
             Version++;
             Save();
+        }
+
+        // the Tuning window's Delete key (owner, 23.11.2026): every value back to its default, the file deleted, tuning off
+        public static void Delete()
+        {
+            foreach (var p in all) p.V = p.Def;
+            Version++;
+            try { if (File.Exists(FilePath)) File.Delete(FilePath); LastError = null; }
+            catch (Exception ex) { LastError = "tuning.json: " + ex.Message; }
+            fileTime = DateTime.MinValue;
+            Enabled = false;
         }
 
         // only the values that differ from their defaults; the file is the user's, so a missing key means the default

@@ -1,5 +1,13 @@
 {
   "_comment": "Tuning window (TuneWindow.cs, Tune.cs): English -> French. Only the Tuning window reads this file; the app's own texts are in fr.json. Game terms stay as players say them (DPS, ISK, NPC, GCD, Vorton, smartbomb, runner, combat log, bounty).",
+  "DELETE CUSTOM TUNING": "SUPPRIMER LE TUNING PERSONNEL",
+  "This clears all your custom values, deletes tuning.json and switches Tuning off. Every value goes back to its default. You cannot undo this.": "Cela efface toutes vos valeurs personnelles, supprime tuning.json et désactive Tuning. Chaque valeur revient à sa valeur par défaut. Vous ne pouvez pas l'annuler.",
+  "Clear and delete": "Effacer et supprimer",
+  "Clear and delete custom tuning": "Effacer et supprimer le tuning personnel",
+  "CHANGE WITH CARE": "MODIFIER AVEC PRUDENCE",
+  "Tuning changes the values The Norns uses to read the logs and to count. A wrong value can make the program show wrong numbers or work incorrectly. Read the description of each value carefully before you change it.": "Tuning modifie les valeurs que The Norns utilise pour lire les logs et compter. Une mauvaise valeur peut faire afficher de faux chiffres au programme ou le faire mal fonctionner. Lisez attentivement la description de chaque valeur avant de la modifier.",
+  "Cancel": "Annuler",
+  "Open Tuning": "Ouvrir Tuning",
   "never": "jamais",
   "TUNING": "TUNING",
   "file      {0}": "fichier   {0}",
@@ -146,5 +154,9 @@
   "Lightning rod": "Lightning rod",
   "Number window": "Fenêtre du nombre",
   "The Lightning rod numbers (damage through the runner, damage the runner takes) average over this many last seconds.": "Les nombres du Lightning rod (dégâts à travers le runner, dégâts subis par le runner) font la moyenne sur ces dernières secondes.",
-  "Inspector": "Inspecteur"
+  "Inspector": "Inspecteur",
+  "Settings": "Réglages",
+  "Close": "Fermer",
+  "Warp effect lasts": "L'effet de warp dure",
+  "With the Warp animation, the power display jumps to warp when the fleet warps and comes out after this long, or at the first shot on a site.": "Avec l'animation Warp, l'écran d'énergie passe en warp quand la flotte warpe et en sort après ce délai ou au premier tir sur un site."
 }

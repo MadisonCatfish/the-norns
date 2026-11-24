@@ -1,5 +1,13 @@
 {
   "_comment": "Tuning window (TuneWindow.cs, Tune.cs): English -> Spanish. Only the Tuning window reads this file; the app's own texts are in es.json. Game terms stay as players say them (DPS, ISK, NPC, GCD, Vorton, smartbomb, runner, combat log, bounty).",
+  "DELETE CUSTOM TUNING": "BORRAR TUNING PROPIO",
+  "This clears all your custom values, deletes tuning.json and switches Tuning off. Every value goes back to its default. You cannot undo this.": "Esto borra todos tus valores propios, elimina tuning.json y apaga Tuning. Cada valor vuelve a su valor por defecto. No puedes deshacerlo.",
+  "Clear and delete": "Limpiar y borrar",
+  "Clear and delete custom tuning": "Limpiar y borrar el tuning propio",
+  "CHANGE WITH CARE": "CAMBIA CON CUIDADO",
+  "Tuning changes the values The Norns uses to read the logs and to count. A wrong value can make the program show wrong numbers or work incorrectly. Read the description of each value carefully before you change it.": "Tuning cambia los valores que The Norns usa para leer los logs y contar. Un valor incorrecto puede hacer que el programa muestre números erróneos o funcione mal. Lee con atención la descripción de cada valor antes de cambiarlo.",
+  "Cancel": "Cancelar",
+  "Open Tuning": "Abrir Tuning",
   "never": "nunca",
   "TUNING": "TUNING",
   "file      {0}": "archivo   {0}",
@@ -146,5 +154,9 @@
   "Lightning rod": "Lightning rod",
   "Number window": "Ventana del número",
   "The Lightning rod numbers (damage through the runner, damage the runner takes) average over this many last seconds.": "Los números de Lightning rod (daño a través del runner, daño que recibe el runner) promedian estos últimos segundos.",
-  "Inspector": "Inspector"
+  "Inspector": "Inspector",
+  "Settings": "Ajustes",
+  "Close": "Cerrar",
+  "Warp effect lasts": "El efecto de warp dura",
+  "With the Warp animation, the power display jumps to warp when the fleet warps and comes out after this long, or at the first shot on a site.": "Con la animación Warp, la pantalla de energía salta a warp cuando la flota warpea y sale tras este tiempo o con el primer disparo en un site."
 }

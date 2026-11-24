@@ -1,5 +1,13 @@
 {
   "_comment": "Tuning window (TuneWindow.cs, Tune.cs): English -> German. Only the Tuning window reads this file; the app's own texts are in de.json. Game terms stay as players say them (DPS, ISK, NPC, GCD, Vorton, smartbomb, runner, combat log, bounty).",
+  "DELETE CUSTOM TUNING": "EIGENES TUNING LÖSCHEN",
+  "This clears all your custom values, deletes tuning.json and switches Tuning off. Every value goes back to its default. You cannot undo this.": "Das setzt alle eigenen Werte zurück, löscht tuning.json und schaltet Tuning aus. Jeder Wert kehrt zu seinem Standard zurück. Du kannst das nicht rückgängig machen.",
+  "Clear and delete": "Zurücksetzen und löschen",
+  "Clear and delete custom tuning": "Eigenes Tuning zurücksetzen und löschen",
+  "CHANGE WITH CARE": "MIT VORSICHT ÄNDERN",
+  "Tuning changes the values The Norns uses to read the logs and to count. A wrong value can make the program show wrong numbers or work incorrectly. Read the description of each value carefully before you change it.": "Tuning ändert die Werte, mit denen The Norns die Logs liest und zählt. Ein falscher Wert kann dazu führen, dass das Programm falsche Zahlen zeigt oder nicht richtig arbeitet. Lies die Beschreibung jedes Werts sorgfältig, bevor du ihn änderst.",
+  "Cancel": "Abbrechen",
+  "Open Tuning": "Tuning öffnen",
   "never": "nie",
   "TUNING": "TUNING",
   "file      {0}": "Datei     {0}",
@@ -146,5 +154,9 @@
   "Lightning rod": "Lightning rod",
   "Number window": "Fenster der Zahl",
   "The Lightning rod numbers (damage through the runner, damage the runner takes) average over this many last seconds.": "Die Lightning-rod-Zahlen (Schaden durch den Runner, Schaden, den der Runner nimmt) mitteln über so viele letzte Sekunden.",
-  "Inspector": "Inspektor"
+  "Inspector": "Inspektor",
+  "Settings": "Einstellungen",
+  "Close": "Schließen",
+  "Warp effect lasts": "Warp-Effekt dauert",
+  "With the Warp animation, the power display jumps to warp when the fleet warps and comes out after this long, or at the first shot on a site.": "Mit der Warp-Animation springt die Power-Anzeige in den Warp, wenn die Flotte warpt, und kommt nach dieser Zeit oder beim ersten Schuss in einer Site heraus."
 }

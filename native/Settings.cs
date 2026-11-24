@@ -364,6 +364,7 @@ namespace TheNorns
             if (id == "reset") { stats.Tracker.ResetAll(); resetShownUntil = Clock + 2.5; return; }
             if (id.StartsWith("lang:")) SetLanguage(id.Substring(5));
             if (id.StartsWith("page:")) { page = id.Substring(5); storage = null; sessions = null; ShowTab(page); }
+            if (id == "tuning") { TuningKey(); return; }
             if (id == "tabs:prev") ScrollTabs(-1);
             if (id == "tabs:next") ScrollTabs(1);
             if (id == "data") OpenDataFolder();
@@ -722,12 +723,24 @@ namespace TheNorns
             CloseKey(g, back, hotSpot == "back", downSpot == "back", U(1) * 0.8f);
             AddKey("back", RectangleF.Inflate(back, U(2), U(2)));
             // Statistics and About: square keys left of the close key, lit while their page is open (Material bar_chart, info)
-            for (int hk = 0; hk < 2; hk++)
+            // and a third, always: the Tuning window (owner, 23.11.2026: Material science), lit while it is open; while
+            // tuning is off it shows a warning first (TuneWarn.cs)
+            for (int hk = 0; hk < 3; hk++)
             {
-                string hp = hk == 0 ? "about" : "stats", hid = "page:" + hp;
+                string hp = hk == 0 ? "about" : "stats", hid = hk == 2 ? "tuning" : "page:" + hp;
                 // 2 px further from the close key (owner, 31.10.2026): 6.6 u at the 125 % size
                 var kr = new RectangleF(back.Left - U(6.6f) - (hk + 1) * U(15) - hk * U(3), c.Top - U(2), U(15), U(15));
-                SquareKey(g, kr, hk == 0 ? MaterialIcon.Info : MaterialIcon.BarChart, false, hid, page == hp);
+                if (hk == 2)
+                {
+                    // values differ from the defaults (owner, 24.11.2026): the key stays as it is, only the flask breathes
+                    // between grey and the accent (Potato: steady in the accent)
+                    bool open = tuneWin != null && !tuneWin.IsDisposed && tuneWin.Visible;
+                    Color? flask = null;
+                    if (!open && Tune.Enabled && Tune.AnyChanged)
+                        flask = Mix(Color.FromArgb(130, 133, 140), BodyTheme.Accent, Potato ? 1 : 0.5 + 0.5 * Math.Sin(Clock * 2 * Math.PI / TuneBreath));
+                    SquareKey(g, kr, TuneWarnWindow.Science, false, hid, open, flask);
+                }
+                else SquareKey(g, kr, hk == 0 ? MaterialIcon.Info : MaterialIcon.BarChart, false, hid, page == hp);
             }
             float y = c.Top + Math.Max(th, U(13)) + U(6);
             line(y); y += U(7);
@@ -886,7 +899,8 @@ namespace TheNorns
         }
 
         // a square key with an icon (the settings' header, the calendar on Statistics); on: lit in the accent
-        void SquareKey(Graphics g, RectangleF kr, string icon, bool symbol, string id, bool on)
+        const double TuneBreath = 2.4;   // s, one breath of the Tuning key's flask
+        void SquareKey(Graphics g, RectangleF kr, string icon, bool symbol, string id, bool on, Color? iconColor = null)
         {
             bool hot = hotSpot == id;
             using (var p = Round(kr, 5))
@@ -896,7 +910,7 @@ namespace TheNorns
             }
             float hic = U(9);
             var ir = new RectangleF(kr.Left + (kr.Width - hic) / 2, kr.Top + (kr.Height - hic) / 2, hic, hic);
-            using (var b = new SolidBrush(on ? BodyTheme.Accent : BodyTheme.Ink)) { if (symbol) MaterialIcon.DrawSymbol(g, icon, ir, b); else MaterialIcon.Draw(g, icon, ir, b); }
+            using (var b = new SolidBrush(on ? BodyTheme.Accent : iconColor ?? BodyTheme.Ink)) { if (symbol) MaterialIcon.DrawSymbol(g, icon, ir, b); else MaterialIcon.Draw(g, icon, ir, b); }
             AddKey(id, kr);
         }
     }

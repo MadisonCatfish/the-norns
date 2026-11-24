@@ -1,6 +1,6 @@
 // PowerAnims.cs - the power display's animation, chosen in Settings -> Display (owner, 04.11.2026): the loadersz sphere
 // (PowerAnim in Body.cs, the default) or one of five made for the body after the owner's picks from the prototypes
-// (build\power-anims): Cube wave, ノルン, Flow field. All are dots in one colour; near dots larger and
+// (build\power-anims): Cube wave, ノルン, Warp (Flow field until 24.11.2026). All are dots in one colour; near dots larger and
 // brighter, far ones smaller and dim. Sizes are in "display units": the display is 28 of them high.
 using System;
 using System.Collections.Generic;
@@ -12,9 +12,11 @@ namespace TheNorns
 {
     static class PowerAnims
     {
-        public static readonly string[] Names = { "working", "cubewave", "norns", "flow" };
-        public static readonly string[] Titles = { "Working", "Cube wave", "ノルン", "Flow field" };
+        public static readonly string[] Names = { "working", "cubewave", "norns", "warp" };
+        public static readonly string[] Titles = { "Working", "Cube wave", "ノルン", "Warp" };
         public static bool Known(string n) { return Names.Contains(n); }
+        // a saved choice of an animation that was replaced (owner, 24.11.2026: Flow field -> Warp)
+        public static string Upgrade(string n) { return n == "flow" ? "warp" : n; }
 
         static double Hash(double e) { double t = Math.Sin(e * 12.9898 + 78.233) * 43758.5453; return t - Math.Floor(t); }
         static double Ease(double x) { return x < 0.5 ? 4 * x * x * x : 1 - Math.Pow(-2 * x + 2, 3) / 2; }
@@ -52,7 +54,7 @@ namespace TheNorns
             {
                 case "cubewave": CubeWave(g, face, secs, color, k); break;
                 case "norns": Norns(slot, g, face, secs, color, k); break;
-                case "flow": Flow(slot, g, face, secs, color, k); break;
+                case "warp": Warp(slot, g, face, secs, color, k); break;
                 default: PowerAnim.Draw(g, new PointF(face.Left + face.Width / 2, face.Top + face.Height / 2), face.Height * 1.89f, secs, color, (float)k); break;
             }
             g.Restore(st);
@@ -90,42 +92,83 @@ namespace TheNorns
             }
         }
 
-        // ---- Flow field: particles drifting through a turning field of swirls, each with a short fading tail ----
-        class FlowState { public double[][] P; public double[][][] Tail; public double Last = double.NaN; }
-        static void Flow(string slot, Graphics g, RectangleF f, double t, Color c, double k)
+        // ---- Warp (owner, 24.11.2026; in place of Flow field): stars flying at the viewer; in a warp they stretch into
+        // streaks and the view rolls round the centre. After the prototype build\power-anims\warp.html
+        // with the owner's settings: cruise 55, streaks 15 %, roll 80 %; no rim glow. In the body the warp follows the
+        // fleet's warp (FleetWarp); elsewhere (the settings' tiles, Tuning) a warp comes every 9 s ----
+        public static bool? FleetWarp;   // the body sets it before each frame: true while the fleet is in warp
+        class WarpState { public double[] X, Y, Z, Tw; public double Last = double.NaN, Level, Roll, Since; public bool Rising; }
+        const int WarpN = 420;
+        const double WarpFar = 1400, WarpSpread = 260, WarpCruise = 55, WarpStreak = 0.15, WarpRoll = 0.8, WarpEvery = 9;
+        static void WarpPlace(WarpState s, int i, bool anywhere, double seed)
         {
-            const int n = 500, tail = 3;
-            object o; FlowState s;
-            if (!states.TryGetValue("flow:" + slot, out o)) { s = new FlowState { P = new double[n][], Tail = new double[n][][] }; for (int i = 0; i < n; i++) { s.P[i] = new[] { Hash(i) * 2 - 1, Hash(i * 5.7) * 2 - 1, Hash(i * 9.3), Hash(i * 3.1) * 4 }; s.Tail[i] = new double[tail][]; } states["flow:" + slot] = s; }
-            else s = (FlowState)o;
+            double x, y; int n = 0;
+            do { x = (Hash(seed + i * 1.7 + n) * 2 - 1) * WarpSpread; y = (Hash(seed * 1.3 + i * 2.9 + n) * 2 - 1) * WarpSpread; n++; } while (Math.Sqrt(x * x + y * y) < 14 && n < 8);
+            s.X[i] = x; s.Y[i] = y; s.Z[i] = anywhere ? -Hash(seed + i * 3.7) * WarpFar : -WarpFar + Hash(seed + i * 4.1) * 60; s.Tw[i] = Hash(i * 7.3) * 6.28;
+        }
+        static void Warp(string slot, Graphics g, RectangleF f, double t, Color c, double k)
+        {
+            object o; WarpState s;
+            if (!states.TryGetValue("warp:" + slot, out o))
+            {
+                s = new WarpState { X = new double[WarpN], Y = new double[WarpN], Z = new double[WarpN], Tw = new double[WarpN] };
+                for (int i = 0; i < WarpN; i++) WarpPlace(s, i, true, 0.5);
+                states["warp:" + slot] = s;
+            }
+            else s = (WarpState)o;
             double dt = double.IsNaN(s.Last) ? 0 : Clamp(t - s.Last, 0, 0.1); s.Last = t;
-            for (int i = 0; i < n; i++)
+            // the warp's level: 0.8 s to spool up (eased in), held while in warp, 1.2 s back to cruise (eased out)
+            bool inWarp;
+            if (slot == "body" && FleetWarp != null) inWarp = FleetWarp.Value;
+            else { s.Since += dt; double ph = s.Since % (WarpEvery + 3.6); inWarp = ph >= WarpEvery && ph < WarpEvery + 2.4; }
+            if (inWarp) { if (!s.Rising) s.Rising = true; s.Level = Math.Min(1, s.Level + dt / 0.8); }
+            else { if (s.Rising) s.Rising = false; s.Level = Math.Max(0, s.Level - dt / 1.2); }
+            double lv = s.Level, wf = s.Rising ? lv * lv * lv : lv * lv * (3 - 2 * lv);
+            double speed = WarpCruise + wf * 1400, streakK = WarpStreak * (0.06 + wf * 0.22);
+            s.Roll += WarpRoll * 0.5 * wf * dt;
+            double fov = (70 + wf * 14) * Math.PI / 180, proj = f.Height / 2 / Math.Tan(fov / 2);
+            double cx = f.Left + f.Width / 2, cy = f.Top + f.Height / 2, cr = Math.Cos(s.Roll), sr = Math.Sin(s.Roll);
+            double shx = Math.Sin(t * 37) * 0.25 * wf, shy = Math.Cos(t * 41) * 0.25 * wf;
+
+            // ahead, a faint haze where the ship flies to
+            float hr = f.Height * 0.9f;
+            using (var hp = new GraphicsPath())
             {
-                var q = s.P[i];
-                Array.Copy(s.Tail[i], 0, s.Tail[i], 1, tail - 1); s.Tail[i][0] = new[] { q[0], q[1] };
-                double x = q[0] * 2.2, y = q[1] * 2.2;
-                // the curl of a sum of waves: a field without sources, so the particles swirl instead of piling up
-                double vx = Math.Cos(y * 1.3 + t * 0.4) + 0.6 * Math.Cos(y * 2.9 - x * 1.1 + t * 0.7);
-                double vy = -Math.Sin(x * 1.5 - t * 0.3) - 0.6 * Math.Sin(x * 2.7 + y * 1.3 - t * 0.5);
-                q[0] += vx * dt * 0.22; q[1] += vy * dt * 0.22; q[3] += dt;
-                if (Math.Abs(q[0]) > 1.1 || Math.Abs(q[1]) > 1.1 || q[3] > 4 + q[2] * 4)
-                {
-                    q[0] = Hash(i + t) * 2 - 1; q[1] = Hash(i * 1.3 + t) * 2 - 1; q[3] = 0;
-                    for (int j = 0; j < tail; j++) s.Tail[i][j] = null;
-                }
+                hp.AddEllipse((float)cx - hr, (float)cy - hr, hr * 2, hr * 2);
+                using (var hb = new PathGradientBrush(hp) { CenterColor = Color.FromArgb((int)(255 * 0.13 * (0.6 + 0.4 * wf)), c), SurroundColors = new[] { Color.FromArgb(0, c) } }) g.FillPath(hb, hp);
             }
-            double cx = f.Left + f.Width / 2, cy = f.Top + f.Height / 2;
-            for (int i = 0; i < n; i++)
+            var pt = new PointF[2];
+            for (int i = 0; i < WarpN; i++)
             {
-                var q = s.P[i];
-                double life = Math.Min(1, q[3] * 2) * Math.Min(1, (4 + q[2] * 4 - q[3]) * 2), z = q[2] * 2 - 1;
-                for (int j = tail - 1; j >= 0; j--)
+                s.Z[i] += speed * dt;
+                if (s.Z[i] > -2) WarpPlace(s, i, false, t + i * 0.01);
+                double x = s.X[i] - shx, y = s.Y[i] - shy, z = s.Z[i];
+                double near = 1 - (-z / WarpFar), side = Math.Min(1, Math.Sqrt(s.X[i] * s.X[i] + s.Y[i] * s.Y[i]) / WarpSpread);
+                double b = Math.Min(1, near * near * (0.55 + 0.45 * side) * 1.6) * (0.82 + 0.18 * Math.Sin(t * 3 + s.Tw[i]) * (1 - wf));
+                if (b < 0.02) continue;
+                double len = speed * streakK * (0.6 + side);
+                // the head and the tail on the glass (rolled round the centre)
+                double hx = x / -z * proj, hy = y / -z * proj, zt = z - len, tx = x / -zt * proj, ty = y / -zt * proj;
+                float sx = (float)(cx + hx * cr - hy * sr), sy = (float)(cy + hx * sr + hy * cr);
+                if (sx < f.Left - 4 || sx > f.Right + 4 || sy < f.Top - 4 || sy > f.Bottom + 4) continue;
+                double lb = b * Math.Min(1, 0.25 + wf * 1.2 + streakK * 2);
+                if (len > 0.5 && lb > 0.03)
                 {
-                    var p = s.Tail[i][j]; if (p == null) continue;
-                    Dot(g, cx + p[0] * f.Width * 0.5, cy + p[1] * f.Height * 0.5, z, 0.2 * k, 0.75 * life * (1 - (j + 1) / (double)(tail + 1)) * 0.5, c);
+                    float ex = (float)(cx + tx * cr - ty * sr), ey = (float)(cy + tx * sr + ty * cr);
+                    if (Math.Abs(ex - sx) + Math.Abs(ey - sy) > 0.6)
+                    {
+                        // the streak fades to nothing at its tail: a bright half at the head, a dim half behind
+                        float mx = (sx + ex) / 2, my = (sy + ey) / 2, w = (float)Math.Max(0.5, 0.35 * k);
+                        using (var pen = new Pen(Color.FromArgb((int)(255 * Clamp(lb * 0.35, 0, 1)), c), w)) g.DrawLine(pen, mx, my, ex, ey);
+                        using (var pen = new Pen(Color.FromArgb((int)(255 * Clamp(lb * 0.85, 0, 1)), c), w)) g.DrawLine(pen, sx, sy, mx, my);
+                    }
                 }
-                Dot(g, cx + q[0] * f.Width * 0.5, cy + q[1] * f.Height * 0.5, z, 0.24 * k, 0.75 * life, c);
+                // the star: larger when near, as the prototype's points (size 4.2, attenuated)
+                double r = Clamp(4.2 / -z * proj * 0.5 * 0.6, 0.25 * k, 1.6 * k);
+                float d = (float)Math.Max(0.6, r * 2);
+                g.FillEllipse(Brush(c, b), sx - d / 2, sy - d / 2, d, d);
             }
+            // no rim glow (owner, 24.11.2026: "Rim glow ... to 0")
         }
 
         // ---- ノルン: the dots gather into the app's name, hold, burst into a swirl and spring back ----
